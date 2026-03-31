@@ -81,8 +81,45 @@
     .btn:active { transform: scale(0.97); }
     .btn:disabled { background: #1a3a5f; color: var(--dim); cursor: default; transform: none; }
 
+    /* ── Header right (location) ── */
+    .header-right { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+    .header-loc   { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+    .header-loc label  { font-size: 0.78rem; color: var(--dim); }
+    .header-loc select { padding: 6px 10px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-size: 0.84rem; outline: none; cursor: pointer; }
+    .header-loc select:focus { border-color: var(--accent); }
+    .header-loc input  { padding: 6px 10px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-size: 0.84rem; outline: none; width: 80px; }
+    .header-loc input:focus { border-color: var(--accent); }
+
+    /* ── Page layout (sidebar + content) ── */
+    .page-layout { display: flex; align-items: flex-start; max-width: 1440px; margin: 0 auto; }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      width: 200px; flex-shrink: 0;
+      background: var(--surface); border-right: 1px solid var(--border);
+      padding: 20px 16px;
+      display: flex; flex-direction: column; gap: 14px;
+      position: sticky; top: 0; height: 100vh; overflow-y: auto;
+    }
+    .sb-title  { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--dim); padding-bottom: 10px; border-bottom: 1px solid var(--border); }
+    .sb-group  { display: flex; flex-direction: column; gap: 8px; }
+    .sb-badge  { font-size: 0.67rem; font-weight: 700; padding: 3px 10px; border-radius: 20px; letter-spacing: 0.05em; align-self: flex-start; }
+    .sb-badge.caution { background: rgba(245,158,11,0.15); color: #fbbf24; border: 1px solid rgba(245,158,11,0.25); }
+    .sb-badge.danger  { background: rgba(239,68,68,0.15);  color: #f87171; border: 1px solid rgba(239,68,68,0.25); }
+    .sb-field  { display: flex; flex-direction: column; gap: 3px; }
+    .sb-lbl    { font-size: 0.7rem; color: var(--muted); }
+    .sb-input  { padding: 6px 8px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-size: 0.84rem; outline: none; width: 100%; }
+    .sb-input:focus { border-color: var(--accent); }
+    .sb-sep    { height: 1px; background: var(--border); }
+
     /* ── Main ── */
-    .main { max-width: 1440px; margin: 0 auto; padding: 24px 32px; }
+    .main { flex: 1; min-width: 0; padding: 24px 32px; }
+
+    @media (max-width: 600px) {
+      .page-layout { flex-direction: column; }
+      .sidebar { width: 100%; height: auto; position: static; flex-direction: row; flex-wrap: wrap; border-right: none; border-bottom: 1px solid var(--border); }
+      .sb-sep  { width: 1px; height: auto; align-self: stretch; }
+    }
 
     /* ── Status bar ── */
     .status-bar { padding: 11px 16px; border-radius: 8px; margin-bottom: 18px; font-size: 0.84rem; display: flex; align-items: center; gap: 8px; }
@@ -196,7 +233,9 @@
     .meta-row { font-size: 0.73rem; color: var(--dim); margin-bottom: 18px; display: flex; gap: 16px; }
 
     @media (max-width: 600px) {
-      header, .api-bar { padding-left: 14px; padding-right: 14px; }
+      header { padding-left: 14px; padding-right: 14px; }
+      .header-inner { flex-direction: column; gap: 12px; }
+      .header-right { align-items: flex-start; }
       .main { padding: 14px; }
       .header-left h1 { font-size: 1.25rem; }
       .cards { grid-template-columns: repeat(2, 1fr); gap: 8px; }
@@ -217,47 +256,33 @@
         <span id="headerModel">&#x1F4E1; GFS · ECMWF WAM</span>
       </div>
     </div>
+    <div class="header-right">
+      <div class="header-loc">
+        <label>📍 Location:</label>
+        <select id="locationSelect" onchange="onLocationChange()">
+          <option value="michmoret">Michmoret</option>
+          <option value="netanya">Netanya</option>
+          <option value="herzliya">Herzliya Marina</option>
+          <option value="tel_aviv">Tel Aviv (Gordon Beach)</option>
+          <option value="caesarea">Caesarea</option>
+          <option value="haifa">Haifa</option>
+          <option value="acre">Acre (Akko)</option>
+          <option value="nahariya">Nahariya</option>
+          <option value="ashdod">Ashdod</option>
+          <option value="ashkelon">Ashkelon</option>
+          <option value="eilat">Eilat (Red Sea)</option>
+          <option value="custom">Custom coordinates...</option>
+        </select>
+      </div>
+      <div class="custom-coords header-loc" id="customCoords">
+        <label>Lat:</label>
+        <input type="number" id="customLat" step="0.01" min="-90" max="90" placeholder="32.40" />
+        <label>Lon:</label>
+        <input type="number" id="customLon" step="0.01" min="-180" max="180" placeholder="34.87" />
+      </div>
+    </div>
   </div>
 </header>
-
-<!-- Location bar -->
-<div class="ctrl-bar">
-  <label>Location:</label>
-  <select id="locationSelect" onchange="onLocationChange()">
-    <option value="michmoret">Michmoret</option>
-    <option value="netanya">Netanya</option>
-    <option value="herzliya">Herzliya Marina</option>
-    <option value="tel_aviv">Tel Aviv (Gordon Beach)</option>
-    <option value="caesarea">Caesarea</option>
-    <option value="haifa">Haifa</option>
-    <option value="acre">Acre (Akko)</option>
-    <option value="nahariya">Nahariya</option>
-    <option value="ashdod">Ashdod</option>
-    <option value="ashkelon">Ashkelon</option>
-    <option value="eilat">Eilat (Red Sea)</option>
-    <option value="custom">Custom coordinates...</option>
-  </select>
-  <div class="custom-coords" id="customCoords">
-    <label>Lat:</label>
-    <input type="number" id="customLat" step="0.01" min="-90" max="90" placeholder="32.40" />
-    <label>Lon:</label>
-    <input type="number" id="customLon" step="0.01" min="-180" max="180" placeholder="34.87" />
-  </div>
-</div>
-
-<!-- Thresholds bar -->
-<div class="ctrl-bar" id="thresholdsBar">
-  <label>⚙️ Thresholds:</label>
-  <label>CAUTION when wind above (<span class="wind-unit-lbl">kn</span>):</label>
-  <input type="number" id="thCautWind" min="1" max="200" step="1" value="12" style="width:65px" />
-  <label>CAUTION when waves above (m):</label>
-  <input type="number" id="thCautWave" min="0.1" max="5" step="0.1" value="0.6" style="width:65px" />
-  <div class="bar-sep"></div>
-  <label>DANGER when wind above (<span class="wind-unit-lbl">kn</span>):</label>
-  <input type="number" id="thDangerWind" min="1" max="200" step="1" value="18" style="width:65px" />
-  <label>DANGER when waves above (m):</label>
-  <input type="number" id="thDangerWave" min="0.1" max="5" step="0.1" value="1.0" style="width:65px" />
-</div>
 
 <!-- Settings bar -->
 <div class="ctrl-bar">
@@ -285,9 +310,45 @@
   <button class="btn" id="fetchBtn" onclick="fetchForecast()">Get Forecast</button>
 </div>
 
-<div class="main">
-  <div id="status" style="display:none"></div>
-  <div id="output"></div>
+<div class="page-layout">
+
+  <!-- Thresholds sidebar -->
+  <aside class="sidebar">
+    <div class="sb-title">⚙️ Thresholds</div>
+
+    <div class="sb-group">
+      <span class="sb-badge caution">CAUTION</span>
+      <div class="sb-field">
+        <label class="sb-lbl">Wind above (<span class="wind-unit-lbl">kn</span>)</label>
+        <input class="sb-input" type="number" id="thCautWind" min="1" max="200" step="1" value="12" />
+      </div>
+      <div class="sb-field">
+        <label class="sb-lbl">Waves above (m)</label>
+        <input class="sb-input" type="number" id="thCautWave" min="0.1" max="5" step="0.1" value="0.6" />
+      </div>
+    </div>
+
+    <div class="sb-sep"></div>
+
+    <div class="sb-group">
+      <span class="sb-badge danger">DANGER</span>
+      <div class="sb-field">
+        <label class="sb-lbl">Wind above (<span class="wind-unit-lbl">kn</span>)</label>
+        <input class="sb-input" type="number" id="thDangerWind" min="1" max="200" step="1" value="18" />
+      </div>
+      <div class="sb-field">
+        <label class="sb-lbl">Waves above (m)</label>
+        <input class="sb-input" type="number" id="thDangerWave" min="0.1" max="5" step="0.1" value="1.0" />
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main content -->
+  <div class="main">
+    <div id="status" style="display:none"></div>
+    <div id="output"></div>
+  </div>
+
 </div>
 
 <script>
