@@ -248,13 +248,13 @@
 <!-- Thresholds bar -->
 <div class="ctrl-bar" id="thresholdsBar">
   <label>⚙️ Thresholds:</label>
-  <label>CAUTION when wind above (kn):</label>
-  <input type="number" id="thCautWind" min="1" max="50" step="1" value="12" style="width:60px" />
+  <label>CAUTION when wind above (<span class="wind-unit-lbl">kn</span>):</label>
+  <input type="number" id="thCautWind" min="1" max="200" step="1" value="12" style="width:65px" />
   <label>CAUTION when waves above (m):</label>
   <input type="number" id="thCautWave" min="0.1" max="5" step="0.1" value="0.6" style="width:65px" />
   <div class="bar-sep"></div>
-  <label>DANGER when wind above (kn):</label>
-  <input type="number" id="thDangerWind" min="1" max="50" step="1" value="18" style="width:60px" />
+  <label>DANGER when wind above (<span class="wind-unit-lbl">kn</span>):</label>
+  <input type="number" id="thDangerWind" min="1" max="200" step="1" value="18" style="width:65px" />
   <label>DANGER when waves above (m):</label>
   <input type="number" id="thDangerWave" min="0.1" max="5" step="0.1" value="1.0" style="width:65px" />
 </div>
@@ -275,6 +275,12 @@
     <option value="gfsWave">GFS Wave — Windy API</option>
     <option disabled>─────────────────────</option>
     <option disabled>AWS S3 / Google Cloud (CLI only, not in browser)</option>
+  </select>
+  <div class="bar-sep"></div>
+  <label class="model-label">Wind Units:</label>
+  <select id="windUnitSelect" onchange="onUnitChange()">
+    <option value="kn">Knots (kn)</option>
+    <option value="kmh">km/h</option>
   </select>
   <button class="btn" id="fetchBtn" onclick="fetchForecast()">Get Forecast</button>
 </div>
@@ -341,6 +347,9 @@
   if (savedWave)  waveSelect.value  = savedWave;
   if (savedLoc)   { document.getElementById('locationSelect').value = savedLoc; onLocationChange(); }
   updateHeaderLocation();
+  const savedUnit = localStorage.getItem('windUnit');
+  if (savedUnit)  document.getElementById('windUnitSelect').value = savedUnit;
+  document.querySelectorAll('.wind-unit-lbl').forEach(el => el.textContent = windUnitLabel());
 
   // Load saved thresholds
   const thInputs = ['thCautWind','thCautWave','thDangerWind','thDangerWave'];
@@ -350,11 +359,13 @@
   });
 
   function getThresholds() {
+    const isKmh   = getWindUnit() === 'kmh';
+    const toKt    = v => isKmh ? v / KT_TO_KMH : v;
     return {
-      cautWind:   parseFloat(document.getElementById('thCautWind').value)   || 12,
-      cautWave:   parseFloat(document.getElementById('thCautWave').value)   || 0.6,
-      dangerWind: parseFloat(document.getElementById('thDangerWind').value) || 18,
-      dangerWave: parseFloat(document.getElementById('thDangerWave').value) || 1.0,
+      cautWind:   toKt(parseFloat(document.getElementById('thCautWind').value)   || (isKmh ? 22 : 12)),
+      cautWave:        parseFloat(document.getElementById('thCautWave').value)   || 0.6,
+      dangerWind: toKt(parseFloat(document.getElementById('thDangerWind').value) || (isKmh ? 33 : 18)),
+      dangerWave:      parseFloat(document.getElementById('thDangerWave').value) || 1.0,
     };
   }
 
@@ -463,7 +474,30 @@
     }
   }
 
-  const M2KT = 1.94384;
+  const M2KT     = 1.94384;
+  const KT_TO_KMH = 1.852;
+
+  function getWindUnit()   { return localStorage.getItem('windUnit') || 'kn'; }
+  function windUnitLabel() { return getWindUnit() === 'kmh' ? 'km/h' : 'kn'; }
+  function windDisp(kt)    { return getWindUnit() === 'kmh' ? kt * KT_TO_KMH : kt; }
+
+  function onUnitChange() {
+    const newUnit = document.getElementById('windUnitSelect').value;
+    const oldUnit = localStorage.getItem('windUnit') || 'kn';
+    if (newUnit !== oldUnit) {
+      ['thCautWind','thDangerWind'].forEach(id => {
+        const el  = document.getElementById(id);
+        const val = parseFloat(el.value);
+        if (!isNaN(val))
+          el.value = newUnit === 'kmh'
+            ? Math.round(val * KT_TO_KMH)
+            : Math.round(val / KT_TO_KMH);
+      });
+      localStorage.setItem('windUnit', newUnit);
+      saveThresholds();
+    }
+    document.querySelectorAll('.wind-unit-lbl').forEach(el => el.textContent = windUnitLabel());
+  }
 
   function windDeg(u, v) {
     return (Math.atan2(-u, -v) * 180 / Math.PI + 360) % 360;
@@ -565,12 +599,12 @@
 
       <div class="legend">
         <div class="lg-group">
-          <div class="lg-title">Wind / Gusts (knots)</div>
-          <div class="lg-item"><div class="lg-dot" style="background:#34d399"></div>&lt; 5 — Calm</div>
-          <div class="lg-item"><div class="lg-dot" style="background:#86efac"></div>5–10 — Light</div>
-          <div class="lg-item"><div class="lg-dot" style="background:#fbbf24"></div>11–16 — Moderate</div>
-          <div class="lg-item"><div class="lg-dot" style="background:#fb923c"></div>17–21 — Fresh</div>
-          <div class="lg-item"><div class="lg-dot" style="background:#f87171"></div>22+ — Strong</div>
+          <div class="lg-title">Wind / Gusts (${windUnitLabel()})</div>
+          <div class="lg-item"><div class="lg-dot" style="background:#34d399"></div>&lt; ${Math.round(windDisp(5))} — Calm</div>
+          <div class="lg-item"><div class="lg-dot" style="background:#86efac"></div>${Math.round(windDisp(5))}–${Math.round(windDisp(10))} — Light</div>
+          <div class="lg-item"><div class="lg-dot" style="background:#fbbf24"></div>${Math.round(windDisp(11))}–${Math.round(windDisp(16))} — Moderate</div>
+          <div class="lg-item"><div class="lg-dot" style="background:#fb923c"></div>${Math.round(windDisp(17))}–${Math.round(windDisp(21))} — Fresh</div>
+          <div class="lg-item"><div class="lg-dot" style="background:#f87171"></div>${Math.round(windDisp(22))}+ — Strong</div>
         </div>
         <div class="lg-group">
           <div class="lg-title">Waves / Swell (m)</div>
@@ -582,9 +616,9 @@
         </div>
         <div class="lg-group">
           <div class="lg-title">Status Thresholds</div>
-          <div class="lg-item"><div class="lg-dot" style="background:#10b981"></div>GO — Wind &lt;${th.cautWind}kn · Wave &lt;${th.cautWave}m</div>
-          <div class="lg-item"><div class="lg-dot" style="background:#f59e0b"></div>CAUTION — Wind ${th.cautWind}–${th.dangerWind}kn · Wave ${th.cautWave}–${th.dangerWave}m</div>
-          <div class="lg-item"><div class="lg-dot" style="background:#ef4444"></div>DANGER — Wind &gt;${th.dangerWind}kn · Wave &gt;${th.dangerWave}m</div>
+          <div class="lg-item"><div class="lg-dot" style="background:#10b981"></div>GO — Wind &lt;${windDisp(th.cautWind).toFixed(1)} ${windUnitLabel()} · Wave &lt;${th.cautWave}m</div>
+          <div class="lg-item"><div class="lg-dot" style="background:#f59e0b"></div>CAUTION — Wind ${windDisp(th.cautWind).toFixed(1)}–${windDisp(th.dangerWind).toFixed(1)} ${windUnitLabel()} · Wave ${th.cautWave}–${th.dangerWave}m</div>
+          <div class="lg-item"><div class="lg-dot" style="background:#ef4444"></div>DANGER — Wind &gt;${windDisp(th.dangerWind).toFixed(1)} ${windUnitLabel()} · Wave &gt;${th.dangerWave}m</div>
         </div>
       </div>
 
@@ -645,9 +679,9 @@
             <div class="fc-label">Wind</div>
             <div class="fc-section">
               <div class="fc-section-left">
-                <div class="fc-wind-speed" style="color:${wc}">${r.windKt.toFixed(1)}<sup>kn</sup></div>
+                <div class="fc-wind-speed" style="color:${wc}">${windDisp(r.windKt).toFixed(1)}<sup>${windUnitLabel()}</sup></div>
                 <div class="fc-wind-sub">${dirLabel(r.deg)} ${Math.round(r.deg)}°</div>
-                <div class="fc-wind-sub">Gusts <span class="fc-gust-val" style="color:${gc}">${r.gustKt.toFixed(1)} kn</span></div>
+                <div class="fc-wind-sub">Gusts <span class="fc-gust-val" style="color:${gc}">${windDisp(r.gustKt).toFixed(1)} ${windUnitLabel()}</span></div>
               </div>
               ${bigDirArrow(r.deg)}
             </div>
