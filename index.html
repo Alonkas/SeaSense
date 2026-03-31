@@ -245,6 +245,24 @@
   </div>
 </div>
 
+<!-- Thresholds bar -->
+<div class="ctrl-bar" id="thresholdsBar">
+  <label>⚙️ Thresholds:</label>
+  <label>GO wind (kn):</label>
+  <input type="number" id="thGoWind" min="1" max="50" step="1" value="12" style="width:60px" />
+  <label>GO gust (kn):</label>
+  <input type="number" id="thGoGust" min="1" max="60" step="1" value="17" style="width:60px" />
+  <label>GO wave (m):</label>
+  <input type="number" id="thGoWave" min="0.1" max="5" step="0.1" value="0.6" style="width:65px" />
+  <div class="bar-sep"></div>
+  <label>CAUTION wind (kn):</label>
+  <input type="number" id="thCautWind" min="1" max="50" step="1" value="18" style="width:60px" />
+  <label>CAUTION gust (kn):</label>
+  <input type="number" id="thCautGust" min="1" max="60" step="1" value="24" style="width:60px" />
+  <label>CAUTION wave (m):</label>
+  <input type="number" id="thCautWave" min="0.1" max="5" step="0.1" value="1.0" style="width:65px" />
+</div>
+
 <!-- Settings bar -->
 <div class="ctrl-bar">
   <label>Windy API Key:</label>
@@ -327,6 +345,29 @@
   if (savedWave)  waveSelect.value  = savedWave;
   if (savedLoc)   { document.getElementById('locationSelect').value = savedLoc; onLocationChange(); }
   updateHeaderLocation();
+
+  // Load saved thresholds
+  const thInputs = ['thGoWind','thGoGust','thGoWave','thCautWind','thCautGust','thCautWave'];
+  thInputs.forEach(id => {
+    const v = localStorage.getItem(id);
+    if (v !== null) document.getElementById(id).value = v;
+  });
+
+  function getThresholds() {
+    return {
+      goWind:   parseFloat(document.getElementById('thGoWind').value)   || 12,
+      goGust:   parseFloat(document.getElementById('thGoGust').value)   || 17,
+      goWave:   parseFloat(document.getElementById('thGoWave').value)   || 0.6,
+      cautWind: parseFloat(document.getElementById('thCautWind').value) || 18,
+      cautGust: parseFloat(document.getElementById('thCautGust').value) || 24,
+      cautWave: parseFloat(document.getElementById('thCautWave').value) || 1.0,
+    };
+  }
+
+  function saveThresholds() {
+    thInputs.forEach(id => localStorage.setItem(id, document.getElementById(id).value));
+  }
+  thInputs.forEach(id => document.getElementById(id).addEventListener('change', saveThresholds));
 
   function setStatus(msg, type) {
     const el = document.getElementById('status');
@@ -472,8 +513,9 @@
   }
 
   function status(windKt, gustKt, waveM) {
-    if (windKt < 12 && gustKt < 17 && waveM < 0.6) return 'go';
-    if (windKt < 18 && gustKt < 24 && waveM < 1.0) return 'caution';
+    const th = getThresholds();
+    if (windKt < th.goWind   && gustKt < th.goGust   && waveM < th.goWave)   return 'go';
+    if (windKt < th.cautWind && gustKt < th.cautGust && waveM < th.cautWave) return 'caution';
     return 'nogo';
   }
 
@@ -487,6 +529,7 @@
   }
 
   function renderForecast(gfs, wLookup) {
+    const th   = getThresholds();
     const ts   = gfs.ts;
     const u    = gfs['wind_u-surface']       || [];
     const v    = gfs['wind_v-surface']       || [];
@@ -545,9 +588,9 @@
         </div>
         <div class="lg-group">
           <div class="lg-title">Status Thresholds</div>
-          <div class="lg-item"><div class="lg-dot" style="background:#10b981"></div>GO — Wind &lt;12kn · Gust &lt;17kn · Wave &lt;0.6m</div>
-          <div class="lg-item"><div class="lg-dot" style="background:#f59e0b"></div>CAUTION — Marginal conditions</div>
-          <div class="lg-item"><div class="lg-dot" style="background:#ef4444"></div>NO-GO — Unsafe conditions</div>
+          <div class="lg-item"><div class="lg-dot" style="background:#10b981"></div>GO — Wind &lt;${th.goWind}kn · Gust &lt;${th.goGust}kn · Wave &lt;${th.goWave}m</div>
+          <div class="lg-item"><div class="lg-dot" style="background:#f59e0b"></div>CAUTION — Wind &lt;${th.cautWind}kn · Gust &lt;${th.cautGust}kn · Wave &lt;${th.cautWave}m</div>
+          <div class="lg-item"><div class="lg-dot" style="background:#ef4444"></div>NO-GO — Anything worse</div>
         </div>
       </div>
 
