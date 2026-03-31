@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SeaSense</title>
+  <style>
+    :root {
+      --bg:       #060e1e;
+      --surface:  #0c1a30;
+      --elevated: #112540;
+      --border:   #1a3050;
+      --accent:   #3b82f6;
+      --text:     #e2e8f0;
+      --dim:      #4a6a8a;
+      --muted:    #8aa0be;
+      --go:       #10b981;
+      --caution:  #f59e0b;
+      --nogo:     #ef4444;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+    /* ── Header ── */
+    header {
+      background: linear-gradient(135deg, #060e1e 0%, #0c1e3d 60%, #091428 100%);
+      padding: 26px 32px 22px;
+      border-bottom: 1px solid var(--border);
+      position: relative;
+    }
+    header::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 0; right: 0; height: 1px;
+      background: linear-gradient(90deg, transparent, #3b82f6 40%, #10b981 60%, transparent);
+    }
+    .header-inner { max-width: 1440px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; }
+    .header-left h1 { font-size: 1.75rem; font-weight: 700; letter-spacing: -0.02em; }
+    .header-left h1 em { font-style: normal; color: #60a5fa; }
+    .header-tagline { font-size: 0.8rem; color: #4a8fd4; margin: 3px 0 5px; letter-spacing: 0.03em; }
+    .header-meta { display: flex; gap: 18px; margin-top: 2px; }
+    .header-meta span { font-size: 0.78rem; color: var(--muted); }
+    /* ── Control bars shared ── */
+    .ctrl-bar {
+      background: var(--surface);
+      padding: 10px 32px;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    }
+    .ctrl-bar label { font-size: 0.78rem; color: var(--dim); white-space: nowrap; }
+    .ctrl-bar select {
+      padding: 7px 10px; border-radius: 6px; border: 1px solid var(--border);
+      background: var(--bg); color: var(--text); font-size: 0.84rem; outline: none;
+      cursor: pointer; transition: border-color 0.2s;
+    }
+    .ctrl-bar select:focus { border-color: var(--accent); }
+    .ctrl-bar input {
+      padding: 7px 12px; border-radius: 6px; border: 1px solid var(--border);
+      background: var(--bg); color: var(--text); font-size: 0.84rem; outline: none;
+      transition: border-color 0.2s;
+    }
+    .ctrl-bar input:focus { border-color: var(--accent); }
+    .bar-sep { width: 1px; height: 22px; background: var(--border); margin: 0 4px; }
+    .model-label { font-size: 0.78rem; color: var(--dim); white-space: nowrap; margin-left: 6px; }
+    #apiKeyInput { max-width: 280px; flex: 1; }
+    #customLat, #customLon { width: 90px; }
+    .custom-coords { display: none; align-items: center; gap: 6px; }
+    .custom-coords.visible { display: flex; }
+
+    /* keep .api-bar alias */
+    .api-bar { background: var(--surface); padding: 10px 32px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .api-bar label { font-size: 0.78rem; color: var(--dim); white-space: nowrap; }
+    .api-bar select { padding: 7px 10px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-size: 0.84rem; outline: none; cursor: pointer; }
+    .api-bar input { padding: 7px 12px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-size: 0.84rem; outline: none; max-width: 280px; flex: 1; }
+    .btn {
+      padding: 7px 18px; border-radius: 6px; border: none;
+      background: var(--accent); color: #fff; font-size: 0.84rem; font-weight: 600;
+      cursor: pointer; transition: background 0.2s, transform 0.1s;
+    }
+    .btn:hover  { background: #2563eb; }
+    .btn:active { transform: scale(0.97); }
+    .btn:disabled { background: #1a3a5f; color: var(--dim); cursor: default; transform: none; }
+
+    /* ── Main ── */
+    .main { max-width: 1440px; margin: 0 auto; padding: 24px 32px; }
+
+    /* ── Status bar ── */
+    .status-bar { padding: 11px 16px; border-radius: 8px; margin-bottom: 18px; font-size: 0.84rem; display: flex; align-items: center; gap: 8px; }
+    .status-bar.error   { background: rgba(239,68,68,0.1);  border: 1px solid rgba(239,68,68,0.3);  color: #fca5a5; }
+    .status-bar.loading { background: rgba(59,130,246,0.1); border: 1px solid rgba(59,130,246,0.3); color: #93c5fd; }
+    .spinner { width: 14px; height: 14px; border: 2px solid rgba(59,130,246,0.3); border-top-color: #3b82f6; border-radius: 50%; animation: spin 0.75s linear infinite; flex-shrink: 0; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Legend ── */
+    .legend {
+      display: flex; gap: 28px; flex-wrap: wrap;
+      padding: 14px 18px; background: var(--surface);
+      border: 1px solid var(--border); border-radius: 10px;
+      margin-bottom: 22px;
+    }
+    .lg-group { display: flex; flex-direction: column; gap: 4px; }
+    .lg-title { font-size: 0.67rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--dim); margin-bottom: 3px; }
+    .lg-item  { display: flex; align-items: center; gap: 7px; font-size: 0.74rem; color: var(--muted); }
+    .lg-dot   { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+    /* ── Day nav ── */
+    .day-nav { display: flex; gap: 10px; margin-bottom: 26px; overflow-x: auto; padding-bottom: 4px; }
+    .day-nav::-webkit-scrollbar { height: 3px; }
+    .day-nav::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+    .day-pill {
+      flex-shrink: 0; text-decoration: none;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 10px; padding: 10px 15px;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .day-pill:hover { border-color: var(--accent); background: var(--elevated); }
+    .dp-weekday { font-size: 0.72rem; color: var(--dim); }
+    .dp-date    { font-size: 0.95rem; font-weight: 700; color: var(--text); margin: 1px 0 5px; }
+    .dp-dots    { display: flex; gap: 4px; flex-wrap: wrap; max-width: 80px; }
+    .dp-dot     { width: 7px; height: 7px; border-radius: 50%; }
+    .dp-dot.go      { background: var(--go); }
+    .dp-dot.caution { background: var(--caution); }
+    .dp-dot.nogo    { background: var(--nogo); }
+
+    /* ── Day section ── */
+    .day-section { margin-bottom: 36px; scroll-margin-top: 20px; }
+    .day-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding-bottom: 10px; margin-bottom: 14px;
+      border-bottom: 1px solid var(--border);
+    }
+    .day-title { font-size: 1.05rem; font-weight: 700; }
+    .day-badges { display: flex; gap: 8px; }
+    .dbadge {
+      font-size: 0.67rem; font-weight: 700; padding: 3px 10px;
+      border-radius: 20px; letter-spacing: 0.05em;
+    }
+    .dbadge.go      { background: rgba(16,185,129,0.15); color: #34d399; border: 1px solid rgba(16,185,129,0.25); }
+    .dbadge.caution { background: rgba(245,158,11,0.15);  color: #fbbf24; border: 1px solid rgba(245,158,11,0.25); }
+    .dbadge.nogo    { background: rgba(239,68,68,0.15);   color: #f87171; border: 1px solid rgba(239,68,68,0.25); }
+
+    /* ── Cards grid ── */
+    .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(195px, 1fr)); gap: 12px; }
+
+    /* ── Forecast card ── */
+    .fc {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 10px; overflow: hidden;
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .fc:hover { transform: translateY(-3px); box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+
+    .fc-top { height: 4px; }
+    .fc-top.go      { background: linear-gradient(90deg, #059669, #10b981); }
+    .fc-top.caution { background: linear-gradient(90deg, #d97706, #f59e0b); }
+    .fc-top.nogo    { background: linear-gradient(90deg, #dc2626, #ef4444); }
+
+    .fc-body { padding: 13px 14px; }
+
+    .fc-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 11px; }
+    .fc-time { font-size: 1.25rem; font-weight: 800; letter-spacing: -0.02em; }
+    .fc-status {
+      font-size: 0.62rem; font-weight: 700; padding: 3px 8px;
+      border-radius: 20px; letter-spacing: 0.06em;
+    }
+    .fc-status.go      { background: rgba(16,185,129,0.2);  color: #34d399; }
+    .fc-status.caution { background: rgba(245,158,11,0.2);  color: #fbbf24; }
+    .fc-status.nogo    { background: rgba(239,68,68,0.2);   color: #f87171; }
+
+    .fc-label { font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--dim); margin-bottom: 3px; }
+
+    .fc-wind-speed { font-size: 1.6rem; font-weight: 800; line-height: 1; }
+    .fc-wind-speed sup { font-size: 0.65rem; font-weight: 500; color: var(--muted); vertical-align: super; margin-left: 1px; }
+    .fc-wind-sub { font-size: 0.75rem; color: var(--muted); margin-top: 2px; }
+    .fc-gust-val { font-weight: 600; }
+    .fc-section { display: flex; align-items: center; justify-content: space-between; }
+    .fc-section-left { flex: 1; min-width: 0; }
+    .big-dir-arrow {
+      font-size: 3rem; line-height: 1; color: #ef4444;
+      display: flex; align-items: center; justify-content: center;
+      width: 3rem; flex-shrink: 0; margin-left: 6px;
+    }
+
+    .fc-hr { height: 1px; background: var(--border); margin: 10px 0; }
+
+    .fc-wave-val { font-size: 1.35rem; font-weight: 800; line-height: 1; }
+    .fc-wave-val sup { font-size: 0.63rem; font-weight: 500; color: var(--muted); vertical-align: super; }
+    .fc-swell-row { display: flex; gap: 10px; margin-top: 4px; }
+    .fc-swell { font-size: 0.72rem; }
+    .fc-swell-lbl { color: var(--dim); margin-right: 2px; font-weight: 600; }
+
+    .fc-rain-row { display: flex; align-items: center; justify-content: space-between; }
+    .fc-rain-val { font-size: 0.82rem; font-weight: 600; }
+
+    /* ── Meta row ── */
+    .meta-row { font-size: 0.73rem; color: var(--dim); margin-bottom: 18px; display: flex; gap: 16px; }
+
+    @media (max-width: 600px) {
+      header, .api-bar { padding-left: 14px; padding-right: 14px; }
+      .main { padding: 14px; }
+      .header-left h1 { font-size: 1.25rem; }
+      .cards { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+      .legend { gap: 16px; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div class="header-left">
+      <h1>&#x1F6F6; <em>SeaSense</em> — <span id="headerLocName">Michmoret</span></h1>
+      <div class="header-tagline">Know before you go · Catch the right moment</div>
+      <div class="header-meta">
+        <span id="headerCoords">&#x1F4CD; 32.40°N, 34.87°E</span>
+        <span id="headerSea">&#x1F30A; Mediterranean Sea</span>
+        <span id="headerModel">&#x1F4E1; GFS · ECMWF WAM</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- Location bar -->
+<div class="ctrl-bar">
+  <label>Location:</label>
+  <select id="locationSelect" onchange="onLocationChange()">
+    <option value="michmoret">Michmoret</option>
+    <option value="netanya">Netanya</option>
+    <option value="herzliya">Herzliya Marina</option>
+    <option value="tel_aviv">Tel Aviv (Gordon Beach)</option>
+    <option value="caesarea">Caesarea</option>
+    <option value="haifa">Haifa</option>
+    <option value="acre">Acre (Akko)</option>
+    <option value="nahariya">Nahariya</option>
+    <option value="ashdod">Ashdod</option>
+    <option value="ashkelon">Ashkelon</option>
+    <option value="eilat">Eilat (Red Sea)</option>
+    <option value="custom">Custom coordinates...</option>
+  </select>
+  <div class="custom-coords" id="customCoords">
+    <label>Lat:</label>
+    <input type="number" id="customLat" step="0.01" min="-90" max="90" placeholder="32.40" />
+    <label>Lon:</label>
+    <input type="number" id="customLon" step="0.01" min="-180" max="180" placeholder="34.87" />
+  </div>
+</div>
+
+<!-- Settings bar -->
+<div class="ctrl-bar">
+  <label>Windy API Key:</label>
+  <input type="password" id="apiKey" id="apiKeyInput" placeholder="Paste your key here..." autocomplete="off" />
+  <div class="bar-sep"></div>
+  <label class="model-label">Wind Model:</label>
+  <select id="modelSelect">
+    <option value="gfs">GFS — Global</option>
+    <option value="iconEu">ICON EU — Europe / Mediterranean</option>
+  </select>
+  <label class="model-label">Wave Source:</label>
+  <select id="waveSelect">
+    <option value="ecmwfWam">ECMWF WAM — Open-Meteo (free)</option>
+    <option value="gfsWave">GFS Wave — Windy API</option>
+    <option disabled>─────────────────────</option>
+    <option disabled>AWS S3 / Google Cloud (CLI only, not in browser)</option>
+  </select>
+  <button class="btn" id="fetchBtn" onclick="fetchForecast()">Get Forecast</button>
+</div>
+
+<div class="main">
+  <div id="status" style="display:none"></div>
+  <div id="output"></div>
+</div>
+
+<script>
+  const API_URL = 'https://api.windy.com/api/point-forecast/v2';
+
+  const LOCATIONS = {
+    michmoret: { name: 'Michmoret',             lat: 32.40, lon: 34.87, sea: 'Mediterranean Sea' },
+    netanya:   { name: 'Netanya',               lat: 32.33, lon: 34.86, sea: 'Mediterranean Sea' },
+    herzliya:  { name: 'Herzliya Marina',        lat: 32.16, lon: 34.79, sea: 'Mediterranean Sea' },
+    tel_aviv:  { name: 'Tel Aviv',               lat: 32.08, lon: 34.76, sea: 'Mediterranean Sea' },
+    caesarea:  { name: 'Caesarea',               lat: 32.50, lon: 34.90, sea: 'Mediterranean Sea' },
+    haifa:     { name: 'Haifa',                  lat: 32.82, lon: 34.99, sea: 'Mediterranean Sea' },
+    acre:      { name: 'Acre (Akko)',             lat: 32.93, lon: 35.07, sea: 'Mediterranean Sea' },
+    nahariya:  { name: 'Nahariya',               lat: 33.01, lon: 35.10, sea: 'Mediterranean Sea' },
+    ashdod:    { name: 'Ashdod',                 lat: 31.80, lon: 34.64, sea: 'Mediterranean Sea' },
+    ashkelon:  { name: 'Ashkelon',               lat: 31.67, lon: 34.57, sea: 'Mediterranean Sea' },
+    eilat:     { name: 'Eilat',                  lat: 29.56, lon: 34.95, sea: 'Red Sea' },
+    custom:    { name: 'Custom',                 lat: null,  lon: null,  sea: '' },
+  };
+
+  function getCoords() {
+    const sel = document.getElementById('locationSelect').value;
+    if (sel === 'custom') {
+      const lat = parseFloat(document.getElementById('customLat').value);
+      const lon = parseFloat(document.getElementById('customLon').value);
+      if (isNaN(lat) || isNaN(lon)) return null;
+      return { lat, lon, name: `${lat.toFixed(2)}°N, ${lon.toFixed(2)}°E`, sea: '' };
+    }
+    return LOCATIONS[sel] || LOCATIONS.michmoret;
+  }
+
+  function onLocationChange() {
+    const sel = document.getElementById('locationSelect').value;
+    const coords = document.getElementById('customCoords');
+    coords.classList.toggle('visible', sel === 'custom');
+    updateHeaderLocation();
+  }
+
+  function updateHeaderLocation() {
+    const loc = getCoords();
+    if (!loc) return;
+    document.getElementById('headerLocName').textContent = loc.name;
+    document.getElementById('headerCoords').textContent  = `📍 ${loc.lat?.toFixed(2)}°N, ${loc.lon?.toFixed(2)}°E`;
+    document.getElementById('headerSea').textContent     = loc.sea ? `🌊 ${loc.sea}` : '';
+    document.title = `SeaSense — ${loc.name}`;
+  }
+
+  const keyInput    = document.getElementById('apiKey');
+  const modelSelect = document.getElementById('modelSelect');
+  const waveSelect  = document.getElementById('waveSelect');
+  const saved       = localStorage.getItem('windyApiKey');
+  const savedModel  = localStorage.getItem('windyModel');
+  const savedWave   = localStorage.getItem('windyWaveSource');
+  const savedLoc    = localStorage.getItem('windyLocation');
+  if (saved)      keyInput.value    = saved;
+  if (savedModel) modelSelect.value = savedModel;
+  if (savedWave)  waveSelect.value  = savedWave;
+  if (savedLoc)   { document.getElementById('locationSelect').value = savedLoc; onLocationChange(); }
+  updateHeaderLocation();
+
+  function setStatus(msg, type) {
+    const el = document.getElementById('status');
+    if (!msg) { el.style.display = 'none'; return; }
+    el.className = 'status-bar ' + type;
+    el.innerHTML = type === 'loading' ? `<div class="spinner"></div>${msg}` : msg;
+    el.style.display = 'flex';
+  }
+
+  async function callWindy(model, parameters) {
+    const key = keyInput.value.trim();
+    const { lat, lon } = getCoords();
+    const body = { lat, lon, model, parameters, levels: ['surface'], key };
+    const res = await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    if (!res.ok) {
+      const text = await res.text().catch(() => '');
+      throw new Error(`HTTP ${res.status} for model "${model}"${text ? ': ' + text : ''}`);
+    }
+    return res.json();
+  }
+
+  async function fetchGfsWave() {
+    const data = await callWindy('gfsWave', ['waves', 'swell1', 'swell2']);
+    const lookup = {};
+    (data.ts || []).forEach((t, i) => {
+      lookup[t] = {
+        wh:  (data['waves_height-surface']  || [])[i] ?? null,
+        sw1: (data['swell1_height-surface'] || [])[i] ?? null,
+        sw2: (data['swell2_height-surface'] || [])[i] ?? null,
+      };
+    });
+    return lookup;
+  }
+
+  async function fetchEcmwfWam() {
+    const { lat, lon } = getCoords();
+    const url = `https://marine-api.open-meteo.com/v1/marine` +
+      `?latitude=${lat}&longitude=${lon}` +
+      `&hourly=wave_height,wave_direction,swell_wave_height,swell_wave_direction,secondary_swell_wave_height,secondary_swell_wave_direction` +
+      `&models=ecmwf_wam&timezone=UTC&forecast_days=7`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`ECMWF WAM (Open-Meteo) HTTP ${res.status}`);
+    const data = await res.json();
+    const lookup = {};
+    (data.hourly?.time || []).forEach((isoStr, i) => {
+      const t = new Date(isoStr + ':00Z').getTime();
+      lookup[t] = {
+        wh:   data.hourly.wave_height?.[i]                           ?? null,
+        whd:  data.hourly.wave_direction?.[i]                        ?? null,
+        sw1:  data.hourly.swell_wave_height?.[i]                     ?? null,
+        sw1d: data.hourly.swell_wave_direction?.[i]                  ?? null,
+        sw2:  data.hourly.secondary_swell_wave_height?.[i]           ?? null,
+        sw2d: data.hourly.secondary_swell_wave_direction?.[i]        ?? null,
+      };
+    });
+    return lookup;
+  }
+
+  async function fetchForecast() {
+    const key = keyInput.value.trim();
+    if (!key) { setStatus('Please enter your Windy API key.', 'error'); return; }
+    const loc = getCoords();
+    if (!loc) { setStatus('Please enter valid custom coordinates.', 'error'); return; }
+    localStorage.setItem('windyApiKey', key);
+    localStorage.setItem('windyModel', modelSelect.value);
+    localStorage.setItem('windyWaveSource', waveSelect.value);
+    localStorage.setItem('windyLocation', document.getElementById('locationSelect').value);
+    updateHeaderLocation();
+
+    const btn = document.getElementById('fetchBtn');
+    btn.disabled = true;
+    btn.textContent = 'Loading...';
+    setStatus('Fetching forecast data...', 'loading');
+    document.getElementById('output').innerHTML = '';
+
+    try {
+      const windNames = { gfs: 'GFS', iconEu: 'ICON EU' };
+      const waveNames = { ecmwfWam: 'ECMWF WAM', gfsWave: 'GFS Wave' };
+
+      const [gfsData, waveLookup] = await Promise.all([
+        callWindy(modelSelect.value, ['wind', 'windGust', 'precip']),
+        waveSelect.value === 'ecmwfWam' ? fetchEcmwfWam() : fetchGfsWave()
+      ]);
+
+      document.getElementById('headerModel').textContent =
+        '📡 ' + (windNames[modelSelect.value] || modelSelect.value) +
+        ' · ' + (waveNames[waveSelect.value] || waveSelect.value);
+      setStatus('', '');
+      renderForecast(gfsData, waveLookup);
+    } catch (e) {
+      setStatus('Error: ' + e.message, 'error');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Get Forecast';
+    }
+  }
+
+  const M2KT = 1.94384;
+
+  function windDeg(u, v) {
+    return (Math.atan2(-u, -v) * 180 / Math.PI + 360) % 360;
+  }
+
+  function dirArrow(deg) {
+    return ['↓','↙','←','↖','↑','↗','→','↘'][Math.round(((deg + 180) % 360) / 45) % 8];
+  }
+
+  function dirLabel(deg) {
+    return ['N','NE','E','SE','S','SW','W','NW','N'][Math.round(deg / 45)];
+  }
+
+  function bigDirArrow(deg) {
+    if (deg == null) return '<div class="big-dir-arrow" style="color:var(--dim)">—</div>';
+    return `<div class="big-dir-arrow"><span style="display:inline-block;transform:rotate(${(Math.round(deg) + 180) % 360}deg);line-height:1">↑</span></div>`;
+  }
+
+  function windColor(kt) {
+    if (kt < 5)  return '#34d399';
+    if (kt < 11) return '#86efac';
+    if (kt < 17) return '#fbbf24';
+    if (kt < 22) return '#fb923c';
+    return '#f87171';
+  }
+
+  function waveColor(m) {
+    if (m == null) return '#4a6a8a';
+    if (m < 0.3)   return '#34d399';
+    if (m < 0.6)   return '#86efac';
+    if (m < 1.0)   return '#fbbf24';
+    if (m < 1.5)   return '#fb923c';
+    return '#f87171';
+  }
+
+  function rainColor(mm) {
+    if (mm < 0.1) return '#4a6a8a';
+    if (mm < 1.0) return '#93c5fd';
+    if (mm < 5.0) return '#3b82f6';
+    return '#a78bfa';
+  }
+
+  function status(windKt, gustKt, waveM) {
+    if (windKt < 12 && gustKt < 17 && waveM < 0.6) return 'go';
+    if (windKt < 18 && gustKt < 24 && waveM < 1.0) return 'caution';
+    return 'nogo';
+  }
+
+  const LABELS = { go: 'GO', caution: 'CAUTION', nogo: 'NO-GO' };
+
+  function findNearest(lookup, t) {
+    const keys = Object.keys(lookup).map(Number);
+    if (!keys.length) return null;
+    const closest = keys.reduce((a, b) => Math.abs(b - t) < Math.abs(a - t) ? b : a);
+    return Math.abs(closest - t) < 2 * 3600 * 1000 ? lookup[closest] : null;
+  }
+
+  function renderForecast(gfs, wLookup) {
+    const ts   = gfs.ts;
+    const u    = gfs['wind_u-surface']       || [];
+    const v    = gfs['wind_v-surface']       || [];
+    const gust = gfs['gust-surface']         || [];
+    const rain = gfs['past3hprecip-surface'] || [];
+
+    // Build rows grouped by day
+    const days = {}, dayOrder = [];
+    ts.forEach((t, i) => {
+      const d = new Date(t);
+      const key = d.toLocaleDateString('en-IL', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'Asia/Jerusalem' });
+      const short = d.toLocaleDateString('en-IL', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'Asia/Jerusalem' });
+      if (!days[key]) { days[key] = { rows: [], short }; dayOrder.push(key); }
+
+      const ui = u[i] || 0, vi = v[i] || 0;
+      const windKt = Math.sqrt(ui*ui + vi*vi) * M2KT;
+      const gustKt = (gust[i] || Math.sqrt(ui*ui + vi*vi)) * M2KT;
+      const deg    = windDeg(ui, vi);
+      const rainMm = rain[i] || 0;
+      const wv     = wLookup[t] || findNearest(wLookup, t) || {};
+      const wh     = wv.wh   ?? null;
+      const whd    = wv.whd  ?? null;
+      const sw1    = wv.sw1  ?? null;
+      const sw1d   = wv.sw1d ?? null;
+      const sw2    = wv.sw2  ?? null;
+      const sw2d   = wv.sw2d ?? null;
+      const st     = status(windKt, gustKt, wh ?? 0);
+
+      days[key].rows.push({ t, d, windKt, gustKt, deg, rainMm, wh, whd, sw1, sw1d, sw2, sw2d, st });
+    });
+
+    // HTML
+    let html = `
+      <div class="meta-row">
+        <span>Last updated: ${new Date().toLocaleTimeString('en-IL', { timeZone: 'Asia/Jerusalem' })} IDT</span>
+        <span>${dayOrder.length} days</span>
+        <span>3-hour intervals</span>
+      </div>
+
+      <div class="legend">
+        <div class="lg-group">
+          <div class="lg-title">Wind / Gusts (knots)</div>
+          <div class="lg-item"><div class="lg-dot" style="background:#34d399"></div>&lt; 5 — Calm</div>
+          <div class="lg-item"><div class="lg-dot" style="background:#86efac"></div>5–10 — Light</div>
+          <div class="lg-item"><div class="lg-dot" style="background:#fbbf24"></div>11–16 — Moderate</div>
+          <div class="lg-item"><div class="lg-dot" style="background:#fb923c"></div>17–21 — Fresh</div>
+          <div class="lg-item"><div class="lg-dot" style="background:#f87171"></div>22+ — Strong</div>
+        </div>
+        <div class="lg-group">
+          <div class="lg-title">Waves / Swell (m)</div>
+          <div class="lg-item"><div class="lg-dot" style="background:#34d399"></div>&lt; 0.3 — Flat</div>
+          <div class="lg-item"><div class="lg-dot" style="background:#86efac"></div>0.3–0.6 — Small</div>
+          <div class="lg-item"><div class="lg-dot" style="background:#fbbf24"></div>0.6–1.0 — Moderate</div>
+          <div class="lg-item"><div class="lg-dot" style="background:#fb923c"></div>1.0–1.5 — Rough</div>
+          <div class="lg-item"><div class="lg-dot" style="background:#f87171"></div>1.5+ — Large</div>
+        </div>
+        <div class="lg-group">
+          <div class="lg-title">Status Thresholds</div>
+          <div class="lg-item"><div class="lg-dot" style="background:#10b981"></div>GO — Wind &lt;12kn · Gust &lt;17kn · Wave &lt;0.6m</div>
+          <div class="lg-item"><div class="lg-dot" style="background:#f59e0b"></div>CAUTION — Marginal conditions</div>
+          <div class="lg-item"><div class="lg-dot" style="background:#ef4444"></div>NO-GO — Unsafe conditions</div>
+        </div>
+      </div>
+
+      <div class="day-nav">`;
+
+    dayOrder.forEach(dk => {
+      const { rows, short } = days[dk];
+      const [wd, ...rest] = short.split(' ');
+      html += `<a class="day-pill" href="#day-${dk.replace(/\W/g,'_')}">
+        <div class="dp-weekday">${wd}</div>
+        <div class="dp-date">${rest.join(' ')}</div>
+        <div class="dp-dots">
+          ${ rows.map(r => `<div class="dp-dot ${r.st}"></div>`).join('') }
+        </div>
+      </a>`;
+    });
+
+    html += `</div>`;
+
+    dayOrder.forEach(dk => {
+      const { rows } = days[dk];
+      const goCnt   = rows.filter(r => r.st === 'go').length;
+      const cautCnt = rows.filter(r => r.st === 'caution').length;
+      const nogoCnt = rows.filter(r => r.st === 'nogo').length;
+      const id = 'day-' + dk.replace(/\W/g,'_');
+
+      html += `<div class="day-section" id="${id}">
+        <div class="day-header">
+          <div class="day-title">${dk}</div>
+          <div class="day-badges">
+            ${goCnt   > 0 ? `<span class="dbadge go">${goCnt} GO</span>` : ''}
+            ${cautCnt > 0 ? `<span class="dbadge caution">${cautCnt} CAUTION</span>` : ''}
+            ${nogoCnt > 0 ? `<span class="dbadge nogo">${nogoCnt} NO-GO</span>` : ''}
+          </div>
+        </div>
+        <div class="cards">`;
+
+      rows.forEach(r => {
+        const time  = r.d.toLocaleTimeString('en-IL', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jerusalem' });
+        const wc    = windColor(r.windKt);
+        const gc    = windColor(r.gustKt);
+        const whC   = waveColor(r.wh);
+        const sw1C  = waveColor(r.sw1);
+        const sw2C  = waveColor(r.sw2);
+        const rc    = rainColor(r.rainMm);
+        const fmtW  = m => m != null ? `${m.toFixed(2)}<sup>m</sup>` : '—';
+        const rainStr = r.rainMm < 0.05 ? '—' : `${r.rainMm.toFixed(1)} mm`;
+
+        html += `
+        <div class="fc">
+          <div class="fc-top ${r.st}"></div>
+          <div class="fc-body">
+            <div class="fc-head">
+              <span class="fc-time">${time}</span>
+              <span class="fc-status ${r.st}">${LABELS[r.st]}</span>
+            </div>
+
+            <div class="fc-label">Wind</div>
+            <div class="fc-section">
+              <div class="fc-section-left">
+                <div class="fc-wind-speed" style="color:${wc}">${r.windKt.toFixed(1)}<sup>kn</sup></div>
+                <div class="fc-wind-sub">${dirLabel(r.deg)} ${Math.round(r.deg)}°</div>
+                <div class="fc-wind-sub">Gusts <span class="fc-gust-val" style="color:${gc}">${r.gustKt.toFixed(1)} kn</span></div>
+              </div>
+              ${bigDirArrow(r.deg)}
+            </div>
+
+            <div class="fc-hr"></div>
+
+            <div class="fc-label">Waves</div>
+            <div class="fc-section">
+              <div class="fc-section-left">
+                <div class="fc-wave-val" style="color:${whC}">${fmtW(r.wh)}</div>
+                ${r.whd != null ? `<div class="fc-wind-sub">${dirLabel(r.whd)} ${Math.round(r.whd)}°</div>` : ''}
+              </div>
+              ${bigDirArrow(r.whd)}
+            </div>
+            <div class="fc-swell-row">
+              <div class="fc-swell"><span class="fc-swell-lbl">S1</span><span style="color:${sw1C}">${r.sw1 != null ? r.sw1.toFixed(2)+'m' : '—'}</span>${r.sw1d != null ? ` <span class="dir-arrow" style="color:var(--muted)">${dirArrow(r.sw1d)}</span><span style="color:var(--muted);font-size:0.7rem">${dirLabel(r.sw1d)}</span>` : ''}</div>
+              <div class="fc-swell"><span class="fc-swell-lbl">S2</span><span style="color:${sw2C}">${r.sw2 != null ? r.sw2.toFixed(2)+'m' : '—'}</span>${r.sw2d != null ? ` <span class="dir-arrow" style="color:var(--muted)">${dirArrow(r.sw2d)}</span><span style="color:var(--muted);font-size:0.7rem">${dirLabel(r.sw2d)}</span>` : ''}</div>
+            </div>
+
+            <div class="fc-hr"></div>
+
+            <div class="fc-rain-row">
+              <span class="fc-label" style="margin:0">Rain</span>
+              <span class="fc-rain-val" style="color:${rc}">${rainStr}</span>
+            </div>
+          </div>
+        </div>`;
+      });
+
+      html += `</div></div>`;
+    });
+
+    document.getElementById('output').innerHTML = html;
+  }
+
+  if (saved) fetchForecast();
+</script>
+</body>
+</html>
