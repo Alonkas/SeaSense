@@ -16,7 +16,7 @@
       --muted:    #8aa0be;
       --go:       #10b981;
       --caution:  #f59e0b;
-      --nogo:     #ef4444;
+      --danger:   #ef4444;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
@@ -120,7 +120,7 @@
     .dp-dot     { width: 7px; height: 7px; border-radius: 50%; }
     .dp-dot.go      { background: var(--go); }
     .dp-dot.caution { background: var(--caution); }
-    .dp-dot.nogo    { background: var(--nogo); }
+    .dp-dot.danger    { background: var(--danger); }
 
     /* ── Day section ── */
     .day-section { margin-bottom: 36px; scroll-margin-top: 20px; }
@@ -137,7 +137,7 @@
     }
     .dbadge.go      { background: rgba(16,185,129,0.15); color: #34d399; border: 1px solid rgba(16,185,129,0.25); }
     .dbadge.caution { background: rgba(245,158,11,0.15);  color: #fbbf24; border: 1px solid rgba(245,158,11,0.25); }
-    .dbadge.nogo    { background: rgba(239,68,68,0.15);   color: #f87171; border: 1px solid rgba(239,68,68,0.25); }
+    .dbadge.danger    { background: rgba(239,68,68,0.15);   color: #f87171; border: 1px solid rgba(239,68,68,0.25); }
 
     /* ── Cards grid ── */
     .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(195px, 1fr)); gap: 12px; }
@@ -153,7 +153,7 @@
     .fc-top { height: 4px; }
     .fc-top.go      { background: linear-gradient(90deg, #059669, #10b981); }
     .fc-top.caution { background: linear-gradient(90deg, #d97706, #f59e0b); }
-    .fc-top.nogo    { background: linear-gradient(90deg, #dc2626, #ef4444); }
+    .fc-top.danger    { background: linear-gradient(90deg, #dc2626, #ef4444); }
 
     .fc-body { padding: 13px 14px; }
 
@@ -165,7 +165,7 @@
     }
     .fc-status.go      { background: rgba(16,185,129,0.2);  color: #34d399; }
     .fc-status.caution { background: rgba(245,158,11,0.2);  color: #fbbf24; }
-    .fc-status.nogo    { background: rgba(239,68,68,0.2);   color: #f87171; }
+    .fc-status.danger    { background: rgba(239,68,68,0.2);   color: #f87171; }
 
     .fc-label { font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--dim); margin-bottom: 3px; }
 
@@ -248,19 +248,15 @@
 <!-- Thresholds bar -->
 <div class="ctrl-bar" id="thresholdsBar">
   <label>⚙️ Thresholds:</label>
-  <label>GO wind (kn):</label>
-  <input type="number" id="thGoWind" min="1" max="50" step="1" value="12" style="width:60px" />
-  <label>GO gust (kn):</label>
-  <input type="number" id="thGoGust" min="1" max="60" step="1" value="17" style="width:60px" />
-  <label>GO wave (m):</label>
-  <input type="number" id="thGoWave" min="0.1" max="5" step="0.1" value="0.6" style="width:65px" />
+  <label>CAUTION when wind above (kn):</label>
+  <input type="number" id="thCautWind" min="1" max="50" step="1" value="12" style="width:60px" />
+  <label>CAUTION when waves above (m):</label>
+  <input type="number" id="thCautWave" min="0.1" max="5" step="0.1" value="0.6" style="width:65px" />
   <div class="bar-sep"></div>
-  <label>CAUTION wind (kn):</label>
-  <input type="number" id="thCautWind" min="1" max="50" step="1" value="18" style="width:60px" />
-  <label>CAUTION gust (kn):</label>
-  <input type="number" id="thCautGust" min="1" max="60" step="1" value="24" style="width:60px" />
-  <label>CAUTION wave (m):</label>
-  <input type="number" id="thCautWave" min="0.1" max="5" step="0.1" value="1.0" style="width:65px" />
+  <label>DANGER when wind above (kn):</label>
+  <input type="number" id="thDangerWind" min="1" max="50" step="1" value="18" style="width:60px" />
+  <label>DANGER when waves above (m):</label>
+  <input type="number" id="thDangerWave" min="0.1" max="5" step="0.1" value="1.0" style="width:65px" />
 </div>
 
 <!-- Settings bar -->
@@ -347,7 +343,7 @@
   updateHeaderLocation();
 
   // Load saved thresholds
-  const thInputs = ['thGoWind','thGoGust','thGoWave','thCautWind','thCautGust','thCautWave'];
+  const thInputs = ['thCautWind','thCautWave','thDangerWind','thDangerWave'];
   thInputs.forEach(id => {
     const v = localStorage.getItem(id);
     if (v !== null) document.getElementById(id).value = v;
@@ -355,12 +351,10 @@
 
   function getThresholds() {
     return {
-      goWind:   parseFloat(document.getElementById('thGoWind').value)   || 12,
-      goGust:   parseFloat(document.getElementById('thGoGust').value)   || 17,
-      goWave:   parseFloat(document.getElementById('thGoWave').value)   || 0.6,
-      cautWind: parseFloat(document.getElementById('thCautWind').value) || 18,
-      cautGust: parseFloat(document.getElementById('thCautGust').value) || 24,
-      cautWave: parseFloat(document.getElementById('thCautWave').value) || 1.0,
+      cautWind:   parseFloat(document.getElementById('thCautWind').value)   || 12,
+      cautWave:   parseFloat(document.getElementById('thCautWave').value)   || 0.6,
+      dangerWind: parseFloat(document.getElementById('thDangerWind').value) || 18,
+      dangerWave: parseFloat(document.getElementById('thDangerWave').value) || 1.0,
     };
   }
 
@@ -514,12 +508,12 @@
 
   function status(windKt, gustKt, waveM) {
     const th = getThresholds();
-    if (windKt < th.goWind   && gustKt < th.goGust   && waveM < th.goWave)   return 'go';
-    if (windKt < th.cautWind && gustKt < th.cautGust && waveM < th.cautWave) return 'caution';
-    return 'nogo';
+    if (windKt >= th.dangerWind || waveM >= th.dangerWave) return 'danger';
+    if (windKt >= th.cautWind   || waveM >= th.cautWave)   return 'caution';
+    return 'go';
   }
 
-  const LABELS = { go: 'GO', caution: 'CAUTION', nogo: 'NO-GO' };
+  const LABELS = { go: 'GO', caution: 'CAUTION', danger: '⚠ DANGER' };
 
   function findNearest(lookup, t) {
     const keys = Object.keys(lookup).map(Number);
@@ -588,9 +582,9 @@
         </div>
         <div class="lg-group">
           <div class="lg-title">Status Thresholds</div>
-          <div class="lg-item"><div class="lg-dot" style="background:#10b981"></div>GO — Wind &lt;${th.goWind}kn · Gust &lt;${th.goGust}kn · Wave &lt;${th.goWave}m</div>
-          <div class="lg-item"><div class="lg-dot" style="background:#f59e0b"></div>CAUTION — Wind &lt;${th.cautWind}kn · Gust &lt;${th.cautGust}kn · Wave &lt;${th.cautWave}m</div>
-          <div class="lg-item"><div class="lg-dot" style="background:#ef4444"></div>NO-GO — Anything worse</div>
+          <div class="lg-item"><div class="lg-dot" style="background:#10b981"></div>GO — Wind &lt;${th.cautWind}kn · Wave &lt;${th.cautWave}m</div>
+          <div class="lg-item"><div class="lg-dot" style="background:#f59e0b"></div>CAUTION — Wind ${th.cautWind}–${th.dangerWind}kn · Wave ${th.cautWave}–${th.dangerWave}m</div>
+          <div class="lg-item"><div class="lg-dot" style="background:#ef4444"></div>DANGER — Wind &gt;${th.dangerWind}kn · Wave &gt;${th.dangerWave}m</div>
         </div>
       </div>
 
@@ -614,7 +608,7 @@
       const { rows } = days[dk];
       const goCnt   = rows.filter(r => r.st === 'go').length;
       const cautCnt = rows.filter(r => r.st === 'caution').length;
-      const nogoCnt = rows.filter(r => r.st === 'nogo').length;
+      const dangerCnt = rows.filter(r => r.st === 'danger').length;
       const id = 'day-' + dk.replace(/\W/g,'_');
 
       html += `<div class="day-section" id="${id}">
@@ -623,7 +617,7 @@
           <div class="day-badges">
             ${goCnt   > 0 ? `<span class="dbadge go">${goCnt} GO</span>` : ''}
             ${cautCnt > 0 ? `<span class="dbadge caution">${cautCnt} CAUTION</span>` : ''}
-            ${nogoCnt > 0 ? `<span class="dbadge nogo">${nogoCnt} NO-GO</span>` : ''}
+            ${dangerCnt > 0 ? `<span class="dbadge danger">${dangerCnt} DANGER</span>` : ''}
           </div>
         </div>
         <div class="cards">`;
