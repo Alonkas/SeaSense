@@ -462,13 +462,13 @@
     const { lat, lon } = getCoords();
     const omModel = OM_MODEL_MAP[model] || 'gfs_seamless';
     const url = `${OM_WIND_URL}?latitude=${lat}&longitude=${lon}` +
-      `&hourly=windspeed_10m,windgusts_10m,winddirection_10m,precipitation` +
+      `&hourly=windspeed_10m,windgusts_10m,winddirection_10m,precipitation,precipitation_probability` +
       `&wind_speed_unit=ms&timezone=UTC&forecast_days=7&models=${omModel}`;
     const res = await fetch(url);
     if (!res.ok) throw new Error(`Open-Meteo wind API HTTP ${res.status}`);
     const data = await res.json();
 
-    const ts = [], windKt = [], gustKt = [], deg = [], rainMm = [];
+    const ts = [], windKt = [], gustKt = [], deg = [], rainMm = [], rainPct = [];
     (data.hourly?.time || []).forEach((isoStr, i) => {
       const d = new Date(isoStr + ':00Z');
       if (d.getUTCHours() % 3 !== 0) return; // 3-hour intervals only
@@ -476,9 +476,10 @@
       windKt.push((data.hourly.windspeed_10m?.[i]   ?? 0) * M2KT);
       gustKt.push((data.hourly.windgusts_10m?.[i]   ?? 0) * M2KT);
       deg.push(   data.hourly.winddirection_10m?.[i] ?? 0);
-      rainMm.push(data.hourly.precipitation?.[i]     ?? 0);
+      rainMm.push(data.hourly.precipitation?.[i]            ?? 0);
+      rainPct.push(data.hourly.precipitation_probability?.[i] ?? null);
     });
-    return { ts, windKt, gustKt, deg, rainMm };
+    return { ts, windKt, gustKt, deg, rainMm, rainPct };
   }
 
   async function fetchEcmwfWam() {
@@ -619,7 +620,7 @@
 
   function renderForecast(windData, wLookup) {
     const th   = getThresholds();
-    const { ts, windKt: windKts, gustKt: gustKts, deg: degs, rainMm: rains } = windData;
+    const { ts, windKt: windKts, gustKt: gustKts, deg: degs, rainMm: rains, rainPct: rainPcts } = windData;
 
     // Build rows grouped by day
     const days = {}, dayOrder = [];
@@ -632,7 +633,8 @@
       const windKt = windKts[i];
       const gustKt = gustKts[i];
       const deg    = degs[i];
-      const rainMm = rains[i];
+      const rainMm  = rains[i];
+      const rainPct = rainPcts?.[i] ?? null;
       const wv     = wLookup[t] || findNearest(wLookup, t) || {};
       const wh     = wv.wh   ?? null;
       const whd    = wv.whd  ?? null;
@@ -642,7 +644,7 @@
       const sw2d   = wv.sw2d ?? null;
       const st     = status(windKt, gustKt, wh ?? 0);
 
-      days[key].rows.push({ t, d, windKt, gustKt, deg, rainMm, wh, whd, sw1, sw1d, sw2, sw2d, st });
+      days[key].rows.push({ t, d, windKt, gustKt, deg, rainMm, rainPct, wh, whd, sw1, sw1d, sw2, sw2d, st });
     });
 
     // HTML
@@ -660,17 +662,22 @@
       const { rows, short } = days[dk];
       const [wd, ...rest] = short.split(' ');
 
-      const windMin = Math.min(...rows.map(r => r.windKt));
-      const windMax = Math.max(...rows.map(r => r.windKt));
-      const waves   = rows.map(r => r.wh).filter(w => w != null);
-      const waveMin = waves.length ? Math.min(...waves) : null;
-      const waveMax = waves.length ? Math.max(...waves) : null;
+      const windMin  = Math.min(...rows.map(r => r.windKt));
+      const windMax  = Math.max(...rows.map(r => r.windKt));
+      const waves    = rows.map(r => r.wh).filter(w => w != null);
+      const waveMin  = waves.length ? Math.min(...waves) : null;
+      const waveMax  = waves.length ? Math.max(...waves) : null;
+      const rainPcts = rows.map(r => r.rainPct).filter(p => p != null);
+      const rainMax  = rainPcts.length ? Math.max(...rainPcts) : null;
 
-      const wMin = windDisp(windMin).toFixed(0);
-      const wMax = windDisp(windMax).toFixed(0);
-      const waveStr = waveMin != null
-        ? `${waveMin.toFixed(1)}–${waveMax.toFixed(1)}`
-        : '—';
+      const wMin    = windDisp(windMin).toFixed(0);
+      const wMax    = windDisp(windMax).toFixed(0);
+      const waveStr = waveMin != null ? `${waveMin.toFixed(1)}–${waveMax.toFixed(1)}` : '—';
+      const rainPillColor = rainMax == null ? 'var(--dim)'
+        : rainMax < 20 ? 'var(--dim)'
+        : rainMax < 50 ? '#93c5fd'
+        : rainMax < 75 ? '#3b82f6'
+        : '#a78bfa';
 
       html += `<a class="day-pill" href="#day-${dk.replace(/\W/g,'_')}">
         <div class="dp-weekday">${wd}</div>
@@ -685,6 +692,11 @@
             <span class="dp-stat-icon">🌊</span>
             <span class="dp-stat-val" style="color:${waveColor(waveMax)}">${waveStr}</span>
             <span class="dp-stat-unit">${waveMin != null ? 'm' : ''}</span>
+          </div>
+          <div class="dp-stat-row">
+            <span class="dp-stat-icon">🌧</span>
+            <span class="dp-stat-val" style="color:${rainPillColor}">${rainMax != null ? rainMax + '%' : '—'}</span>
+            <span class="dp-stat-unit">${rainMax != null ? 'max' : ''}</span>
           </div>
         </div>
       </a>`;
@@ -717,9 +729,15 @@
         const whC   = waveColor(r.wh);
         const sw1C  = waveColor(r.sw1);
         const sw2C  = waveColor(r.sw2);
-        const rc    = rainColor(r.rainMm);
-        const fmtW  = m => m != null ? `${m.toFixed(2)}<sup>m</sup>` : '—';
-        const rainStr = r.rainMm < 0.05 ? '—' : `${r.rainMm.toFixed(1)} mm`;
+        const rc       = rainColor(r.rainMm);
+        const fmtW     = m => m != null ? `${m.toFixed(2)}<sup>m</sup>` : '—';
+        const rainMmStr  = r.rainMm < 0.05 ? '' : `${r.rainMm.toFixed(1)} mm`;
+        const rainPctStr = r.rainPct != null ? `${r.rainPct}%` : '—';
+        const rainPctColor = r.rainPct == null ? 'var(--dim)'
+          : r.rainPct < 20 ? 'var(--dim)'
+          : r.rainPct < 50 ? '#93c5fd'
+          : r.rainPct < 75 ? '#3b82f6'
+          : '#a78bfa';
 
         html += `
         <div class="fc">
@@ -759,7 +777,9 @@
 
             <div class="fc-rain-row">
               <span class="fc-label" style="margin:0">Rain</span>
-              <span class="fc-rain-val" style="color:${rc}">${rainStr}</span>
+              <span class="fc-rain-val">
+                <span style="color:${rainPctColor};font-weight:700">${rainPctStr}</span>${rainMmStr ? `<span style="color:var(--dim);font-size:0.72rem;margin-left:4px">${rainMmStr}</span>` : ''}
+              </span>
             </div>
           </div>
         </div>`;
