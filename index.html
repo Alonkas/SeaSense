@@ -653,30 +653,6 @@
         <span>3-hour intervals</span>
       </div>
 
-      <div class="legend">
-        <div class="lg-group">
-          <div class="lg-title">Wind / Gusts (${windUnitLabel()})</div>
-          <div class="lg-item"><div class="lg-dot" style="background:#34d399"></div>&lt; ${Math.round(windDisp(5))} — Calm</div>
-          <div class="lg-item"><div class="lg-dot" style="background:#86efac"></div>${Math.round(windDisp(5))}–${Math.round(windDisp(10))} — Light</div>
-          <div class="lg-item"><div class="lg-dot" style="background:#fbbf24"></div>${Math.round(windDisp(11))}–${Math.round(windDisp(16))} — Moderate</div>
-          <div class="lg-item"><div class="lg-dot" style="background:#fb923c"></div>${Math.round(windDisp(17))}–${Math.round(windDisp(21))} — Fresh</div>
-          <div class="lg-item"><div class="lg-dot" style="background:#f87171"></div>${Math.round(windDisp(22))}+ — Strong</div>
-        </div>
-        <div class="lg-group">
-          <div class="lg-title">Waves / Swell (m)</div>
-          <div class="lg-item"><div class="lg-dot" style="background:#34d399"></div>&lt; 0.3 — Flat</div>
-          <div class="lg-item"><div class="lg-dot" style="background:#86efac"></div>0.3–0.6 — Small</div>
-          <div class="lg-item"><div class="lg-dot" style="background:#fbbf24"></div>0.6–1.0 — Moderate</div>
-          <div class="lg-item"><div class="lg-dot" style="background:#fb923c"></div>1.0–1.5 — Rough</div>
-          <div class="lg-item"><div class="lg-dot" style="background:#f87171"></div>1.5+ — Large</div>
-        </div>
-        <div class="lg-group">
-          <div class="lg-title">Status Thresholds</div>
-          <div class="lg-item"><div class="lg-dot" style="background:#10b981"></div>GO — Wind &lt;${windDisp(th.cautWind).toFixed(1)} ${windUnitLabel()} · Wave &lt;${th.cautWave}m</div>
-          <div class="lg-item"><div class="lg-dot" style="background:#f59e0b"></div>CAUTION — Wind ${windDisp(th.cautWind).toFixed(1)}–${windDisp(th.dangerWind).toFixed(1)} ${windUnitLabel()} · Wave ${th.cautWave}–${th.dangerWave}m</div>
-          <div class="lg-item"><div class="lg-dot" style="background:#ef4444"></div>DANGER — Wind &gt;${windDisp(th.dangerWind).toFixed(1)} ${windUnitLabel()} · Wave &gt;${th.dangerWave}m</div>
-        </div>
-      </div>
 
       <div class="day-nav">`;
 
