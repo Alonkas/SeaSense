@@ -132,16 +132,19 @@
     @media (max-width: 768px) {
 
       /* Header */
-      header { padding: 12px 16px; }
-      .header-inner { flex-direction: row; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: nowrap; }
+      header { padding: 12px 16px 12px 16px; overflow: visible; }
+      .header-inner { flex-direction: row; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: nowrap; overflow: visible; }
       .header-left h1 { font-size: 1.1rem; }
       .header-tagline { display: none; }
-      .header-right { flex-direction: row; align-items: flex-start; gap: 8px; }
+      .header-right { flex-direction: row; align-items: center; gap: 8px; flex-shrink: 0; }
       .header-loc { flex-direction: column; align-items: flex-start; gap: 4px; }
       .header-loc label { display: none; }
-      .header-loc select { font-size: 0.78rem; padding: 5px 6px; }
-      .header-loc input  { font-size: 0.78rem; padding: 5px 6px; width: 80px; }
-      .drawer-btn { align-self: flex-start; margin-top: 2px; }
+      .header-loc select { font-size: 0.78rem; padding: 5px 6px; max-width: 170px; }
+      /* hide lat/lon inputs on mobile unless custom coords selected */
+      .custom-coords:not(.visible) { display: none !important; }
+      .custom-coords.visible { flex-direction: column; }
+      .custom-coords input  { font-size: 0.78rem; padding: 5px 6px; width: 100px; }
+      .drawer-btn { align-self: center; flex-shrink: 0; }
 
       /* Settings bar */
       .ctrl-bar { flex-wrap: wrap; gap: 8px; padding: 8px 14px; }
@@ -183,7 +186,7 @@
       .main { padding: 12px 14px; }
 
       /* Cards — 2 columns, compact */
-      .cards { grid-template-columns: repeat(2, 1fr); gap: 6px; }
+      .cards { grid-template-columns: repeat(2, 1fr) !important; gap: 6px; }
       .fc-body { padding: 8px 9px; }
       .fc-head { margin-bottom: 7px; }
       .fc-time { font-size: 1rem; }
