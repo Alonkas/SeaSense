@@ -91,7 +91,7 @@
     .header-loc input:focus { border-color: var(--accent); }
 
     /* ── Page layout (sidebar + content) ── */
-    .page-layout { display: flex; align-items: flex-start; max-width: 1440px; margin: 0 auto; }
+    .page-layout { display: flex; align-items: flex-start; width: 100%; }
 
     /* ── Sidebar ── */
     .sidebar {
@@ -251,13 +251,8 @@
 <header>
   <div class="header-inner">
     <div class="header-left">
-      <h1>&#x1F6F6; <em>SeaSense</em> — <span id="headerLocName">Michmoret</span></h1>
+      <h1>&#x1F6F6; <em>SeaSense</em></h1>
       <div class="header-tagline">Know before you go · Catch the right moment</div>
-      <div class="header-meta">
-        <span id="headerCoords">&#x1F4CD; 32.40°N, 34.87°E</span>
-        <span id="headerSea">&#x1F30A; Mediterranean Sea</span>
-        <span id="headerModel">&#x1F4E1; GFS · ECMWF WAM</span>
-      </div>
     </div>
     <div class="header-right">
       <div class="header-loc">
@@ -395,9 +390,6 @@
   function updateHeaderLocation() {
     const loc = getCoords();
     if (!loc) return;
-    document.getElementById('headerLocName').textContent = loc.name;
-    document.getElementById('headerCoords').textContent  = `📍 ${loc.lat?.toFixed(2)}°N, ${loc.lon?.toFixed(2)}°E`;
-    document.getElementById('headerSea').textContent     = loc.sea ? `🌊 ${loc.sea}` : '';
     document.title = `SeaSense — ${loc.name}`;
   }
 
@@ -525,8 +517,6 @@
         fetchEcmwfWam()
       ]);
 
-      document.getElementById('headerModel').textContent =
-        '📡 ' + (OM_MODEL_LABEL[modelSelect.value] || modelSelect.value) + ' · ECMWF WAM';
       setStatus('', '');
       renderForecast(windData, waveLookup);
     } catch (e) {
