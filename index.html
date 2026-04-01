@@ -156,11 +156,11 @@
     .day-pill:hover { border-color: var(--accent); background: var(--elevated); }
     .dp-weekday { font-size: 0.72rem; color: var(--dim); }
     .dp-date    { font-size: 0.95rem; font-weight: 700; color: var(--text); margin: 1px 0 5px; }
-    .dp-dots    { display: flex; gap: 4px; flex-wrap: wrap; max-width: 80px; }
-    .dp-dot     { width: 7px; height: 7px; border-radius: 50%; }
-    .dp-dot.go      { background: var(--go); }
-    .dp-dot.caution { background: var(--caution); }
-    .dp-dot.danger    { background: var(--danger); }
+    .dp-stats     { display: flex; flex-direction: column; gap: 4px; margin-top: 6px; }
+    .dp-stat-row  { display: flex; align-items: baseline; gap: 5px; font-size: 0.7rem; }
+    .dp-stat-icon { font-size: 0.68rem; }
+    .dp-stat-val  { font-weight: 600; }
+    .dp-stat-unit { font-size: 0.62rem; color: var(--dim); }
 
     /* ── Day section ── */
     .day-section { margin-bottom: 36px; scroll-margin-top: 20px; }
@@ -659,11 +659,33 @@
     dayOrder.forEach(dk => {
       const { rows, short } = days[dk];
       const [wd, ...rest] = short.split(' ');
+
+      const windMin = Math.min(...rows.map(r => r.windKt));
+      const windMax = Math.max(...rows.map(r => r.windKt));
+      const waves   = rows.map(r => r.wh).filter(w => w != null);
+      const waveMin = waves.length ? Math.min(...waves) : null;
+      const waveMax = waves.length ? Math.max(...waves) : null;
+
+      const wMin = windDisp(windMin).toFixed(0);
+      const wMax = windDisp(windMax).toFixed(0);
+      const waveStr = waveMin != null
+        ? `${waveMin.toFixed(1)}–${waveMax.toFixed(1)}`
+        : '—';
+
       html += `<a class="day-pill" href="#day-${dk.replace(/\W/g,'_')}">
         <div class="dp-weekday">${wd}</div>
         <div class="dp-date">${rest.join(' ')}</div>
-        <div class="dp-dots">
-          ${ rows.map(r => `<div class="dp-dot ${r.st}"></div>`).join('') }
+        <div class="dp-stats">
+          <div class="dp-stat-row">
+            <span class="dp-stat-icon">💨</span>
+            <span class="dp-stat-val" style="color:${windColor(windMax)}">${wMin}–${wMax}</span>
+            <span class="dp-stat-unit">${windUnitLabel()}</span>
+          </div>
+          <div class="dp-stat-row">
+            <span class="dp-stat-icon">🌊</span>
+            <span class="dp-stat-val" style="color:${waveColor(waveMax)}">${waveStr}</span>
+            <span class="dp-stat-unit">${waveMin != null ? 'm' : ''}</span>
+          </div>
         </div>
       </a>`;
     });
