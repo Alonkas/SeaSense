@@ -136,9 +136,12 @@
       .header-inner { flex-direction: row; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: nowrap; }
       .header-left h1 { font-size: 1.1rem; }
       .header-tagline { display: none; }
-      .header-right { flex-direction: row; align-items: center; gap: 6px; }
+      .header-right { flex-direction: row; align-items: flex-start; gap: 8px; }
+      .header-loc { flex-direction: column; align-items: flex-start; gap: 4px; }
       .header-loc label { display: none; }
       .header-loc select { font-size: 0.78rem; padding: 5px 6px; }
+      .header-loc input  { font-size: 0.78rem; padding: 5px 6px; width: 80px; }
+      .drawer-btn { align-self: flex-start; margin-top: 2px; }
 
       /* Settings bar */
       .ctrl-bar { flex-wrap: wrap; gap: 8px; padding: 8px 14px; }
@@ -179,8 +182,18 @@
       .page-layout { display: block; }
       .main { padding: 12px 14px; }
 
-      /* Cards — 2 columns */
-      .cards { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+      /* Cards — 2 columns, compact */
+      .cards { grid-template-columns: repeat(2, 1fr); gap: 6px; }
+      .fc-body { padding: 8px 9px; }
+      .fc-head { margin-bottom: 7px; }
+      .fc-time { font-size: 1rem; }
+      .fc-wind-speed { font-size: 1.2rem; }
+      .fc-wind-sub { font-size: 0.68rem; }
+      .fc-wave-val { font-size: 1.05rem; }
+      .fc-label { font-size: 0.58rem; }
+      .fc-hr { margin: 6px 0; }
+      .fc-swell-row { display: none; }
+      .big-dir-arrow { font-size: 2rem; width: 2rem; }
 
       /* Day pills — tighter */
       .day-pill { padding: 8px 10px; }
@@ -310,7 +323,6 @@
       <div class="header-tagline">Know before you go · Catch the right moment</div>
     </div>
     <div class="header-right">
-      <button class="drawer-btn" onclick="toggleDrawer()" aria-label="Settings">☰</button>
       <div class="header-loc">
         <label>📍 Location:</label>
         <select id="locationSelect" onchange="onLocationChange()">
@@ -334,6 +346,7 @@
         <label>Lon:</label>
         <input type="number" id="customLon" step="0.01" min="-180" max="180" placeholder="34.87" />
       </div>
+      <button class="drawer-btn" onclick="toggleDrawer()" aria-label="Settings">☰</button>
     </div>
   </div>
 </header>
