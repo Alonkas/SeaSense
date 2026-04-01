@@ -286,20 +286,11 @@
 
 <!-- Settings bar -->
 <div class="ctrl-bar">
-  <label>Windy API Key:</label>
-  <input type="password" id="apiKey" id="apiKeyInput" placeholder="Paste your key here..." autocomplete="off" />
-  <div class="bar-sep"></div>
   <label class="model-label">Wind Model:</label>
   <select id="modelSelect">
     <option value="gfs">GFS — Global</option>
     <option value="iconEu">ICON EU — Europe / Mediterranean</option>
-  </select>
-  <label class="model-label">Wave Source:</label>
-  <select id="waveSelect">
-    <option value="ecmwfWam">ECMWF WAM — Open-Meteo (free)</option>
-    <option value="gfsWave">GFS Wave — Windy API</option>
-    <option disabled>─────────────────────</option>
-    <option disabled>AWS S3 / Google Cloud (CLI only, not in browser)</option>
+    <option value="ecmwf">ECMWF IFS — Global (high res)</option>
   </select>
   <div class="bar-sep"></div>
   <label class="model-label">Wind Units:</label>
@@ -352,7 +343,8 @@
 </div>
 
 <script>
-  const API_URL = 'https://api.windy.com/api/point-forecast/v2';
+  const OM_WIND_URL   = 'https://api.open-meteo.com/v1/forecast';
+  const OM_MARINE_URL = 'https://marine-api.open-meteo.com/v1/marine';
 
   const LOCATIONS = {
     michmoret: { name: 'Michmoret',             lat: 32.40, lon: 34.87, sea: 'Mediterranean Sea' },
@@ -396,16 +388,10 @@
     document.title = `SeaSense — ${loc.name}`;
   }
 
-  const keyInput    = document.getElementById('apiKey');
   const modelSelect = document.getElementById('modelSelect');
-  const waveSelect  = document.getElementById('waveSelect');
-  const saved       = localStorage.getItem('windyApiKey');
-  const savedModel  = localStorage.getItem('windyModel');
-  const savedWave   = localStorage.getItem('windyWaveSource');
+  const savedModel  = localStorage.getItem('ssModel');
   const savedLoc    = localStorage.getItem('windyLocation');
-  if (saved)      keyInput.value    = saved;
   if (savedModel) modelSelect.value = savedModel;
-  if (savedWave)  waveSelect.value  = savedWave;
   if (savedLoc)   { document.getElementById('locationSelect').value = savedLoc; onLocationChange(); }
   updateHeaderLocation();
   const savedUnit = localStorage.getItem('windUnit');
@@ -443,39 +429,35 @@
     el.style.display = 'flex';
   }
 
-  async function callWindy(model, parameters) {
-    const key = keyInput.value.trim();
-    const { lat, lon } = getCoords();
-    const body = { lat, lon, model, parameters, levels: ['surface'], key };
-    const res = await fetch(API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
-    });
-    if (!res.ok) {
-      const text = await res.text().catch(() => '');
-      throw new Error(`HTTP ${res.status} for model "${model}"${text ? ': ' + text : ''}`);
-    }
-    return res.json();
-  }
+  const OM_MODEL_MAP = { gfs: 'gfs_seamless', iconEu: 'icon_eu', ecmwf: 'ecmwf_ifs025' };
+  const OM_MODEL_LABEL = { gfs: 'GFS', iconEu: 'ICON EU', ecmwf: 'ECMWF IFS' };
 
-  async function fetchGfsWave() {
-    const data = await callWindy('gfsWave', ['waves', 'swell1', 'swell2']);
-    const lookup = {};
-    (data.ts || []).forEach((t, i) => {
-      lookup[t] = {
-        wh:  (data['waves_height-surface']  || [])[i] ?? null,
-        sw1: (data['swell1_height-surface'] || [])[i] ?? null,
-        sw2: (data['swell2_height-surface'] || [])[i] ?? null,
-      };
+  async function fetchOpenMeteoWind(model) {
+    const { lat, lon } = getCoords();
+    const omModel = OM_MODEL_MAP[model] || 'gfs_seamless';
+    const url = `${OM_WIND_URL}?latitude=${lat}&longitude=${lon}` +
+      `&hourly=windspeed_10m,windgusts_10m,winddirection_10m,precipitation` +
+      `&wind_speed_unit=ms&timezone=UTC&forecast_days=7&models=${omModel}`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`Open-Meteo wind API HTTP ${res.status}`);
+    const data = await res.json();
+
+    const ts = [], windKt = [], gustKt = [], deg = [], rainMm = [];
+    (data.hourly?.time || []).forEach((isoStr, i) => {
+      const d = new Date(isoStr + ':00Z');
+      if (d.getUTCHours() % 3 !== 0) return; // 3-hour intervals only
+      ts.push(d.getTime());
+      windKt.push((data.hourly.windspeed_10m?.[i]   ?? 0) * M2KT);
+      gustKt.push((data.hourly.windgusts_10m?.[i]   ?? 0) * M2KT);
+      deg.push(   data.hourly.winddirection_10m?.[i] ?? 0);
+      rainMm.push(data.hourly.precipitation?.[i]     ?? 0);
     });
-    return lookup;
+    return { ts, windKt, gustKt, deg, rainMm };
   }
 
   async function fetchEcmwfWam() {
     const { lat, lon } = getCoords();
-    const url = `https://marine-api.open-meteo.com/v1/marine` +
-      `?latitude=${lat}&longitude=${lon}` +
+    const url = `${OM_MARINE_URL}?latitude=${lat}&longitude=${lon}` +
       `&hourly=wave_height,wave_direction,swell_wave_height,swell_wave_direction,secondary_swell_wave_height,secondary_swell_wave_direction` +
       `&models=ecmwf_wam&timezone=UTC&forecast_days=7`;
     const res = await fetch(url);
@@ -485,25 +467,21 @@
     (data.hourly?.time || []).forEach((isoStr, i) => {
       const t = new Date(isoStr + ':00Z').getTime();
       lookup[t] = {
-        wh:   data.hourly.wave_height?.[i]                           ?? null,
-        whd:  data.hourly.wave_direction?.[i]                        ?? null,
-        sw1:  data.hourly.swell_wave_height?.[i]                     ?? null,
-        sw1d: data.hourly.swell_wave_direction?.[i]                  ?? null,
-        sw2:  data.hourly.secondary_swell_wave_height?.[i]           ?? null,
-        sw2d: data.hourly.secondary_swell_wave_direction?.[i]        ?? null,
+        wh:   data.hourly.wave_height?.[i]                         ?? null,
+        whd:  data.hourly.wave_direction?.[i]                      ?? null,
+        sw1:  data.hourly.swell_wave_height?.[i]                   ?? null,
+        sw1d: data.hourly.swell_wave_direction?.[i]                ?? null,
+        sw2:  data.hourly.secondary_swell_wave_height?.[i]         ?? null,
+        sw2d: data.hourly.secondary_swell_wave_direction?.[i]      ?? null,
       };
     });
     return lookup;
   }
 
   async function fetchForecast() {
-    const key = keyInput.value.trim();
-    if (!key) { setStatus('Please enter your Windy API key.', 'error'); return; }
     const loc = getCoords();
     if (!loc) { setStatus('Please enter valid custom coordinates.', 'error'); return; }
-    localStorage.setItem('windyApiKey', key);
-    localStorage.setItem('windyModel', modelSelect.value);
-    localStorage.setItem('windyWaveSource', waveSelect.value);
+    localStorage.setItem('ssModel', modelSelect.value);
     localStorage.setItem('windyLocation', document.getElementById('locationSelect').value);
     updateHeaderLocation();
 
@@ -514,19 +492,15 @@
     document.getElementById('output').innerHTML = '';
 
     try {
-      const windNames = { gfs: 'GFS', iconEu: 'ICON EU' };
-      const waveNames = { ecmwfWam: 'ECMWF WAM', gfsWave: 'GFS Wave' };
-
-      const [gfsData, waveLookup] = await Promise.all([
-        callWindy(modelSelect.value, ['wind', 'windGust', 'precip']),
-        waveSelect.value === 'ecmwfWam' ? fetchEcmwfWam() : fetchGfsWave()
+      const [windData, waveLookup] = await Promise.all([
+        fetchOpenMeteoWind(modelSelect.value),
+        fetchEcmwfWam()
       ]);
 
       document.getElementById('headerModel').textContent =
-        '📡 ' + (windNames[modelSelect.value] || modelSelect.value) +
-        ' · ' + (waveNames[waveSelect.value] || waveSelect.value);
+        '📡 ' + (OM_MODEL_LABEL[modelSelect.value] || modelSelect.value) + ' · ECMWF WAM';
       setStatus('', '');
-      renderForecast(gfsData, waveLookup);
+      renderForecast(windData, waveLookup);
     } catch (e) {
       setStatus('Error: ' + e.message, 'error');
     } finally {
@@ -617,13 +591,9 @@
     return Math.abs(closest - t) < 2 * 3600 * 1000 ? lookup[closest] : null;
   }
 
-  function renderForecast(gfs, wLookup) {
+  function renderForecast(windData, wLookup) {
     const th   = getThresholds();
-    const ts   = gfs.ts;
-    const u    = gfs['wind_u-surface']       || [];
-    const v    = gfs['wind_v-surface']       || [];
-    const gust = gfs['gust-surface']         || [];
-    const rain = gfs['past3hprecip-surface'] || [];
+    const { ts, windKt: windKts, gustKt: gustKts, deg: degs, rainMm: rains } = windData;
 
     // Build rows grouped by day
     const days = {}, dayOrder = [];
@@ -633,11 +603,10 @@
       const short = d.toLocaleDateString('en-IL', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'Asia/Jerusalem' });
       if (!days[key]) { days[key] = { rows: [], short }; dayOrder.push(key); }
 
-      const ui = u[i] || 0, vi = v[i] || 0;
-      const windKt = Math.sqrt(ui*ui + vi*vi) * M2KT;
-      const gustKt = (gust[i] || Math.sqrt(ui*ui + vi*vi)) * M2KT;
-      const deg    = windDeg(ui, vi);
-      const rainMm = rain[i] || 0;
+      const windKt = windKts[i];
+      const gustKt = gustKts[i];
+      const deg    = degs[i];
+      const rainMm = rains[i];
       const wv     = wLookup[t] || findNearest(wLookup, t) || {};
       const wh     = wv.wh   ?? null;
       const whd    = wv.whd  ?? null;
@@ -778,7 +747,7 @@
     document.getElementById('output').innerHTML = html;
   }
 
-  if (saved) fetchForecast();
+  fetchForecast();
 </script>
 </body>
 </html>
