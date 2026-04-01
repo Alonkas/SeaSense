@@ -111,6 +111,9 @@
     .sb-input  { padding: 6px 8px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-size: 0.84rem; outline: none; width: 100%; }
     .sb-input:focus { border-color: var(--accent); }
     .sb-sep    { height: 1px; background: var(--border); }
+    .sb-model-info { margin-top: 4px; padding: 10px 11px; background: var(--elevated); border: 1px solid var(--border); border-radius: 8px; display: flex; flex-direction: column; gap: 5px; }
+    .sb-model-name { font-size: 0.72rem; font-weight: 700; color: var(--accent); }
+    .sb-model-desc { font-size: 0.68rem; color: var(--muted); line-height: 1.45; }
 
     /* ── Main ── */
     .main { flex: 1; min-width: 0; padding: 24px 32px; }
@@ -321,6 +324,15 @@
 
     <div class="sb-sep"></div>
 
+    <!-- Model info -->
+    <div class="sb-title" style="margin-top:4px">📡 Wind Model</div>
+    <div class="sb-model-info" id="modelInfo">
+      <div class="sb-model-name" id="modelInfoName"></div>
+      <div class="sb-model-desc" id="modelInfoDesc"></div>
+    </div>
+
+    <div class="sb-sep"></div>
+
     <div class="sb-group">
       <span class="sb-badge danger">DANGER</span>
       <div class="sb-field">
@@ -429,8 +441,22 @@
     el.style.display = 'flex';
   }
 
-  const OM_MODEL_MAP = { gfs: 'gfs_seamless', iconEu: 'icon_eu', ecmwf: 'ecmwf_ifs025' };
+  const OM_MODEL_MAP   = { gfs: 'gfs_seamless', iconEu: 'icon_eu', ecmwf: 'ecmwf_ifs025' };
   const OM_MODEL_LABEL = { gfs: 'GFS', iconEu: 'ICON EU', ecmwf: 'ECMWF IFS' };
+  const OM_MODEL_DESC  = {
+    gfs:    { name: 'GFS — Global Forecast System', desc: 'NOAA\'s global model. Good all-around choice, updated 4×/day. Best for open-water and offshore conditions.' },
+    iconEu: { name: 'ICON EU — European Regional', desc: 'High-resolution German model focused on Europe & the Mediterranean. More accurate for coastal areas like the Israeli coast.' },
+    ecmwf:  { name: 'ECMWF IFS — European Centre', desc: 'Widely considered the world\'s most accurate global model. Best for multi-day planning and longer-range outlooks.' },
+  };
+
+  function updateModelInfo() {
+    const m = document.getElementById('modelSelect').value;
+    const info = OM_MODEL_DESC[m] || {};
+    document.getElementById('modelInfoName').textContent = info.name || '';
+    document.getElementById('modelInfoDesc').textContent = info.desc || '';
+  }
+  document.getElementById('modelSelect').addEventListener('change', updateModelInfo);
+  updateModelInfo();
 
   async function fetchOpenMeteoWind(model) {
     const { lat, lon } = getCoords();
