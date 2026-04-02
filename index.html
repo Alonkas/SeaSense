@@ -457,8 +457,18 @@
   <button class="btn" id="fetchBtn" onclick="fetchForecast()">Get Forecast</button>
   <button class="btn" id="sunBtn" onclick="openSunModal()" style="background:var(--elevated);border:1px solid var(--border);color:var(--text)">☀️ Sun &amp; UV</button>
   <button class="btn" id="shareBtn" onclick="copyShareURL()" style="background:var(--elevated);border:1px solid var(--border);color:var(--text)">🔗 Share</button>
+  <button class="btn" id="a2hsBtn" onclick="openA2HS()" style="background:var(--elevated);border:1px solid var(--border);color:var(--text)">📱 Add to Phone</button>
 </div>
 <div id="toast"></div>
+
+<!-- Add to Home Screen Modal -->
+<div class="modal-overlay" id="a2hsModal" onclick="closeA2HSOutside(event)">
+  <div class="modal-box" style="max-width:420px">
+    <button class="modal-close" onclick="closeA2HS()">✕</button>
+    <div class="modal-title">📱 Add SeaSense to your Phone</div>
+    <div id="a2hsBody"></div>
+  </div>
+</div>
 
 <!-- Sun & UV Modal -->
 <div class="modal-overlay" id="sunModal" onclick="closeSunModalOutside(event)">
@@ -557,6 +567,86 @@
     document.getElementById('sidebar').classList.toggle('open');
     document.getElementById('sidebarOverlay').classList.toggle('open');
   }
+
+  // ── Add to Home Screen ──────────────────────────────────────
+  let _a2hsDeferredPrompt = null;
+  window.addEventListener('beforeinstallprompt', e => {
+    e.preventDefault();
+    _a2hsDeferredPrompt = e;
+  });
+
+  function openA2HS() {
+    // Android Chrome: native install prompt available
+    if (_a2hsDeferredPrompt) {
+      _a2hsDeferredPrompt.prompt();
+      _a2hsDeferredPrompt.userChoice.then(() => { _a2hsDeferredPrompt = null; });
+      return;
+    }
+    // Show instructions modal
+    const isIOS     = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    const isAndroid = /Android/i.test(navigator.userAgent);
+    const isSafari  = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+    let html = '';
+    if (isIOS) {
+      html = `
+        <p style="color:var(--muted);font-size:0.88rem;margin-bottom:18px;line-height:1.6">
+          Follow these steps in <strong style="color:var(--text)">Safari</strong> to add SeaSense to your home screen:
+        </p>
+        <div style="display:flex;flex-direction:column;gap:14px">
+          <div style="display:flex;align-items:flex-start;gap:12px">
+            <span style="font-size:1.6rem;line-height:1">1️⃣</span>
+            <span style="font-size:0.88rem;color:var(--muted);line-height:1.5">Tap the <strong style="color:var(--text)">Share</strong> button <span style="font-size:1.1rem">⬆️</span> at the bottom of your browser</span>
+          </div>
+          <div style="display:flex;align-items:flex-start;gap:12px">
+            <span style="font-size:1.6rem;line-height:1">2️⃣</span>
+            <span style="font-size:0.88rem;color:var(--muted);line-height:1.5">Scroll down and tap <strong style="color:var(--text)">"Add to Home Screen"</strong> <span style="font-size:1.1rem">➕</span></span>
+          </div>
+          <div style="display:flex;align-items:flex-start;gap:12px">
+            <span style="font-size:1.6rem;line-height:1">3️⃣</span>
+            <span style="font-size:0.88rem;color:var(--muted);line-height:1.5">Tap <strong style="color:var(--text)">"Add"</strong> in the top-right corner</span>
+          </div>
+        </div>
+        <div style="margin-top:20px;padding:12px;background:var(--elevated);border-radius:8px;font-size:0.78rem;color:var(--dim)">
+          💡 SeaSense will appear on your home screen like a native app
+        </div>`;
+    } else if (isAndroid) {
+      html = `
+        <p style="color:var(--muted);font-size:0.88rem;margin-bottom:18px;line-height:1.6">
+          Follow these steps in <strong style="color:var(--text)">Chrome</strong> to add SeaSense to your home screen:
+        </p>
+        <div style="display:flex;flex-direction:column;gap:14px">
+          <div style="display:flex;align-items:flex-start;gap:12px">
+            <span style="font-size:1.6rem;line-height:1">1️⃣</span>
+            <span style="font-size:0.88rem;color:var(--muted);line-height:1.5">Tap the <strong style="color:var(--text)">⋮ menu</strong> at the top-right of Chrome</span>
+          </div>
+          <div style="display:flex;align-items:flex-start;gap:12px">
+            <span style="font-size:1.6rem;line-height:1">2️⃣</span>
+            <span style="font-size:0.88rem;color:var(--muted);line-height:1.5">Tap <strong style="color:var(--text)">"Add to Home screen"</strong></span>
+          </div>
+          <div style="display:flex;align-items:flex-start;gap:12px">
+            <span style="font-size:1.6rem;line-height:1">3️⃣</span>
+            <span style="font-size:0.88rem;color:var(--muted);line-height:1.5">Tap <strong style="color:var(--text)">"Add"</strong> to confirm</span>
+          </div>
+        </div>
+        <div style="margin-top:20px;padding:12px;background:var(--elevated);border-radius:8px;font-size:0.78rem;color:var(--dim)">
+          💡 SeaSense will appear on your home screen like a native app
+        </div>`;
+    } else {
+      html = `
+        <p style="color:var(--muted);font-size:0.88rem;line-height:1.6;margin-bottom:16px">
+          Open SeaSense on your phone and tap <strong style="color:var(--text)">📱 Add to Phone</strong> from there.
+        </p>
+        <div style="padding:14px;background:var(--elevated);border-radius:8px;font-size:0.84rem;text-align:center">
+          <div style="font-size:1.4rem;margin-bottom:8px">📲</div>
+          <strong style="color:var(--text)">Share this link with your phone:</strong><br>
+          <span style="color:var(--accent);font-size:0.8rem;word-break:break-all">${location.href}</span>
+        </div>`;
+    }
+    document.getElementById('a2hsBody').innerHTML = html;
+    document.getElementById('a2hsModal').classList.add('open');
+  }
+  function closeA2HS() { document.getElementById('a2hsModal').classList.remove('open'); }
+  function closeA2HSOutside(e) { if (e.target === document.getElementById('a2hsModal')) closeA2HS(); }
 
   // ── Sun & UV Modal ──────────────────────────────────────────
   function openSunModal() {
