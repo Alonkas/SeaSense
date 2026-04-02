@@ -388,6 +388,16 @@
     /* ── Meta row ── */
     .meta-row { font-size: 0.73rem; color: var(--dim); margin-bottom: 18px; display: flex; gap: 16px; }
 
+    /* ── Footer ── */
+    .app-footer {
+      text-align: center; padding: 18px 16px;
+      font-size: 0.72rem; color: var(--dim);
+      border-top: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center; gap: 16px; flex-wrap: wrap;
+    }
+    .app-footer a { color: var(--dim); text-decoration: none; }
+    .app-footer a:hover { color: var(--muted); }
+
   </style>
 </head>
 <body>
@@ -398,7 +408,7 @@
       <img src="icons/compass.svg" alt="SeaSense logo" class="header-logo" />
       <div class="header-title-group">
         <h1><em>SeaSense</em></h1>
-        <div class="header-tagline">Know before you go · Catch the right moment</div>
+        <div class="header-tagline">Know before you go · Catch the right moment <span style="opacity:0.55;margin-left:6px">v1.1.0</span></div>
       </div>
     </div>
     <div class="header-right">
@@ -1157,5 +1167,13 @@
   applyURLParams();
   fetchForecast().then(() => startAutoRefresh());
 </script>
+
+<footer class="app-footer">
+  <span>SeaSense <strong style="color:var(--muted)">v1.1.0</strong></span>
+  <span style="color:var(--border)">·</span>
+  <span>Made with ❤️ by <strong style="color:var(--muted)">Alon Kassir</strong></span>
+  <span style="color:var(--border)">·</span>
+  <span>Data: <a href="https://open-meteo.com" target="_blank">Open-Meteo</a></span>
+</footer>
 </body>
 </html>
