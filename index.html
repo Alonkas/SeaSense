@@ -204,6 +204,53 @@
     }
 
 
+    /* ── Sun & UV Modal ── */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0; z-index: 300;
+      background: rgba(0,0,0,0.65); backdrop-filter: blur(3px);
+      align-items: center; justify-content: center;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal-box {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 14px; padding: 24px 28px; width: 100%; max-width: 560px;
+      max-height: 90vh; overflow-y: auto;
+      box-shadow: 0 24px 64px rgba(0,0,0,0.6);
+      position: relative;
+    }
+    .modal-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 18px; display: flex; align-items: center; gap: 8px; }
+    .modal-close {
+      position: absolute; top: 16px; right: 18px;
+      background: none; border: none; color: var(--muted);
+      font-size: 1.3rem; cursor: pointer; line-height: 1; padding: 2px 6px;
+      border-radius: 6px; transition: color 0.2s, background 0.2s;
+    }
+    .modal-close:hover { color: var(--text); background: var(--elevated); }
+    .sun-table { width: 100%; border-collapse: collapse; font-size: 0.84rem; }
+    .sun-table th {
+      text-align: left; font-size: 0.68rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.08em;
+      color: var(--dim); padding: 0 10px 10px 0; border-bottom: 1px solid var(--border);
+    }
+    .sun-table td { padding: 10px 10px 10px 0; border-bottom: 1px solid rgba(255,255,255,0.04); vertical-align: middle; }
+    .sun-table tr:last-child td { border-bottom: none; }
+    .sun-day { font-weight: 700; color: var(--text); font-size: 0.88rem; }
+    .sun-today { color: var(--accent); }
+    .uv-badge {
+      display: inline-block; padding: 3px 10px; border-radius: 20px;
+      font-size: 0.75rem; font-weight: 700; letter-spacing: 0.04em;
+    }
+    .uv-low      { background: rgba(16,185,129,0.15); color: #34d399; border: 1px solid rgba(16,185,129,0.25); }
+    .uv-moderate { background: rgba(234,179,8,0.15);  color: #fde047; border: 1px solid rgba(234,179,8,0.25); }
+    .uv-high     { background: rgba(249,115,22,0.15); color: #fb923c; border: 1px solid rgba(249,115,22,0.25); }
+    .uv-veryhigh { background: rgba(239,68,68,0.15);  color: #f87171; border: 1px solid rgba(239,68,68,0.25); }
+    .uv-extreme  { background: rgba(168,85,247,0.15); color: #c084fc; border: 1px solid rgba(168,85,247,0.25); }
+    .modal-loading { color: var(--muted); font-size: 0.88rem; text-align: center; padding: 24px 0; }
+    @media (max-width: 768px) {
+      .modal-box { padding: 18px 16px; margin: 12px; }
+      .sun-table th, .sun-table td { padding: 8px 6px 8px 0; font-size: 0.78rem; }
+    }
+
     /* ── Status bar ── */
     .status-bar { padding: 11px 16px; border-radius: 8px; margin-bottom: 18px; font-size: 0.84rem; display: flex; align-items: center; gap: 8px; }
     .status-bar.error   { background: rgba(239,68,68,0.1);  border: 1px solid rgba(239,68,68,0.3);  color: #fca5a5; }
@@ -374,6 +421,16 @@
     <option value="kmh">km/h</option>
   </select>
   <button class="btn" id="fetchBtn" onclick="fetchForecast()">Get Forecast</button>
+  <button class="btn" id="sunBtn" onclick="openSunModal()" style="background:var(--elevated);border:1px solid var(--border);color:var(--text)">☀️ Sun &amp; UV</button>
+</div>
+
+<!-- Sun & UV Modal -->
+<div class="modal-overlay" id="sunModal" onclick="closeSunModalOutside(event)">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeSunModal()">✕</button>
+    <div class="modal-title">☀️ Sunrise, Sunset &amp; UV Index</div>
+    <div id="sunModalBody"><div class="modal-loading">Loading…</div></div>
+  </div>
 </div>
 
 <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleDrawer()"></div>
@@ -463,6 +520,91 @@
   function toggleDrawer() {
     document.getElementById('sidebar').classList.toggle('open');
     document.getElementById('sidebarOverlay').classList.toggle('open');
+  }
+
+  // ── Sun & UV Modal ──────────────────────────────────────────
+  function openSunModal() {
+    document.getElementById('sunModal').classList.add('open');
+    loadSunUV();
+  }
+  function closeSunModal() {
+    document.getElementById('sunModal').classList.remove('open');
+  }
+  function closeSunModalOutside(e) {
+    if (e.target === document.getElementById('sunModal')) closeSunModal();
+  }
+
+  async function loadSunUV() {
+    const body = document.getElementById('sunModalBody');
+    body.innerHTML = '<div class="modal-loading"><div class="spinner" style="margin:0 auto 8px"></div>Fetching sun data…</div>';
+    const loc = getCoords();
+    if (!loc) { body.innerHTML = '<div class="modal-loading">⚠️ No location selected.</div>'; return; }
+    try {
+      const url = `${OM_WIND_URL}?latitude=${loc.lat}&longitude=${loc.lon}` +
+        `&daily=sunrise,sunset,uv_index_max,uv_index_clear_sky_max` +
+        `&timezone=Asia%2FJerusalem&forecast_days=7`;
+      const res  = await fetch(url);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      renderSunUV(data.daily, loc.name);
+    } catch(e) {
+      body.innerHTML = `<div class="modal-loading" style="color:#f87171">Error: ${e.message}</div>`;
+    }
+  }
+
+  function uvClass(uv) {
+    if (uv == null) return '';
+    if (uv <= 2)  return 'uv-low';
+    if (uv <= 5)  return 'uv-moderate';
+    if (uv <= 7)  return 'uv-high';
+    if (uv <= 10) return 'uv-veryhigh';
+    return 'uv-extreme';
+  }
+  function uvLabel(uv) {
+    if (uv == null) return '—';
+    if (uv <= 2)  return `${uv.toFixed(1)} Low`;
+    if (uv <= 5)  return `${uv.toFixed(1)} Moderate`;
+    if (uv <= 7)  return `${uv.toFixed(1)} High`;
+    if (uv <= 10) return `${uv.toFixed(1)} Very High`;
+    return `${uv.toFixed(1)} Extreme`;
+  }
+  function fmtTime(isoStr) {
+    // "2026-04-02T05:43" → "05:43"
+    return isoStr ? isoStr.slice(11, 16) : '—';
+  }
+  function fmtDaylight(rise, set) {
+    if (!rise || !set) return '—';
+    const mins = Math.round((new Date(set) - new Date(rise)) / 60000);
+    return `${Math.floor(mins/60)}h ${mins%60}m`;
+  }
+
+  function renderSunUV(daily, locName) {
+    const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Jerusalem' }); // YYYY-MM-DD
+    const days = daily.time || [];
+    let rows = '';
+    days.forEach((dateStr, i) => {
+      const isToday = dateStr === todayStr;
+      const dow = new Date(dateStr + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short' });
+      const d   = new Date(dateStr + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      const uv  = daily.uv_index_max?.[i];
+      rows += `<tr>
+        <td><span class="sun-day ${isToday ? 'sun-today' : ''}">${isToday ? 'Today' : dow}<br><span style="font-size:0.75rem;font-weight:400;color:var(--muted)">${d}</span></span></td>
+        <td>🌅 ${fmtTime(daily.sunrise?.[i])}</td>
+        <td>🌇 ${fmtTime(daily.sunset?.[i])}</td>
+        <td style="color:var(--muted)">${fmtDaylight(daily.sunrise?.[i], daily.sunset?.[i])}</td>
+        <td><span class="uv-badge ${uvClass(uv)}">${uvLabel(uv)}</span></td>
+      </tr>`;
+    });
+    document.getElementById('sunModalBody').innerHTML = `
+      <div style="font-size:0.75rem;color:var(--muted);margin-bottom:14px">📍 ${locName}</div>
+      <table class="sun-table">
+        <thead><tr>
+          <th>Day</th><th>Sunrise</th><th>Sunset</th><th>Daylight</th><th>UV Max</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+      <div style="font-size:0.68rem;color:var(--dim);margin-top:14px">UV scale: Low ≤2 · Moderate 3–5 · High 6–7 · Very High 8–10 · Extreme ≥11</div>
+    `;
   }
 
   function onLocationChange() {
