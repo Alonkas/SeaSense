@@ -288,6 +288,11 @@
     .fc-status.danger    { background: rgba(239,68,68,0.2);   color: #f87171; }
 
     .fc-label { font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--dim); margin-bottom: 3px; }
+    .fc-section-label { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 4px; }
+    .fc-section-label.wind  { color: #94a3b8; }
+    .fc-section-label.waves { color: #60a5fa; }
+    .fc-temp-row  { display: flex; justify-content: space-between; align-items: center; margin-top: 2px; }
+    .fc-temp-item { display: flex; align-items: center; gap: 3px; font-size: 0.75rem; font-weight: 600; }
 
     .fc-wind-speed { font-size: 1.6rem; font-weight: 800; line-height: 1; }
     .fc-wind-speed sup { font-size: 0.65rem; font-weight: 500; color: var(--muted); vertical-align: super; margin-left: 1px; }
@@ -544,13 +549,13 @@
     const { lat, lon } = getCoords();
     const omModel = OM_MODEL_MAP[model] || 'gfs_seamless';
     const url = `${OM_WIND_URL}?latitude=${lat}&longitude=${lon}` +
-      `&hourly=windspeed_10m,windgusts_10m,winddirection_10m,precipitation,precipitation_probability` +
+      `&hourly=windspeed_10m,windgusts_10m,winddirection_10m,precipitation,precipitation_probability,temperature_2m` +
       `&wind_speed_unit=ms&timezone=UTC&forecast_days=7&models=${omModel}`;
     const res = await fetch(url);
     if (!res.ok) throw new Error(`Open-Meteo wind API HTTP ${res.status}`);
     const data = await res.json();
 
-    const ts = [], windKt = [], gustKt = [], deg = [], rainMm = [], rainPct = [];
+    const ts = [], windKt = [], gustKt = [], deg = [], rainMm = [], rainPct = [], airTempC = [];
     (data.hourly?.time || []).forEach((isoStr, i) => {
       const d = new Date(isoStr + ':00Z');
       if (d.getUTCHours() % 3 !== 0) return; // 3-hour intervals only
@@ -558,16 +563,17 @@
       windKt.push((data.hourly.windspeed_10m?.[i]   ?? 0) * M2KT);
       gustKt.push((data.hourly.windgusts_10m?.[i]   ?? 0) * M2KT);
       deg.push(   data.hourly.winddirection_10m?.[i] ?? 0);
-      rainMm.push(data.hourly.precipitation?.[i]            ?? 0);
+      rainMm.push(data.hourly.precipitation?.[i]              ?? 0);
       rainPct.push(data.hourly.precipitation_probability?.[i] ?? null);
+      airTempC.push(data.hourly.temperature_2m?.[i]           ?? null);
     });
-    return { ts, windKt, gustKt, deg, rainMm, rainPct };
+    return { ts, windKt, gustKt, deg, rainMm, rainPct, airTempC };
   }
 
   async function fetchEcmwfWam() {
     const { lat, lon } = getCoords();
     const url = `${OM_MARINE_URL}?latitude=${lat}&longitude=${lon}` +
-      `&hourly=wave_height,wave_direction,swell_wave_height,swell_wave_direction,secondary_swell_wave_height,secondary_swell_wave_direction` +
+      `&hourly=wave_height,wave_direction,swell_wave_height,swell_wave_direction,secondary_swell_wave_height,secondary_swell_wave_direction,sea_surface_temperature` +
       `&models=ecmwf_wam&timezone=UTC&forecast_days=7`;
     const res = await fetch(url);
     if (!res.ok) throw new Error(`ECMWF WAM (Open-Meteo) HTTP ${res.status}`);
@@ -576,12 +582,13 @@
     (data.hourly?.time || []).forEach((isoStr, i) => {
       const t = new Date(isoStr + ':00Z').getTime();
       lookup[t] = {
-        wh:   data.hourly.wave_height?.[i]                         ?? null,
-        whd:  data.hourly.wave_direction?.[i]                      ?? null,
-        sw1:  data.hourly.swell_wave_height?.[i]                   ?? null,
-        sw1d: data.hourly.swell_wave_direction?.[i]                ?? null,
-        sw2:  data.hourly.secondary_swell_wave_height?.[i]         ?? null,
-        sw2d: data.hourly.secondary_swell_wave_direction?.[i]      ?? null,
+        wh:        data.hourly.wave_height?.[i]                         ?? null,
+        whd:       data.hourly.wave_direction?.[i]                      ?? null,
+        sw1:       data.hourly.swell_wave_height?.[i]                   ?? null,
+        sw1d:      data.hourly.swell_wave_direction?.[i]                ?? null,
+        sw2:       data.hourly.secondary_swell_wave_height?.[i]         ?? null,
+        sw2d:      data.hourly.secondary_swell_wave_direction?.[i]      ?? null,
+        waterTempC: data.hourly.sea_surface_temperature?.[i]            ?? null,
       };
     });
     return lookup;
@@ -653,9 +660,10 @@
     return ['N','NE','E','SE','S','SW','W','NW','N'][Math.round(deg / 45)];
   }
 
-  function bigDirArrow(deg) {
-    if (deg == null) return '<div class="big-dir-arrow" style="color:var(--dim)">—</div>';
-    return `<div class="big-dir-arrow"><span style="display:inline-block;transform:rotate(${(Math.round(deg) + 180) % 360}deg);line-height:1">↑</span></div>`;
+  function bigDirArrow(deg, color) {
+    const c = color || 'var(--dim)';
+    if (deg == null) return `<div class="big-dir-arrow" style="color:var(--dim)">—</div>`;
+    return `<div class="big-dir-arrow" style="color:${c}"><span style="display:inline-block;transform:rotate(${(Math.round(deg) + 180) % 360}deg);line-height:1">↑</span></div>`;
   }
 
   function windColor(kt) {
@@ -700,7 +708,7 @@
 
   function renderForecast(windData, wLookup) {
     const th   = getThresholds();
-    const { ts, windKt: windKts, gustKt: gustKts, deg: degs, rainMm: rains, rainPct: rainPcts } = windData;
+    const { ts, windKt: windKts, gustKt: gustKts, deg: degs, rainMm: rains, rainPct: rainPcts, airTempC: airTemps } = windData;
 
     // Build rows grouped by day
     const days = {}, dayOrder = [];
@@ -708,6 +716,7 @@
       const d = new Date(t);
       const localHour = parseInt(d.toLocaleTimeString('en-IL', { hour: '2-digit', hour12: false, timeZone: 'Asia/Jerusalem' }));
       if ([21, 0, 3].includes(localHour)) return; // skip night slots
+      if (t < Date.now()) return; // skip past slots
       const key = d.toLocaleDateString('en-IL', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'Asia/Jerusalem' });
       const short = d.toLocaleDateString('en-IL', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'Asia/Jerusalem' });
       if (!days[key]) { days[key] = { rows: [], short }; dayOrder.push(key); }
@@ -715,18 +724,20 @@
       const windKt = windKts[i];
       const gustKt = gustKts[i];
       const deg    = degs[i];
-      const rainMm  = rains[i];
-      const rainPct = rainPcts?.[i] ?? null;
+      const rainMm   = rains[i];
+      const rainPct  = rainPcts?.[i]  ?? null;
+      const airTempC = airTemps?.[i]  ?? null;
       const wv     = wLookup[t] || findNearest(wLookup, t) || {};
-      const wh     = wv.wh   ?? null;
-      const whd    = wv.whd  ?? null;
-      const sw1    = wv.sw1  ?? null;
-      const sw1d   = wv.sw1d ?? null;
-      const sw2    = wv.sw2  ?? null;
-      const sw2d   = wv.sw2d ?? null;
-      const st     = status(windKt, gustKt, wh ?? 0);
+      const wh         = wv.wh         ?? null;
+      const whd        = wv.whd        ?? null;
+      const sw1        = wv.sw1        ?? null;
+      const sw1d       = wv.sw1d       ?? null;
+      const sw2        = wv.sw2        ?? null;
+      const sw2d       = wv.sw2d       ?? null;
+      const waterTempC = wv.waterTempC ?? null;
+      const st         = status(windKt, gustKt, wh ?? 0);
 
-      days[key].rows.push({ t, d, windKt, gustKt, deg, rainMm, rainPct, wh, whd, sw1, sw1d, sw2, sw2d, st });
+      days[key].rows.push({ t, d, windKt, gustKt, deg, rainMm, rainPct, airTempC, wh, whd, sw1, sw1d, sw2, sw2d, waterTempC, st });
     });
 
     // HTML
@@ -820,6 +831,16 @@
           : r.rainPct < 50 ? '#93c5fd'
           : r.rainPct < 75 ? '#3b82f6'
           : '#a78bfa';
+        const airTempStr   = r.airTempC   != null ? `${Math.round(r.airTempC)}°C`   : '—';
+        const waterTempStr = r.waterTempC != null ? `${Math.round(r.waterTempC)}°C` : '—';
+        const airTempColor = r.airTempC == null ? 'var(--dim)'
+          : r.airTempC < 15 ? '#93c5fd'
+          : r.airTempC < 25 ? '#34d399'
+          : '#fb923c';
+        const waterTempColor = r.waterTempC == null ? 'var(--dim)'
+          : r.waterTempC < 18 ? '#93c5fd'
+          : r.waterTempC < 24 ? '#34d399'
+          : '#fb923c';
 
         html += `
         <div class="fc">
@@ -830,25 +851,25 @@
               <span class="fc-status ${r.st}">${LABELS[r.st]}</span>
             </div>
 
-            <div class="fc-label">Wind</div>
+            <div class="fc-section-label wind">Wind</div>
             <div class="fc-section">
               <div class="fc-section-left">
                 <div class="fc-wind-speed" style="color:${wc}">${windDisp(r.windKt).toFixed(1)}<sup>${windUnitLabel()}</sup></div>
                 <div class="fc-wind-sub">${dirLabel(r.deg)} ${Math.round(r.deg)}°</div>
                 <div class="fc-wind-sub">Gusts <span class="fc-gust-val" style="color:${gc}">${windDisp(r.gustKt).toFixed(1)} ${windUnitLabel()}</span></div>
               </div>
-              ${bigDirArrow(r.deg)}
+              ${bigDirArrow(r.deg, wc)}
             </div>
 
             <div class="fc-hr"></div>
 
-            <div class="fc-label">Waves</div>
+            <div class="fc-section-label waves">Waves</div>
             <div class="fc-section">
               <div class="fc-section-left">
                 <div class="fc-wave-val" style="color:${whC}">${fmtW(r.wh)}</div>
                 ${r.whd != null ? `<div class="fc-wind-sub">${dirLabel(r.whd)} ${Math.round(r.whd)}°</div>` : ''}
               </div>
-              ${bigDirArrow(r.whd)}
+              ${bigDirArrow(r.whd, whC)}
             </div>
             <div class="fc-swell-row">
               <div class="fc-swell"><span class="fc-swell-lbl">S1</span><span style="color:${sw1C}">${r.sw1 != null ? r.sw1.toFixed(2)+'m' : '—'}</span>${r.sw1d != null ? ` <span class="dir-arrow" style="color:var(--muted)">${dirArrow(r.sw1d)}</span><span style="color:var(--muted);font-size:0.7rem">${dirLabel(r.sw1d)}</span>` : ''}</div>
@@ -862,6 +883,13 @@
               <span class="fc-rain-val">
                 <span style="color:${rainPctColor};font-weight:700">${rainPctStr}</span>${rainMmStr ? `<span style="color:var(--dim);font-size:0.72rem;margin-left:4px">${rainMmStr}</span>` : ''}
               </span>
+            </div>
+
+            <div class="fc-hr"></div>
+
+            <div class="fc-temp-row">
+              <div class="fc-temp-item"><span style="color:var(--dim)">🌡</span><span style="color:${airTempColor}">${airTempStr}</span></div>
+              <div class="fc-temp-item"><span style="color:var(--dim)">💧</span><span style="color:${waterTempColor}">${waterTempStr}</span></div>
             </div>
           </div>
         </div>`;
