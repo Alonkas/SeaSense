@@ -878,18 +878,11 @@
 
             <div class="fc-hr"></div>
 
-            <div class="fc-rain-row">
-              <span class="fc-label" style="margin:0">Rain</span>
-              <span class="fc-rain-val">
-                <span style="color:${rainPctColor};font-weight:700">${rainPctStr}</span>${rainMmStr ? `<span style="color:var(--dim);font-size:0.72rem;margin-left:4px">${rainMmStr}</span>` : ''}
-              </span>
-            </div>
-
-            <div class="fc-hr"></div>
-
             <div class="fc-temp-row">
-              <div class="fc-temp-item"><span style="color:var(--dim)">🌡</span><span style="color:${airTempColor}">${airTempStr}</span></div>
-              <div class="fc-temp-item"><span style="color:var(--dim)">💧</span><span style="color:${waterTempColor}">${waterTempStr}</span></div>
+              <div class="fc-temp-item"><span style="color:var(--dim)">🌡</span><span style="color:${airTempColor}">${airTempStr}</span><span style="color:var(--dim);margin-left:4px;font-size:0.7rem">💧</span><span style="color:${waterTempColor};font-size:0.7rem">${waterTempStr}</span></div>
+              <div class="fc-temp-item" style="gap:2px">
+                <span style="color:${rainPctColor};font-weight:700">${rainPctStr}</span>${rainMmStr ? `<span style="color:var(--dim);font-size:0.72rem;margin-left:3px">${rainMmStr}</span>` : ''}
+              </div>
             </div>
           </div>
         </div>`;
