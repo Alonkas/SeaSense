@@ -262,10 +262,6 @@
     #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
     /* ── Wind trend in day pill ── */
-    .dp-trend { font-size: 0.82rem; font-weight: 700; margin-left: 3px; }
-    .dp-trend.up   { color: #f87171; }
-    .dp-trend.down { color: #34d399; }
-    .dp-trend.flat { color: var(--muted); }
 
     /* ── Refresh timer ── */
     .refresh-timer { font-size: 0.72rem; color: var(--dim); display: flex; align-items: center; gap: 4px; cursor: pointer; }
@@ -936,15 +932,6 @@
         : rainMax < 75 ? '#3b82f6'
         : '#a78bfa';
 
-      // Wind trend: compare avg of first half vs second half
-      const windSlots = rows.map(r => r.windKt);
-      const half = Math.ceil(windSlots.length / 2);
-      const avg1 = windSlots.slice(0, half).reduce((a, b) => a + b, 0) / half;
-      const avg2 = windSlots.slice(half).reduce((a, b) => a + b, 0) / (windSlots.length - half || 1);
-      const diff  = avg2 - avg1;
-      const trendArrow = diff > 2 ? '↗' : diff < -2 ? '↘' : '→';
-      const trendClass = diff > 2 ? 'up' : diff < -2 ? 'down' : 'flat';
-
       html += `<a class="day-pill" href="#day-${dk.replace(/\W/g,'_')}">
         <div class="dp-weekday">${wd}</div>
         <div class="dp-date">${rest.join(' ')}</div>
@@ -953,7 +940,6 @@
             <span class="dp-stat-icon">💨</span>
             <span class="dp-stat-val" style="color:${windColor(windMax)}">${wMin}–${wMax}</span>
             <span class="dp-stat-unit">${windUnitLabel()}</span>
-            <span class="dp-trend ${trendClass}">${trendArrow}</span>
           </div>
           <div class="dp-stat-row">
             <span class="dp-stat-icon">🌊</span>
