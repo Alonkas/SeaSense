@@ -871,17 +871,17 @@
               </div>
               ${bigDirArrow(r.whd, whC)}
             </div>
-            <div class="fc-swell-row">
+            ${(r.sw1 != null || r.sw2 != null) ? `<div class="fc-swell-row">
               <div class="fc-swell"><span class="fc-swell-lbl">S1</span><span style="color:${sw1C}">${r.sw1 != null ? r.sw1.toFixed(2)+'m' : '—'}</span>${r.sw1d != null ? ` <span class="dir-arrow" style="color:var(--muted)">${dirArrow(r.sw1d)}</span><span style="color:var(--muted);font-size:0.7rem">${dirLabel(r.sw1d)}</span>` : ''}</div>
               <div class="fc-swell"><span class="fc-swell-lbl">S2</span><span style="color:${sw2C}">${r.sw2 != null ? r.sw2.toFixed(2)+'m' : '—'}</span>${r.sw2d != null ? ` <span class="dir-arrow" style="color:var(--muted)">${dirArrow(r.sw2d)}</span><span style="color:var(--muted);font-size:0.7rem">${dirLabel(r.sw2d)}</span>` : ''}</div>
-            </div>
+            </div>` : ''}
 
             <div class="fc-hr"></div>
 
             <div class="fc-temp-row">
               <div class="fc-temp-item"><span style="color:var(--dim)">🌡</span><span style="color:${airTempColor}">${airTempStr}</span><span style="color:var(--dim);margin-left:4px;font-size:0.7rem">💧</span><span style="color:${waterTempColor};font-size:0.7rem">${waterTempStr}</span></div>
               <div class="fc-temp-item" style="gap:2px">
-                <span style="color:${rainPctColor};font-weight:700">${rainPctStr}</span>${rainMmStr ? `<span style="color:var(--dim);font-size:0.72rem;margin-left:3px">${rainMmStr}</span>` : ''}
+                <span style="color:var(--dim)">🌧</span><span style="color:${rainPctColor};font-weight:700">${rainPctStr}</span>${rainMmStr ? `<span style="color:var(--dim);font-size:0.72rem;margin-left:3px">${rainMmStr}</span>` : ''}
               </div>
             </div>
           </div>
