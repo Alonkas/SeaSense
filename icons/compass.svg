@@ -1,103 +1,116 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
-  <defs>
-    <!-- Gradient for outer disk (subtle sheen) -->
-    <radialGradient id="diskGrad" cx="42%" cy="38%" r="60%">
-      <stop offset="0%"   stop-color="#e2eef8"/>
-      <stop offset="100%" stop-color="#b8cedf"/>
-    </radialGradient>
-    <!-- Gradient for inner disk -->
-    <radialGradient id="innerGrad" cx="42%" cy="38%" r="60%">
-      <stop offset="0%"   stop-color="#e8f2fb"/>
-      <stop offset="100%" stop-color="#c4d9ec"/>
-    </radialGradient>
-    <!-- Mask: annular ring channel (between outer ring inner edge r≈86 and inner ring outer edge r≈78) -->
-    <mask id="channelMask">
-      <circle cx="100" cy="100" r="87" fill="white"/>
-      <circle cx="100" cy="100" r="77" fill="black"/>
-    </mask>
-    <!-- Mask: inner disk only -->
-    <mask id="innerMask">
-      <circle cx="100" cy="100" r="77" fill="white"/>
-    </mask>
-  </defs>
+  <!--
+    Compass rose — adapted to app's dark-navy palette.
+    Colors:
+      #1c3d68  dark navy  (dark halves, rings, labels)
+      #2f639e  mid blue   (light halves)
+    Layout:
+      Center: 100,100
+      Outer ring r=84  → top y=16
+      Inner ring r=64  → top y=36
+      Cardinal tips: y=4 (pierce 12px past outer ring)
+      Intercardinal tips: y=37 (just at inner ring)
+      Tick marks: r=66→r=80  (y=20→y=34)
+  -->
 
-  <!-- ── OUTER DISK BASE ── -->
-  <circle cx="100" cy="100" r="95" fill="url(#diskGrad)"/>
+  <!-- ═══ OUTER RING ═══ -->
+  <circle cx="100" cy="100" r="84" fill="none" stroke="#1c3d68" stroke-width="2"/>
 
-  <!-- ── RING CHANNEL SEGMENTS (8 alternating) ── -->
-  <!-- Base darker fill for whole channel area -->
-  <circle cx="100" cy="100" r="87" fill="#afc6d8" mask="url(#channelMask)"/>
-  <g mask="url(#channelMask)">
-    <!-- 4 lighter wedges at cardinal positions (N/E/S/W), ±22.5° each -->
-    <!-- North wedge -->
-    <polygon points="100,100 -15,-177 215,-177"   fill="#cddde9"/>
-    <!-- East wedge -->
-    <polygon points="100,100 377,-15 377,215"     fill="#cddde9"/>
-    <!-- South wedge -->
-    <polygon points="100,100 215,377 -15,377"     fill="#cddde9"/>
-    <!-- West wedge -->
-    <polygon points="100,100 -177,215 -177,-15"   fill="#cddde9"/>
+  <!-- ═══ INNER RING ═══ -->
+  <circle cx="100" cy="100" r="64" fill="none" stroke="#1c3d68" stroke-width="1.5"/>
+
+  <!-- ═══ 16 TICK MARKS between the two rings ═══ -->
+  <!-- 8 major ticks (at 0°/45°/90°… – aligned with star points) -->
+  <g stroke="#1c3d68" stroke-width="1.5" stroke-linecap="round">
+    <line x1="100" y1="20" x2="100" y2="34"/>
+    <line x1="100" y1="20" x2="100" y2="34" transform="rotate(45,100,100)"/>
+    <line x1="100" y1="20" x2="100" y2="34" transform="rotate(90,100,100)"/>
+    <line x1="100" y1="20" x2="100" y2="34" transform="rotate(135,100,100)"/>
+    <line x1="100" y1="20" x2="100" y2="34" transform="rotate(180,100,100)"/>
+    <line x1="100" y1="20" x2="100" y2="34" transform="rotate(225,100,100)"/>
+    <line x1="100" y1="20" x2="100" y2="34" transform="rotate(270,100,100)"/>
+    <line x1="100" y1="20" x2="100" y2="34" transform="rotate(315,100,100)"/>
+    <!-- 8 minor ticks (at 22.5° offsets – shorter) -->
+    <line x1="100" y1="25" x2="100" y2="34" transform="rotate(22.5,100,100)"/>
+    <line x1="100" y1="25" x2="100" y2="34" transform="rotate(67.5,100,100)"/>
+    <line x1="100" y1="25" x2="100" y2="34" transform="rotate(112.5,100,100)"/>
+    <line x1="100" y1="25" x2="100" y2="34" transform="rotate(157.5,100,100)"/>
+    <line x1="100" y1="25" x2="100" y2="34" transform="rotate(202.5,100,100)"/>
+    <line x1="100" y1="25" x2="100" y2="34" transform="rotate(247.5,100,100)"/>
+    <line x1="100" y1="25" x2="100" y2="34" transform="rotate(292.5,100,100)"/>
+    <line x1="100" y1="25" x2="100" y2="34" transform="rotate(337.5,100,100)"/>
   </g>
 
-  <!-- ── OUTER RING (thick dark navy) ── -->
-  <circle cx="100" cy="100" r="90" fill="none" stroke="#1a3560" stroke-width="9"/>
-
-  <!-- ── INNER DISK ── -->
-  <circle cx="100" cy="100" r="76" fill="url(#innerGrad)"/>
-
-  <!-- Inner disk: faint 8-spoke radial lines (segment dividers) -->
-  <g mask="url(#innerMask)" stroke="#1a3560" stroke-width="0.7" opacity="0.14">
-    <line x1="100" y1="24" x2="100" y2="176"/>
-    <line x1="24"  y1="100" x2="176" y2="100"/>
-    <line x1="46.3" y1="46.3" x2="153.7" y2="153.7"/>
-    <line x1="153.7" y1="46.3" x2="46.3" y2="153.7"/>
+  <!-- ═══ INTERCARDINAL POINTS (NE/SE/SW/NW) — shorter, drawn behind cardinals ═══ -->
+  <!--
+    Base shape (pointing N before rotation):
+      tip        = (100, 37)   r≈63, just at inner ring
+      shoulder-L = (93,  65)   widest point
+      shoulder-R = (107, 65)
+      base       = (100, 100)  center
+    Left half  → dark navy
+    Right half → mid blue
+    Centerline → hair-thin dark stroke for the fold
+  -->
+  <g>
+    <!-- NE -->
+    <polygon points="100,37 93,65 100,100"  fill="#1c3d68" transform="rotate(45,100,100)"/>
+    <polygon points="100,37 107,65 100,100" fill="#2f639e" transform="rotate(45,100,100)"/>
+    <line x1="100" y1="37" x2="100" y2="100" stroke="#1c3d68" stroke-width="0.6" transform="rotate(45,100,100)"/>
+    <!-- SE -->
+    <polygon points="100,37 93,65 100,100"  fill="#1c3d68" transform="rotate(135,100,100)"/>
+    <polygon points="100,37 107,65 100,100" fill="#2f639e" transform="rotate(135,100,100)"/>
+    <line x1="100" y1="37" x2="100" y2="100" stroke="#1c3d68" stroke-width="0.6" transform="rotate(135,100,100)"/>
+    <!-- SW -->
+    <polygon points="100,37 93,65 100,100"  fill="#1c3d68" transform="rotate(225,100,100)"/>
+    <polygon points="100,37 107,65 100,100" fill="#2f639e" transform="rotate(225,100,100)"/>
+    <line x1="100" y1="37" x2="100" y2="100" stroke="#1c3d68" stroke-width="0.6" transform="rotate(225,100,100)"/>
+    <!-- NW -->
+    <polygon points="100,37 93,65 100,100"  fill="#1c3d68" transform="rotate(315,100,100)"/>
+    <polygon points="100,37 107,65 100,100" fill="#2f639e" transform="rotate(315,100,100)"/>
+    <line x1="100" y1="37" x2="100" y2="100" stroke="#1c3d68" stroke-width="0.6" transform="rotate(315,100,100)"/>
   </g>
 
-  <!-- Alternating inner disk segments (subtle) -->
-  <g mask="url(#innerMask)" opacity="0.10">
-    <!-- Slightly darker quarter-pie slices at intercardinal diagonals -->
-    <polygon points="100,100 153.7,46.3 100,24 46.3,46.3"  fill="#1a3560"/>
-    <polygon points="100,100 153.7,153.7 176,100 153.7,46.3" fill="#1a3560"/>
-    <polygon points="100,100 46.3,153.7 100,176 153.7,153.7" fill="#1a3560"/>
-    <polygon points="100,100 46.3,46.3 24,100 46.3,153.7"   fill="#1a3560"/>
+  <!-- ═══ CARDINAL POINTS (N/S/E/W) — long, pierce outer ring, drawn on top ═══ -->
+  <!--
+    Base shape (pointing N):
+      tip        = (100,  4)   r≈96, 12px past outer ring
+      shoulder-L = (91,  52)   widest point
+      shoulder-R = (109, 52)
+      base       = (100, 100)  center
+  -->
+  <g>
+    <!-- N -->
+    <polygon points="100,4 91,52 100,100"  fill="#1c3d68"/>
+    <polygon points="100,4 109,52 100,100" fill="#2f639e"/>
+    <line x1="100" y1="4" x2="100" y2="100" stroke="#1c3d68" stroke-width="0.7"/>
+    <!-- S -->
+    <polygon points="100,4 91,52 100,100"  fill="#1c3d68" transform="rotate(180,100,100)"/>
+    <polygon points="100,4 109,52 100,100" fill="#2f639e" transform="rotate(180,100,100)"/>
+    <line x1="100" y1="4" x2="100" y2="100" stroke="#1c3d68" stroke-width="0.7" transform="rotate(180,100,100)"/>
+    <!-- E -->
+    <polygon points="100,4 91,52 100,100"  fill="#1c3d68" transform="rotate(90,100,100)"/>
+    <polygon points="100,4 109,52 100,100" fill="#2f639e" transform="rotate(90,100,100)"/>
+    <line x1="100" y1="4" x2="100" y2="100" stroke="#1c3d68" stroke-width="0.7" transform="rotate(90,100,100)"/>
+    <!-- W -->
+    <polygon points="100,4 91,52 100,100"  fill="#1c3d68" transform="rotate(270,100,100)"/>
+    <polygon points="100,4 109,52 100,100" fill="#2f639e" transform="rotate(270,100,100)"/>
+    <line x1="100" y1="4" x2="100" y2="100" stroke="#1c3d68" stroke-width="0.7" transform="rotate(270,100,100)"/>
   </g>
 
-  <!-- ── INNER RING (thinner dark navy) ── -->
-  <circle cx="100" cy="100" r="76" fill="none" stroke="#1a3560" stroke-width="4.5"/>
+  <!-- ═══ CENTER HUB ═══ -->
+  <circle cx="100" cy="100" r="10"  fill="#1c3d68"/>
+  <circle cx="100" cy="100" r="7"   fill="#5a8fba"/>
+  <circle cx="100" cy="100" r="4.5" fill="#1c3d68"/>
+  <circle cx="100" cy="100" r="2.5" fill="#8ab8d8"/>
 
-  <!-- ── INTERCARDINAL POINTS (NE/NW/SE/SW) — shorter, steel blue ── -->
-  <!-- Base shape points North, tip at y=24 (r=76, at inner ring), widest at y=65 (±7) -->
-  <g fill="#5d8fb5" stroke="#1a3560" stroke-width="0.8">
-    <polygon points="100,24 107,65 100,100 93,65" transform="rotate(45,100,100)"/>
-    <polygon points="100,24 107,65 100,100 93,65" transform="rotate(135,100,100)"/>
-    <polygon points="100,24 107,65 100,100 93,65" transform="rotate(225,100,100)"/>
-    <polygon points="100,24 107,65 100,100 93,65" transform="rotate(315,100,100)"/>
-  </g>
-
-  <!-- ── CARDINAL POINTS (N/S/E/W) — long, dark navy ── -->
-  <!-- Tip at y=5 (r=95, just past outer ring edge), widest at y=66 (±8.5), tapers to center -->
-  <g fill="#1a3560">
-    <!-- North -->
-    <polygon points="100,5 108.5,66 100,100 91.5,66"/>
-    <!-- South -->
-    <polygon points="100,5 108.5,66 100,100 91.5,66" transform="rotate(180,100,100)"/>
-    <!-- East -->
-    <polygon points="100,5 108.5,66 100,100 91.5,66" transform="rotate(90,100,100)"/>
-    <!-- West -->
-    <polygon points="100,5 108.5,66 100,100 91.5,66" transform="rotate(270,100,100)"/>
-  </g>
-
-  <!-- ── CENTER DECORATION ── -->
-  <!-- Outer dark navy ring -->
-  <circle cx="100" cy="100" r="13.5" fill="#1a3560"/>
-  <!-- Light blue fill -->
-  <circle cx="100" cy="100" r="10"   fill="#a8c4d8"/>
-  <!-- Inner ring border -->
-  <circle cx="100" cy="100" r="10"   fill="none" stroke="#1a3560" stroke-width="2"/>
-  <!-- Inner light circle -->
-  <circle cx="100" cy="100" r="6.5"  fill="#c4daea"/>
-  <!-- Center dot -->
-  <circle cx="100" cy="100" r="3.5"  fill="#1a3560"/>
-  <!-- Tiny highlight -->
-  <circle cx="100" cy="100" r="1.5"  fill="#7aaec8"/>
+  <!-- ═══ N / S / E / W LABELS ═══ -->
+  <text x="100" y="10"  text-anchor="middle" dominant-baseline="middle"
+        font-family="Georgia,serif" font-size="13" font-weight="bold" fill="#1c3d68">N</text>
+  <text x="100" y="195" text-anchor="middle" dominant-baseline="middle"
+        font-family="Georgia,serif" font-size="13" font-weight="bold" fill="#1c3d68">S</text>
+  <text x="194" y="101" text-anchor="middle" dominant-baseline="middle"
+        font-family="Georgia,serif" font-size="13" font-weight="bold" fill="#1c3d68">E</text>
+  <text x="6"   y="101" text-anchor="middle" dominant-baseline="middle"
+        font-family="Georgia,serif" font-size="13" font-weight="bold" fill="#1c3d68">W</text>
 </svg>
