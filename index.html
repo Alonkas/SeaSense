@@ -255,6 +255,23 @@
       .sun-table th, .sun-table td { padding: 8px 6px 8px 0; font-size: 0.78rem; }
     }
 
+    /* ── About Modal ── */
+    .about-body { display: flex; flex-direction: column; gap: 16px; }
+    .about-lead { font-size: 0.9rem; color: var(--muted); line-height: 1.65; }
+    .about-section-title { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--dim); padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+    .about-list { padding-left: 18px; display: flex; flex-direction: column; gap: 6px; }
+    .about-list li { font-size: 0.85rem; color: var(--muted); line-height: 1.5; }
+    .about-list li strong { color: var(--text); }
+    .about-models { display: flex; flex-direction: column; gap: 10px; }
+    .about-model { background: var(--elevated); border: 1px solid var(--border); border-radius: 8px; padding: 11px 13px; }
+    .about-model-name { font-size: 0.84rem; font-weight: 700; color: var(--accent); margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
+    .about-model-tag { font-size: 0.65rem; font-weight: 700; padding: 2px 8px; border-radius: 20px; background: rgba(16,185,129,0.15); color: #34d399; border: 1px solid rgba(16,185,129,0.25); }
+    .about-model-desc { font-size: 0.8rem; color: var(--muted); line-height: 1.55; }
+    .about-wave-note { font-size: 0.78rem; color: var(--dim); background: var(--elevated); border-radius: 7px; padding: 9px 12px; line-height: 1.5; }
+    .about-wave-note strong { color: var(--muted); }
+    .about-footer-note { font-size: 0.76rem; color: var(--dim); text-align: center; line-height: 1.7; border-top: 1px solid var(--border); padding-top: 12px; }
+    .about-footer-note strong { color: var(--muted); }
+
     /* ── Toast ── */
     #toast {
       position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%) translateY(16px);
@@ -458,8 +475,60 @@
   <button class="btn" id="sunBtn" onclick="openSunModal()" style="background:var(--elevated);border:1px solid var(--border);color:var(--text)">☀️ Sun &amp; UV</button>
   <button class="btn" id="shareBtn" onclick="copyShareURL()" style="background:var(--elevated);border:1px solid var(--border);color:var(--text)">🔗 Share</button>
   <button class="btn" id="a2hsBtn" onclick="openA2HS()" style="background:var(--elevated);border:1px solid var(--border);color:var(--text)">📱 Add to Phone</button>
+  <button class="btn" onclick="openAbout()" style="background:var(--elevated);border:1px solid var(--border);color:var(--text)">ℹ️ About</button>
 </div>
 <div id="toast"></div>
+
+<!-- About Modal -->
+<div class="modal-overlay" id="aboutModal" onclick="closeAboutOutside(event)">
+  <div class="modal-box" style="max-width:560px">
+    <button class="modal-close" onclick="closeAbout()">✕</button>
+    <div class="modal-title">ℹ️ About SeaSense</div>
+    <div class="about-body">
+
+      <p class="about-lead">SeaSense gives Israeli coastal water sports enthusiasts a clear, colour-coded marine forecast — so you can decide in seconds whether it's safe to go out.</p>
+
+      <div class="about-section-title">🌊 What it shows</div>
+      <ul class="about-list">
+        <li><strong>Wind speed & gusts</strong> — direction, bearing, and arrow for every 3-hour slot</li>
+        <li><strong>Wave height & direction</strong> — from the ECMWF WAM ocean model</li>
+        <li><strong>Air & water temperature</strong> — so you know what to wear</li>
+        <li><strong>Rain probability & amount</strong> — per time slot and daily summary</li>
+        <li><strong>Sunrise, sunset & UV index</strong> — via the ☀️ Sun & UV panel</li>
+        <li><strong>GO / CAUTION / DANGER status</strong> — instantly at a glance, customisable thresholds</li>
+      </ul>
+
+      <div class="about-section-title">📡 Wind models</div>
+      <div class="about-models">
+        <div class="about-model">
+          <div class="about-model-name">ICON EU <span class="about-model-tag">Recommended</span></div>
+          <div class="about-model-desc">German model (~7 km resolution) covering Europe & the Mediterranean. Best for coastal breezes, sea-land thermal shifts, and same-day decisions at Israeli beaches.</div>
+        </div>
+        <div class="about-model">
+          <div class="about-model-name">ECMWF IFS</div>
+          <div class="about-model-desc">European global model (~25 km). Gold standard for multi-day accuracy. Excellent for planning trips 2–5 days ahead when storm systems or weather fronts approach.</div>
+        </div>
+        <div class="about-model">
+          <div class="about-model-name">GFS</div>
+          <div class="about-model-desc">US global model (~25 km). Best for extended outlooks beyond 5 days and cross-referencing with other models. Less detail near coastlines than ICON EU.</div>
+        </div>
+      </div>
+      <div class="about-wave-note">🌊 Wave data always comes from <strong>ECMWF WAM</strong> — the dedicated ocean wave model, regardless of which wind model is selected.</div>
+
+      <div class="about-section-title">⚙️ Customisation</div>
+      <ul class="about-list">
+        <li>Set your own <strong>CAUTION</strong> and <strong>DANGER</strong> wind & wave thresholds from the sidebar</li>
+        <li>Switch between <strong>knots</strong> and <strong>km/h</strong></li>
+        <li>Choose from 11 Israeli coastal locations or enter custom coordinates</li>
+        <li>Share your exact view with friends via the 🔗 Share button</li>
+        <li>Data auto-refreshes every <strong>15 minutes</strong></li>
+      </ul>
+
+      <div class="about-footer-note">All data is free — no API key required.<br>
+      Built by <strong>Alon Kassir</strong> &nbsp;·&nbsp; v1.1.0</div>
+    </div>
+  </div>
+</div>
 
 <!-- Add to Home Screen Modal -->
 <div class="modal-overlay" id="a2hsModal" onclick="closeA2HSOutside(event)">
@@ -567,6 +636,11 @@
     document.getElementById('sidebar').classList.toggle('open');
     document.getElementById('sidebarOverlay').classList.toggle('open');
   }
+
+  // ── About Modal ─────────────────────────────────────────────
+  function openAbout()        { document.getElementById('aboutModal').classList.add('open'); }
+  function closeAbout()       { document.getElementById('aboutModal').classList.remove('open'); }
+  function closeAboutOutside(e) { if (e.target === document.getElementById('aboutModal')) closeAbout(); }
 
   // ── Add to Home Screen ──────────────────────────────────────
   let _a2hsDeferredPrompt = null;
