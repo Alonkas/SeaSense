@@ -35,6 +35,8 @@
       background: linear-gradient(90deg, transparent, #3b82f6 40%, #10b981 60%, transparent);
     }
     .header-inner { max-width: 1440px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; }
+    .header-left { display: flex; align-items: center; gap: 12px; }
+    .header-logo { width: 48px; height: 48px; flex-shrink: 0; }
     .header-left h1 { font-size: 1.75rem; font-weight: 700; letter-spacing: -0.02em; }
     .header-left h1 em { font-style: normal; color: #60a5fa; }
     .header-tagline { font-size: 0.8rem; color: #4a8fd4; margin: 3px 0 5px; letter-spacing: 0.03em; }
@@ -135,6 +137,7 @@
       header { padding: 12px 16px 12px 16px; overflow: visible; }
       .header-inner { flex-direction: row; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: nowrap; overflow: visible; }
       .header-left h1 { font-size: 1.32rem; }
+      .header-logo { width: 36px; height: 36px; }
       .header-tagline { display: none; }
       .header-right { flex-direction: row; align-items: center; gap: 8px; flex-shrink: 0; }
       .header-loc { flex-direction: column; align-items: flex-start; gap: 4px; }
@@ -391,7 +394,8 @@
 <header>
   <div class="header-inner">
     <div class="header-left">
-      <h1>&#x1F6F6; <em>SeaSense</em></h1>
+      <img src="icons/compass.svg" alt="SeaSense logo" class="header-logo" />
+      <h1><em>SeaSense</em></h1>
       <div class="header-tagline">Know before you go · Catch the right moment</div>
     </div>
     <div class="header-right">

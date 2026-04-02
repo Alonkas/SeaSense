@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <!-- Outer ring -->
+  <circle cx="100" cy="100" r="95" fill="none" stroke="#1e3a5f" stroke-width="7"/>
+  <!-- Inner ring -->
+  <circle cx="100" cy="100" r="78" fill="#b8ccdf" stroke="#1e3a5f" stroke-width="5"/>
+  <!-- Inner ring fill lighter -->
+  <circle cx="100" cy="100" r="73" fill="#d0e2f0"/>
+
+  <!-- 8 compass point segments (light fill) -->
+  <!-- NW segment -->
+  <path d="M100,100 L51,51 A69,69 0 0,1 100,31 Z" fill="#b8ccdf"/>
+  <!-- NE segment -->
+  <path d="M100,100 L149,51 A69,69 0 0,0 100,31 Z" fill="#d0e2f0"/>
+  <!-- EN segment -->
+  <path d="M100,100 L149,51 A69,69 0 0,1 169,100 Z" fill="#b8ccdf"/>
+  <!-- ES segment -->
+  <path d="M100,100 L149,149 A69,69 0 0,0 169,100 Z" fill="#d0e2f0"/>
+  <!-- SE segment -->
+  <path d="M100,100 L149,149 A69,69 0 0,1 100,169 Z" fill="#b8ccdf"/>
+  <!-- SW segment -->
+  <path d="M100,100 L51,149 A69,69 0 0,0 100,169 Z" fill="#d0e2f0"/>
+  <!-- WS segment -->
+  <path d="M100,100 L51,149 A69,69 0 0,1 31,100 Z" fill="#b8ccdf"/>
+  <!-- WN segment -->
+  <path d="M100,100 L51,51 A69,69 0 0,0 31,100 Z" fill="#d0e2f0"/>
+
+  <!-- Dividing lines between segments -->
+  <line x1="100" y1="31" x2="100" y2="169" stroke="#1e3a5f" stroke-width="1.5" opacity="0.4"/>
+  <line x1="31" y1="100" x2="169" y2="100" stroke="#1e3a5f" stroke-width="1.5" opacity="0.4"/>
+  <line x1="51" y1="51" x2="149" y2="149" stroke="#1e3a5f" stroke-width="1.5" opacity="0.4"/>
+  <line x1="149" y1="51" x2="51" y2="149" stroke="#1e3a5f" stroke-width="1.5" opacity="0.4"/>
+
+  <!-- Inner circle border -->
+  <circle cx="100" cy="100" r="73" fill="none" stroke="#1e3a5f" stroke-width="2" opacity="0.5"/>
+
+  <!-- Main 4 compass points (N/S/E/W) — tall dark navy diamonds -->
+  <!-- North point -->
+  <polygon points="100,5 107,85 100,95 93,85" fill="#1e3a5f"/>
+  <!-- South point -->
+  <polygon points="100,195 107,115 100,105 93,115" fill="#1e3a5f"/>
+  <!-- East point -->
+  <polygon points="195,100 115,107 105,100 115,93" fill="#1e3a5f"/>
+  <!-- West point -->
+  <polygon points="5,100 85,107 95,100 85,93" fill="#1e3a5f"/>
+
+  <!-- Diagonal 4 compass points (NE/NW/SE/SW) — shorter light blue diamonds -->
+  <!-- NE point -->
+  <polygon points="148,52 113,90 108,108 90,113" fill="#6b9dbf" stroke="#1e3a5f" stroke-width="1"/>
+  <!-- NW point -->
+  <polygon points="52,52 87,90 92,108 110,113" fill="#6b9dbf" stroke="#1e3a5f" stroke-width="1"/>
+  <!-- SE point -->
+  <polygon points="148,148 113,110 108,92 90,87" fill="#6b9dbf" stroke="#1e3a5f" stroke-width="1"/>
+  <!-- SW point -->
+  <polygon points="52,148 87,110 92,92 110,87" fill="#6b9dbf" stroke="#1e3a5f" stroke-width="1"/>
+
+  <!-- Center circle outer -->
+  <circle cx="100" cy="100" r="14" fill="#1e3a5f"/>
+  <!-- Center circle inner -->
+  <circle cx="100" cy="100" r="9" fill="#b8ccdf" stroke="#1e3a5f" stroke-width="2"/>
+  <!-- Center dot -->
+  <circle cx="100" cy="100" r="4" fill="#1e3a5f"/>
+</svg>
