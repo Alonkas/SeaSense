@@ -1,62 +1,103 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
-  <!-- Outer ring -->
-  <circle cx="100" cy="100" r="95" fill="none" stroke="#1e3a5f" stroke-width="7"/>
-  <!-- Inner ring -->
-  <circle cx="100" cy="100" r="78" fill="#b8ccdf" stroke="#1e3a5f" stroke-width="5"/>
-  <!-- Inner ring fill lighter -->
-  <circle cx="100" cy="100" r="73" fill="#d0e2f0"/>
+  <defs>
+    <!-- Gradient for outer disk (subtle sheen) -->
+    <radialGradient id="diskGrad" cx="42%" cy="38%" r="60%">
+      <stop offset="0%"   stop-color="#e2eef8"/>
+      <stop offset="100%" stop-color="#b8cedf"/>
+    </radialGradient>
+    <!-- Gradient for inner disk -->
+    <radialGradient id="innerGrad" cx="42%" cy="38%" r="60%">
+      <stop offset="0%"   stop-color="#e8f2fb"/>
+      <stop offset="100%" stop-color="#c4d9ec"/>
+    </radialGradient>
+    <!-- Mask: annular ring channel (between outer ring inner edge r≈86 and inner ring outer edge r≈78) -->
+    <mask id="channelMask">
+      <circle cx="100" cy="100" r="87" fill="white"/>
+      <circle cx="100" cy="100" r="77" fill="black"/>
+    </mask>
+    <!-- Mask: inner disk only -->
+    <mask id="innerMask">
+      <circle cx="100" cy="100" r="77" fill="white"/>
+    </mask>
+  </defs>
 
-  <!-- 8 compass point segments (light fill) -->
-  <!-- NW segment -->
-  <path d="M100,100 L51,51 A69,69 0 0,1 100,31 Z" fill="#b8ccdf"/>
-  <!-- NE segment -->
-  <path d="M100,100 L149,51 A69,69 0 0,0 100,31 Z" fill="#d0e2f0"/>
-  <!-- EN segment -->
-  <path d="M100,100 L149,51 A69,69 0 0,1 169,100 Z" fill="#b8ccdf"/>
-  <!-- ES segment -->
-  <path d="M100,100 L149,149 A69,69 0 0,0 169,100 Z" fill="#d0e2f0"/>
-  <!-- SE segment -->
-  <path d="M100,100 L149,149 A69,69 0 0,1 100,169 Z" fill="#b8ccdf"/>
-  <!-- SW segment -->
-  <path d="M100,100 L51,149 A69,69 0 0,0 100,169 Z" fill="#d0e2f0"/>
-  <!-- WS segment -->
-  <path d="M100,100 L51,149 A69,69 0 0,1 31,100 Z" fill="#b8ccdf"/>
-  <!-- WN segment -->
-  <path d="M100,100 L51,51 A69,69 0 0,0 31,100 Z" fill="#d0e2f0"/>
+  <!-- ── OUTER DISK BASE ── -->
+  <circle cx="100" cy="100" r="95" fill="url(#diskGrad)"/>
 
-  <!-- Dividing lines between segments -->
-  <line x1="100" y1="31" x2="100" y2="169" stroke="#1e3a5f" stroke-width="1.5" opacity="0.4"/>
-  <line x1="31" y1="100" x2="169" y2="100" stroke="#1e3a5f" stroke-width="1.5" opacity="0.4"/>
-  <line x1="51" y1="51" x2="149" y2="149" stroke="#1e3a5f" stroke-width="1.5" opacity="0.4"/>
-  <line x1="149" y1="51" x2="51" y2="149" stroke="#1e3a5f" stroke-width="1.5" opacity="0.4"/>
+  <!-- ── RING CHANNEL SEGMENTS (8 alternating) ── -->
+  <!-- Base darker fill for whole channel area -->
+  <circle cx="100" cy="100" r="87" fill="#afc6d8" mask="url(#channelMask)"/>
+  <g mask="url(#channelMask)">
+    <!-- 4 lighter wedges at cardinal positions (N/E/S/W), ±22.5° each -->
+    <!-- North wedge -->
+    <polygon points="100,100 -15,-177 215,-177"   fill="#cddde9"/>
+    <!-- East wedge -->
+    <polygon points="100,100 377,-15 377,215"     fill="#cddde9"/>
+    <!-- South wedge -->
+    <polygon points="100,100 215,377 -15,377"     fill="#cddde9"/>
+    <!-- West wedge -->
+    <polygon points="100,100 -177,215 -177,-15"   fill="#cddde9"/>
+  </g>
 
-  <!-- Inner circle border -->
-  <circle cx="100" cy="100" r="73" fill="none" stroke="#1e3a5f" stroke-width="2" opacity="0.5"/>
+  <!-- ── OUTER RING (thick dark navy) ── -->
+  <circle cx="100" cy="100" r="90" fill="none" stroke="#1a3560" stroke-width="9"/>
 
-  <!-- Main 4 compass points (N/S/E/W) — tall dark navy diamonds -->
-  <!-- North point -->
-  <polygon points="100,5 107,85 100,95 93,85" fill="#1e3a5f"/>
-  <!-- South point -->
-  <polygon points="100,195 107,115 100,105 93,115" fill="#1e3a5f"/>
-  <!-- East point -->
-  <polygon points="195,100 115,107 105,100 115,93" fill="#1e3a5f"/>
-  <!-- West point -->
-  <polygon points="5,100 85,107 95,100 85,93" fill="#1e3a5f"/>
+  <!-- ── INNER DISK ── -->
+  <circle cx="100" cy="100" r="76" fill="url(#innerGrad)"/>
 
-  <!-- Diagonal 4 compass points (NE/NW/SE/SW) — shorter light blue diamonds -->
-  <!-- NE point -->
-  <polygon points="148,52 113,90 108,108 90,113" fill="#6b9dbf" stroke="#1e3a5f" stroke-width="1"/>
-  <!-- NW point -->
-  <polygon points="52,52 87,90 92,108 110,113" fill="#6b9dbf" stroke="#1e3a5f" stroke-width="1"/>
-  <!-- SE point -->
-  <polygon points="148,148 113,110 108,92 90,87" fill="#6b9dbf" stroke="#1e3a5f" stroke-width="1"/>
-  <!-- SW point -->
-  <polygon points="52,148 87,110 92,92 110,87" fill="#6b9dbf" stroke="#1e3a5f" stroke-width="1"/>
+  <!-- Inner disk: faint 8-spoke radial lines (segment dividers) -->
+  <g mask="url(#innerMask)" stroke="#1a3560" stroke-width="0.7" opacity="0.14">
+    <line x1="100" y1="24" x2="100" y2="176"/>
+    <line x1="24"  y1="100" x2="176" y2="100"/>
+    <line x1="46.3" y1="46.3" x2="153.7" y2="153.7"/>
+    <line x1="153.7" y1="46.3" x2="46.3" y2="153.7"/>
+  </g>
 
-  <!-- Center circle outer -->
-  <circle cx="100" cy="100" r="14" fill="#1e3a5f"/>
-  <!-- Center circle inner -->
-  <circle cx="100" cy="100" r="9" fill="#b8ccdf" stroke="#1e3a5f" stroke-width="2"/>
+  <!-- Alternating inner disk segments (subtle) -->
+  <g mask="url(#innerMask)" opacity="0.10">
+    <!-- Slightly darker quarter-pie slices at intercardinal diagonals -->
+    <polygon points="100,100 153.7,46.3 100,24 46.3,46.3"  fill="#1a3560"/>
+    <polygon points="100,100 153.7,153.7 176,100 153.7,46.3" fill="#1a3560"/>
+    <polygon points="100,100 46.3,153.7 100,176 153.7,153.7" fill="#1a3560"/>
+    <polygon points="100,100 46.3,46.3 24,100 46.3,153.7"   fill="#1a3560"/>
+  </g>
+
+  <!-- ── INNER RING (thinner dark navy) ── -->
+  <circle cx="100" cy="100" r="76" fill="none" stroke="#1a3560" stroke-width="4.5"/>
+
+  <!-- ── INTERCARDINAL POINTS (NE/NW/SE/SW) — shorter, steel blue ── -->
+  <!-- Base shape points North, tip at y=24 (r=76, at inner ring), widest at y=65 (±7) -->
+  <g fill="#5d8fb5" stroke="#1a3560" stroke-width="0.8">
+    <polygon points="100,24 107,65 100,100 93,65" transform="rotate(45,100,100)"/>
+    <polygon points="100,24 107,65 100,100 93,65" transform="rotate(135,100,100)"/>
+    <polygon points="100,24 107,65 100,100 93,65" transform="rotate(225,100,100)"/>
+    <polygon points="100,24 107,65 100,100 93,65" transform="rotate(315,100,100)"/>
+  </g>
+
+  <!-- ── CARDINAL POINTS (N/S/E/W) — long, dark navy ── -->
+  <!-- Tip at y=5 (r=95, just past outer ring edge), widest at y=66 (±8.5), tapers to center -->
+  <g fill="#1a3560">
+    <!-- North -->
+    <polygon points="100,5 108.5,66 100,100 91.5,66"/>
+    <!-- South -->
+    <polygon points="100,5 108.5,66 100,100 91.5,66" transform="rotate(180,100,100)"/>
+    <!-- East -->
+    <polygon points="100,5 108.5,66 100,100 91.5,66" transform="rotate(90,100,100)"/>
+    <!-- West -->
+    <polygon points="100,5 108.5,66 100,100 91.5,66" transform="rotate(270,100,100)"/>
+  </g>
+
+  <!-- ── CENTER DECORATION ── -->
+  <!-- Outer dark navy ring -->
+  <circle cx="100" cy="100" r="13.5" fill="#1a3560"/>
+  <!-- Light blue fill -->
+  <circle cx="100" cy="100" r="10"   fill="#a8c4d8"/>
+  <!-- Inner ring border -->
+  <circle cx="100" cy="100" r="10"   fill="none" stroke="#1a3560" stroke-width="2"/>
+  <!-- Inner light circle -->
+  <circle cx="100" cy="100" r="6.5"  fill="#c4daea"/>
   <!-- Center dot -->
-  <circle cx="100" cy="100" r="4" fill="#1e3a5f"/>
+  <circle cx="100" cy="100" r="3.5"  fill="#1a3560"/>
+  <!-- Tiny highlight -->
+  <circle cx="100" cy="100" r="1.5"  fill="#7aaec8"/>
 </svg>
