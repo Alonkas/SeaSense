@@ -1,101 +1,78 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
   <!--
-    Compass rose — adapted to app's dark-navy palette.
-    Colors:
-      #1c3d68  dark navy  (dark halves, rings, labels)
-      #2f639e  mid blue   (light halves)
-    Layout:
-      Center: 100,100
-      Outer ring r=84  → top y=16
-      Inner ring r=64  → top y=36
-      Cardinal tips: y=4 (pierce 12px past outer ring)
-      Intercardinal tips: y=37 (just at inner ring)
-      Tick marks: r=66→r=80  (y=20→y=34)
+    Compass rose — app dark-navy palette.
+    #1c3d68 = dark navy   #2f639e = mid blue
+    Sized to display at 80px desktop / 54px mobile — labels legible at both.
+    viewBox 200x200; labels outside outer ring (r=78).
   -->
 
   <!-- ═══ OUTER RING ═══ -->
-  <circle cx="100" cy="100" r="84" fill="none" stroke="#1c3d68" stroke-width="2"/>
+  <circle cx="100" cy="100" r="78" fill="none" stroke="#1c3d68" stroke-width="2"/>
 
   <!-- ═══ INNER RING ═══ -->
-  <circle cx="100" cy="100" r="64" fill="none" stroke="#1c3d68" stroke-width="1.5"/>
+  <circle cx="100" cy="100" r="59" fill="none" stroke="#1c3d68" stroke-width="1.5"/>
 
-  <!-- ═══ 16 TICK MARKS between the two rings ═══ -->
-  <!-- 8 major ticks (at 0°/45°/90°… – aligned with star points) -->
+  <!-- ═══ 16 TICK MARKS between rings ═══ -->
   <g stroke="#1c3d68" stroke-width="1.5" stroke-linecap="round">
-    <line x1="100" y1="20" x2="100" y2="34"/>
-    <line x1="100" y1="20" x2="100" y2="34" transform="rotate(45,100,100)"/>
-    <line x1="100" y1="20" x2="100" y2="34" transform="rotate(90,100,100)"/>
-    <line x1="100" y1="20" x2="100" y2="34" transform="rotate(135,100,100)"/>
-    <line x1="100" y1="20" x2="100" y2="34" transform="rotate(180,100,100)"/>
-    <line x1="100" y1="20" x2="100" y2="34" transform="rotate(225,100,100)"/>
-    <line x1="100" y1="20" x2="100" y2="34" transform="rotate(270,100,100)"/>
-    <line x1="100" y1="20" x2="100" y2="34" transform="rotate(315,100,100)"/>
-    <!-- 8 minor ticks (at 22.5° offsets – shorter) -->
-    <line x1="100" y1="25" x2="100" y2="34" transform="rotate(22.5,100,100)"/>
-    <line x1="100" y1="25" x2="100" y2="34" transform="rotate(67.5,100,100)"/>
-    <line x1="100" y1="25" x2="100" y2="34" transform="rotate(112.5,100,100)"/>
-    <line x1="100" y1="25" x2="100" y2="34" transform="rotate(157.5,100,100)"/>
-    <line x1="100" y1="25" x2="100" y2="34" transform="rotate(202.5,100,100)"/>
-    <line x1="100" y1="25" x2="100" y2="34" transform="rotate(247.5,100,100)"/>
-    <line x1="100" y1="25" x2="100" y2="34" transform="rotate(292.5,100,100)"/>
-    <line x1="100" y1="25" x2="100" y2="34" transform="rotate(337.5,100,100)"/>
+    <!-- 8 major (every 45°) -->
+    <line x1="100" y1="25" x2="100" y2="41"/>
+    <line x1="100" y1="25" x2="100" y2="41" transform="rotate(45,100,100)"/>
+    <line x1="100" y1="25" x2="100" y2="41" transform="rotate(90,100,100)"/>
+    <line x1="100" y1="25" x2="100" y2="41" transform="rotate(135,100,100)"/>
+    <line x1="100" y1="25" x2="100" y2="41" transform="rotate(180,100,100)"/>
+    <line x1="100" y1="25" x2="100" y2="41" transform="rotate(225,100,100)"/>
+    <line x1="100" y1="25" x2="100" y2="41" transform="rotate(270,100,100)"/>
+    <line x1="100" y1="25" x2="100" y2="41" transform="rotate(315,100,100)"/>
+    <!-- 8 minor (every 22.5°) -->
+    <line x1="100" y1="29" x2="100" y2="41" transform="rotate(22.5,100,100)"/>
+    <line x1="100" y1="29" x2="100" y2="41" transform="rotate(67.5,100,100)"/>
+    <line x1="100" y1="29" x2="100" y2="41" transform="rotate(112.5,100,100)"/>
+    <line x1="100" y1="29" x2="100" y2="41" transform="rotate(157.5,100,100)"/>
+    <line x1="100" y1="29" x2="100" y2="41" transform="rotate(202.5,100,100)"/>
+    <line x1="100" y1="29" x2="100" y2="41" transform="rotate(247.5,100,100)"/>
+    <line x1="100" y1="29" x2="100" y2="41" transform="rotate(292.5,100,100)"/>
+    <line x1="100" y1="29" x2="100" y2="41" transform="rotate(337.5,100,100)"/>
   </g>
 
-  <!-- ═══ INTERCARDINAL POINTS (NE/SE/SW/NW) — shorter, drawn behind cardinals ═══ -->
-  <!--
-    Base shape (pointing N before rotation):
-      tip        = (100, 37)   r≈63, just at inner ring
-      shoulder-L = (93,  65)   widest point
-      shoulder-R = (107, 65)
-      base       = (100, 100)  center
-    Left half  → dark navy
-    Right half → mid blue
-    Centerline → hair-thin dark stroke for the fold
-  -->
+  <!-- ═══ INTERCARDINAL POINTS (NE/SE/SW/NW) — shorter, behind cardinals ═══ -->
+  <!-- Base shape tip=(100,42) r≈58 ~inner ring; shoulder ±7 at y=66; base=(100,100) -->
   <g>
-    <!-- NE -->
-    <polygon points="100,37 93,65 100,100"  fill="#1c3d68" transform="rotate(45,100,100)"/>
-    <polygon points="100,37 107,65 100,100" fill="#2f639e" transform="rotate(45,100,100)"/>
-    <line x1="100" y1="37" x2="100" y2="100" stroke="#1c3d68" stroke-width="0.6" transform="rotate(45,100,100)"/>
-    <!-- SE -->
-    <polygon points="100,37 93,65 100,100"  fill="#1c3d68" transform="rotate(135,100,100)"/>
-    <polygon points="100,37 107,65 100,100" fill="#2f639e" transform="rotate(135,100,100)"/>
-    <line x1="100" y1="37" x2="100" y2="100" stroke="#1c3d68" stroke-width="0.6" transform="rotate(135,100,100)"/>
-    <!-- SW -->
-    <polygon points="100,37 93,65 100,100"  fill="#1c3d68" transform="rotate(225,100,100)"/>
-    <polygon points="100,37 107,65 100,100" fill="#2f639e" transform="rotate(225,100,100)"/>
-    <line x1="100" y1="37" x2="100" y2="100" stroke="#1c3d68" stroke-width="0.6" transform="rotate(225,100,100)"/>
-    <!-- NW -->
-    <polygon points="100,37 93,65 100,100"  fill="#1c3d68" transform="rotate(315,100,100)"/>
-    <polygon points="100,37 107,65 100,100" fill="#2f639e" transform="rotate(315,100,100)"/>
-    <line x1="100" y1="37" x2="100" y2="100" stroke="#1c3d68" stroke-width="0.6" transform="rotate(315,100,100)"/>
+    <polygon points="100,42 93,66 100,100"  fill="#1c3d68" transform="rotate(45,100,100)"/>
+    <polygon points="100,42 107,66 100,100" fill="#2f639e" transform="rotate(45,100,100)"/>
+    <line x1="100" y1="42" x2="100" y2="100" stroke="#1c3d68" stroke-width="0.6" transform="rotate(45,100,100)"/>
+
+    <polygon points="100,42 93,66 100,100"  fill="#1c3d68" transform="rotate(135,100,100)"/>
+    <polygon points="100,42 107,66 100,100" fill="#2f639e" transform="rotate(135,100,100)"/>
+    <line x1="100" y1="42" x2="100" y2="100" stroke="#1c3d68" stroke-width="0.6" transform="rotate(135,100,100)"/>
+
+    <polygon points="100,42 93,66 100,100"  fill="#1c3d68" transform="rotate(225,100,100)"/>
+    <polygon points="100,42 107,66 100,100" fill="#2f639e" transform="rotate(225,100,100)"/>
+    <line x1="100" y1="42" x2="100" y2="100" stroke="#1c3d68" stroke-width="0.6" transform="rotate(225,100,100)"/>
+
+    <polygon points="100,42 93,66 100,100"  fill="#1c3d68" transform="rotate(315,100,100)"/>
+    <polygon points="100,42 107,66 100,100" fill="#2f639e" transform="rotate(315,100,100)"/>
+    <line x1="100" y1="42" x2="100" y2="100" stroke="#1c3d68" stroke-width="0.6" transform="rotate(315,100,100)"/>
   </g>
 
-  <!-- ═══ CARDINAL POINTS (N/S/E/W) — long, pierce outer ring, drawn on top ═══ -->
-  <!--
-    Base shape (pointing N):
-      tip        = (100,  4)   r≈96, 12px past outer ring
-      shoulder-L = (91,  52)   widest point
-      shoulder-R = (109, 52)
-      base       = (100, 100)  center
-  -->
+  <!-- ═══ CARDINAL POINTS (N/S/E/W) — long, pierce outer ring ═══ -->
+  <!-- tip=(100,12) pierces 10px past ring; shoulder ±9 at y=56; base=(100,100) -->
   <g>
     <!-- N -->
-    <polygon points="100,4 91,52 100,100"  fill="#1c3d68"/>
-    <polygon points="100,4 109,52 100,100" fill="#2f639e"/>
-    <line x1="100" y1="4" x2="100" y2="100" stroke="#1c3d68" stroke-width="0.7"/>
+    <polygon points="100,12 91,56 100,100"  fill="#1c3d68"/>
+    <polygon points="100,12 109,56 100,100" fill="#2f639e"/>
+    <line x1="100" y1="12" x2="100" y2="100" stroke="#1c3d68" stroke-width="0.7"/>
     <!-- S -->
-    <polygon points="100,4 91,52 100,100"  fill="#1c3d68" transform="rotate(180,100,100)"/>
-    <polygon points="100,4 109,52 100,100" fill="#2f639e" transform="rotate(180,100,100)"/>
-    <line x1="100" y1="4" x2="100" y2="100" stroke="#1c3d68" stroke-width="0.7" transform="rotate(180,100,100)"/>
+    <polygon points="100,12 91,56 100,100"  fill="#1c3d68" transform="rotate(180,100,100)"/>
+    <polygon points="100,12 109,56 100,100" fill="#2f639e" transform="rotate(180,100,100)"/>
+    <line x1="100" y1="12" x2="100" y2="100" stroke="#1c3d68" stroke-width="0.7" transform="rotate(180,100,100)"/>
     <!-- E -->
-    <polygon points="100,4 91,52 100,100"  fill="#1c3d68" transform="rotate(90,100,100)"/>
-    <polygon points="100,4 109,52 100,100" fill="#2f639e" transform="rotate(90,100,100)"/>
-    <line x1="100" y1="4" x2="100" y2="100" stroke="#1c3d68" stroke-width="0.7" transform="rotate(90,100,100)"/>
+    <polygon points="100,12 91,56 100,100"  fill="#1c3d68" transform="rotate(90,100,100)"/>
+    <polygon points="100,12 109,56 100,100" fill="#2f639e" transform="rotate(90,100,100)"/>
+    <line x1="100" y1="12" x2="100" y2="100" stroke="#1c3d68" stroke-width="0.7" transform="rotate(90,100,100)"/>
     <!-- W -->
-    <polygon points="100,4 91,52 100,100"  fill="#1c3d68" transform="rotate(270,100,100)"/>
-    <polygon points="100,4 109,52 100,100" fill="#2f639e" transform="rotate(270,100,100)"/>
-    <line x1="100" y1="4" x2="100" y2="100" stroke="#1c3d68" stroke-width="0.7" transform="rotate(270,100,100)"/>
+    <polygon points="100,12 91,56 100,100"  fill="#1c3d68" transform="rotate(270,100,100)"/>
+    <polygon points="100,12 109,56 100,100" fill="#2f639e" transform="rotate(270,100,100)"/>
+    <line x1="100" y1="12" x2="100" y2="100" stroke="#1c3d68" stroke-width="0.7" transform="rotate(270,100,100)"/>
   </g>
 
   <!-- ═══ CENTER HUB ═══ -->
@@ -105,12 +82,14 @@
   <circle cx="100" cy="100" r="2.5" fill="#8ab8d8"/>
 
   <!-- ═══ N / S / E / W LABELS ═══ -->
-  <text x="100" y="10"  text-anchor="middle" dominant-baseline="middle"
-        font-family="Georgia,serif" font-size="13" font-weight="bold" fill="#1c3d68">N</text>
-  <text x="100" y="195" text-anchor="middle" dominant-baseline="middle"
-        font-family="Georgia,serif" font-size="13" font-weight="bold" fill="#1c3d68">S</text>
-  <text x="194" y="101" text-anchor="middle" dominant-baseline="middle"
-        font-family="Georgia,serif" font-size="13" font-weight="bold" fill="#1c3d68">E</text>
-  <text x="6"   y="101" text-anchor="middle" dominant-baseline="middle"
-        font-family="Georgia,serif" font-size="13" font-weight="bold" fill="#1c3d68">W</text>
+  <!-- Outer ring top/bottom at y=22/178, left/right at x=22/178 -->
+  <!-- Labels sit just outside: N above, S below, E right, W left -->
+  <text x="100" y="13"  text-anchor="middle" dominant-baseline="middle"
+        font-family="Georgia,serif" font-size="18" font-weight="bold" fill="#1c3d68">N</text>
+  <text x="100" y="190" text-anchor="middle" dominant-baseline="middle"
+        font-family="Georgia,serif" font-size="18" font-weight="bold" fill="#1c3d68">S</text>
+  <text x="190" y="101" text-anchor="middle" dominant-baseline="middle"
+        font-family="Georgia,serif" font-size="18" font-weight="bold" fill="#1c3d68">E</text>
+  <text x="10"  y="101" text-anchor="middle" dominant-baseline="middle"
+        font-family="Georgia,serif" font-size="18" font-weight="bold" fill="#1c3d68">W</text>
 </svg>
