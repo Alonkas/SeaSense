@@ -251,6 +251,26 @@
       .sun-table th, .sun-table td { padding: 8px 6px 8px 0; font-size: 0.78rem; }
     }
 
+    /* ── Toast ── */
+    #toast {
+      position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%) translateY(16px);
+      background: #1e3a5f; border: 1px solid var(--accent); color: #93c5fd;
+      padding: 9px 22px; border-radius: 8px; font-size: 0.84rem; font-weight: 600;
+      opacity: 0; pointer-events: none; transition: opacity 0.25s, transform 0.25s;
+      z-index: 500; white-space: nowrap;
+    }
+    #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* ── Wind trend in day pill ── */
+    .dp-trend { font-size: 0.82rem; font-weight: 700; margin-left: 3px; }
+    .dp-trend.up   { color: #f87171; }
+    .dp-trend.down { color: #34d399; }
+    .dp-trend.flat { color: var(--muted); }
+
+    /* ── Refresh timer ── */
+    .refresh-timer { font-size: 0.72rem; color: var(--dim); display: flex; align-items: center; gap: 4px; cursor: pointer; }
+    .refresh-timer:hover { color: var(--muted); }
+
     /* ── Status bar ── */
     .status-bar { padding: 11px 16px; border-radius: 8px; margin-bottom: 18px; font-size: 0.84rem; display: flex; align-items: center; gap: 8px; }
     .status-bar.error   { background: rgba(239,68,68,0.1);  border: 1px solid rgba(239,68,68,0.3);  color: #fca5a5; }
@@ -422,7 +442,9 @@
   </select>
   <button class="btn" id="fetchBtn" onclick="fetchForecast()">Get Forecast</button>
   <button class="btn" id="sunBtn" onclick="openSunModal()" style="background:var(--elevated);border:1px solid var(--border);color:var(--text)">☀️ Sun &amp; UV</button>
+  <button class="btn" id="shareBtn" onclick="copyShareURL()" style="background:var(--elevated);border:1px solid var(--border);color:var(--text)">🔗 Share</button>
 </div>
+<div id="toast"></div>
 
 <!-- Sun & UV Modal -->
 <div class="modal-overlay" id="sunModal" onclick="closeSunModalOutside(event)">
@@ -887,7 +909,7 @@
       <div class="meta-row">
         <span>Last updated: ${new Date().toLocaleTimeString('en-IL', { timeZone: 'Asia/Jerusalem' })} IDT</span>
         <span>${dayOrder.length} days</span>
-        <span>06:00 – 18:00 only</span>
+        <span class="refresh-timer" id="refreshTimer" onclick="fetchForecast()" title="Click to refresh now">⟳ —</span>
       </div>
 
 
@@ -914,6 +936,15 @@
         : rainMax < 75 ? '#3b82f6'
         : '#a78bfa';
 
+      // Wind trend: compare avg of first half vs second half
+      const windSlots = rows.map(r => r.windKt);
+      const half = Math.ceil(windSlots.length / 2);
+      const avg1 = windSlots.slice(0, half).reduce((a, b) => a + b, 0) / half;
+      const avg2 = windSlots.slice(half).reduce((a, b) => a + b, 0) / (windSlots.length - half || 1);
+      const diff  = avg2 - avg1;
+      const trendArrow = diff > 2 ? '↗' : diff < -2 ? '↘' : '→';
+      const trendClass = diff > 2 ? 'up' : diff < -2 ? 'down' : 'flat';
+
       html += `<a class="day-pill" href="#day-${dk.replace(/\W/g,'_')}">
         <div class="dp-weekday">${wd}</div>
         <div class="dp-date">${rest.join(' ')}</div>
@@ -922,6 +953,7 @@
             <span class="dp-stat-icon">💨</span>
             <span class="dp-stat-val" style="color:${windColor(windMax)}">${wMin}–${wMax}</span>
             <span class="dp-stat-unit">${windUnitLabel()}</span>
+            <span class="dp-trend ${trendClass}">${trendArrow}</span>
           </div>
           <div class="dp-stat-row">
             <span class="dp-stat-icon">🌊</span>
@@ -1036,7 +1068,100 @@
     document.getElementById('output').innerHTML = html;
   }
 
-  fetchForecast();
+  // ── Shareable URL ───────────────────────────────────────────
+  function buildShareURL() {
+    const p = new URLSearchParams();
+    const sel = document.getElementById('locationSelect').value;
+    p.set('loc', sel);
+    if (sel === 'custom') {
+      p.set('lat', document.getElementById('customLat').value);
+      p.set('lon', document.getElementById('customLon').value);
+    }
+    p.set('model', document.getElementById('modelSelect').value);
+    p.set('unit',  document.getElementById('windUnitSelect').value);
+    p.set('thcw',  document.getElementById('thCautWind').value);
+    p.set('thcwv', document.getElementById('thCautWave').value);
+    p.set('thdw',  document.getElementById('thDangerWind').value);
+    p.set('thdwv', document.getElementById('thDangerWave').value);
+    return `${location.origin}${location.pathname}?${p.toString()}`;
+  }
+
+  async function copyShareURL() {
+    try {
+      await navigator.clipboard.writeText(buildShareURL());
+      showToast('🔗 Link copied to clipboard!');
+    } catch(e) {
+      // Fallback for non-HTTPS / older browsers
+      const inp = document.createElement('input');
+      inp.value = buildShareURL();
+      document.body.appendChild(inp);
+      inp.select(); document.execCommand('copy');
+      document.body.removeChild(inp);
+      showToast('🔗 Link copied!');
+    }
+  }
+
+  function applyURLParams() {
+    const p = new URLSearchParams(location.search);
+    if (!p.toString()) return; // nothing in URL
+    if (p.has('loc')) {
+      const locEl = document.getElementById('locationSelect');
+      locEl.value = p.get('loc');
+      onLocationChange();
+    }
+    if (p.has('lat')) document.getElementById('customLat').value = p.get('lat');
+    if (p.has('lon')) document.getElementById('customLon').value = p.get('lon');
+    if (p.has('model')) document.getElementById('modelSelect').value = p.get('model');
+    if (p.has('unit')) {
+      document.getElementById('windUnitSelect').value = p.get('unit');
+      localStorage.setItem('windUnit', p.get('unit'));
+      document.querySelectorAll('.wind-unit-lbl').forEach(el => el.textContent = windUnitLabel());
+    }
+    const thMap = { thcw: 'thCautWind', thcwv: 'thCautWave', thdw: 'thDangerWind', thdwv: 'thDangerWave' };
+    Object.entries(thMap).forEach(([key, id]) => {
+      if (p.has(key)) document.getElementById(id).value = p.get(key);
+    });
+  }
+
+  // ── Toast ────────────────────────────────────────────────────
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(t._timer);
+    t._timer = setTimeout(() => t.classList.remove('show'), 2200);
+  }
+
+  // ── Auto-refresh (15 min) ────────────────────────────────────
+  const AUTO_REFRESH_SEC = 15 * 60;
+  let _refreshSecsLeft = AUTO_REFRESH_SEC;
+  let _refreshInterval = null;
+
+  function startAutoRefresh() {
+    clearInterval(_refreshInterval);
+    _refreshSecsLeft = AUTO_REFRESH_SEC;
+    _refreshInterval = setInterval(() => {
+      _refreshSecsLeft--;
+      updateRefreshTimer();
+      if (_refreshSecsLeft <= 0) {
+        _refreshSecsLeft = AUTO_REFRESH_SEC;
+        fetchForecast();
+      }
+    }, 1000);
+    updateRefreshTimer();
+  }
+
+  function updateRefreshTimer() {
+    const el = document.getElementById('refreshTimer');
+    if (!el) return;
+    const m = Math.floor(_refreshSecsLeft / 60);
+    const s = _refreshSecsLeft % 60;
+    el.textContent = `⟳ ${m}:${String(s).padStart(2,'0')}`;
+  }
+
+  // ── Init ─────────────────────────────────────────────────────
+  applyURLParams();
+  fetchForecast().then(() => startAutoRefresh());
 </script>
 </body>
 </html>
