@@ -120,7 +120,7 @@
     .sb-model-name { font-size: 0.72rem; font-weight: 700; color: var(--accent); }
     .sb-model-desc { font-size: 0.68rem; color: var(--muted); line-height: 1.45; }
 
-    /* ── Drawer button (mobile only) ── */
+    /* ── Drawer button (mobile only, lives in ctrl-bar) ── */
     .drawer-btn { display: none; }
 
     /* ── Overlay (mobile only) ── */
@@ -148,18 +148,17 @@
       .custom-coords:not(.visible) { display: none !important; }
       .custom-coords.visible { flex-direction: column; }
       .custom-coords input  { font-size: 0.78rem; padding: 5px 6px; width: 100px; }
-      .drawer-btn { align-self: center; flex-shrink: 0; }
 
       /* Settings bar */
       .ctrl-bar { flex-wrap: wrap; gap: 8px; padding: 8px 14px; }
       .ctrl-bar select, .ctrl-bar input { font-size: 0.8rem; }
       .bar-sep { display: none; }
 
-      /* Drawer button */
+      /* Drawer button — shown in ctrl-bar on mobile */
       .drawer-btn {
         display: flex; align-items: center; justify-content: center; gap: 5px;
-        height: 34px; padding: 0 12px; border-radius: 8px; border: 1px solid var(--border);
-        background: var(--elevated); color: var(--text); font-size: 0.8rem; font-weight: 600;
+        height: 34px; padding: 0 14px; border-radius: 8px; border: 1px solid var(--border);
+        background: var(--elevated); color: var(--text); font-size: 0.82rem; font-weight: 600;
         cursor: pointer; flex-shrink: 0; white-space: nowrap;
       }
 
@@ -452,13 +451,13 @@
         <label>Lon:</label>
         <input type="number" id="customLon" step="0.01" min="-180" max="180" placeholder="34.87" />
       </div>
-      <button class="drawer-btn" onclick="toggleDrawer()" aria-label="Settings">⚙️ Settings</button>
     </div>
   </div>
 </header>
 
 <!-- Settings bar -->
 <div class="ctrl-bar">
+  <button class="drawer-btn" onclick="toggleDrawer()" aria-label="Settings">⚙️ Settings</button>
   <label class="model-label">Wind Model:</label>
   <select id="modelSelect">
     <option value="iconEu">ICON EU — Europe / Mediterranean</option>
