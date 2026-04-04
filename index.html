@@ -120,8 +120,10 @@
     .sb-model-name { font-size: 0.72rem; font-weight: 700; color: var(--accent); }
     .sb-model-desc { font-size: 0.68rem; color: var(--muted); line-height: 1.45; }
 
-    /* ── Drawer button (mobile only, lives in ctrl-bar) ── */
+    /* ── Drawer button (legacy, hidden) ── */
     .drawer-btn { display: none; }
+    /* ── Mobile-only elements ── */
+    .mobile-only { display: none; }
 
     /* ── Overlay (mobile only) ── */
     .sidebar-overlay { display: none; }
@@ -154,13 +156,7 @@
       .ctrl-bar select, .ctrl-bar input { font-size: 0.8rem; }
       .bar-sep { display: none; }
 
-      /* Drawer button — shown in ctrl-bar on mobile */
-      .drawer-btn {
-        display: flex; align-items: center; justify-content: center; gap: 5px;
-        height: 34px; padding: 0 14px; border-radius: 8px; border: 1px solid var(--border);
-        background: var(--elevated); color: var(--text); font-size: 0.82rem; font-weight: 600;
-        cursor: pointer; flex-shrink: 0; white-space: nowrap;
-      }
+      .mobile-only { display: flex; }
 
       /* Sidebar — hidden off-screen, slides in */
       .sidebar {
@@ -457,7 +453,6 @@
 
 <!-- Settings bar -->
 <div class="ctrl-bar">
-  <button class="drawer-btn" onclick="toggleDrawer()" aria-label="Settings">⚙️ Settings</button>
   <label class="model-label">Wind Model:</label>
   <select id="modelSelect">
     <option value="iconEu">ICON EU — Europe / Mediterranean</option>
@@ -475,6 +470,7 @@
   <button class="btn" id="shareBtn" onclick="copyShareURL()" style="background:var(--elevated);border:1px solid var(--border);color:var(--text)">🔗 Share</button>
   <button class="btn" id="a2hsBtn" onclick="openA2HS()" style="background:var(--elevated);border:1px solid var(--border);color:var(--text)">📱 Add to Phone</button>
   <button class="btn" onclick="openAbout()" style="background:var(--elevated);border:1px solid var(--border);color:var(--text)">ℹ️ About</button>
+  <button class="btn mobile-only" onclick="toggleDrawer()" style="background:var(--elevated);border:1px solid var(--border);color:var(--text)">⚙️ Settings</button>
 </div>
 <div id="toast"></div>
 
