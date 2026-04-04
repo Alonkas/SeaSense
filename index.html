@@ -124,6 +124,9 @@
     .drawer-btn { display: none; }
     /* ── Mobile-only elements ── */
     .mobile-only { display: none; }
+    /* ── Secondary buttons row ── */
+    .sec-btns { display: contents; } /* flat on desktop — buttons stay in ctrl-bar flow */
+    .sec-btns .btn { background: var(--elevated); border: 1px solid var(--border); color: var(--text); }
 
     /* ── Overlay (mobile only) ── */
     .sidebar-overlay { display: none; }
@@ -157,6 +160,21 @@
       .bar-sep { display: none; }
 
       .mobile-only { display: flex; }
+      /* 4-button row: full width, equal columns, one line */
+      .sec-btns {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 6px;
+        width: 100%;
+      }
+      .sec-btns .btn {
+        font-size: 0.72rem;
+        padding: 7px 2px;
+        text-align: center;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
 
       /* Sidebar — hidden off-screen, slides in */
       .sidebar {
@@ -466,10 +484,12 @@
     <option value="kmh">km/h</option>
   </select>
   <button class="btn" id="fetchBtn" onclick="fetchForecast()">Get Forecast</button>
-  <button class="btn" id="sunBtn" onclick="openSunModal()" style="background:var(--elevated);border:1px solid var(--border);color:var(--text)">☀️ Sun &amp; UV</button>
-  <button class="btn" id="shareBtn" onclick="copyShareURL()" style="background:var(--elevated);border:1px solid var(--border);color:var(--text)">🔗 Share</button>
-  <button class="btn" id="a2hsBtn" onclick="openA2HS()" style="background:var(--elevated);border:1px solid var(--border);color:var(--text)">📱 Add to Phone</button>
-  <button class="btn mobile-only" onclick="toggleDrawer()" style="background:var(--elevated);border:1px solid var(--border);color:var(--text)">⚙️ Settings</button>
+  <div class="sec-btns">
+    <button class="btn" id="sunBtn" onclick="openSunModal()">☀️ Sun &amp; UV</button>
+    <button class="btn" id="shareBtn" onclick="copyShareURL()">🔗 Share</button>
+    <button class="btn" id="a2hsBtn" onclick="openA2HS()">📱 Add to Phone</button>
+    <button class="btn mobile-only" onclick="toggleDrawer()">⚙️ Settings</button>
+  </div>
 </div>
 <div id="toast"></div>
 
