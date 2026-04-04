@@ -478,6 +478,12 @@
     <option value="gfs">GFS — Global</option>
   </select>
   <div class="bar-sep"></div>
+  <label class="model-label">Layout:</label>
+  <select id="layoutSelect" onchange="onLayoutChange()">
+    <option value="hourly">Hourly</option>
+    <option value="daily">Daily</option>
+  </select>
+  <div class="bar-sep"></div>
   <label class="model-label">Wind Units:</label>
   <select id="windUnitSelect" onchange="onUnitChange()">
     <option value="kn">Knots (kn)</option>
@@ -1004,6 +1010,24 @@
     document.querySelectorAll('.wind-unit-lbl').forEach(el => el.textContent = windUnitLabel());
   }
 
+  function onLayoutChange() {
+    const layout = document.getElementById('layoutSelect').value;
+    localStorage.setItem('ssLayout', layout);
+    applyLayout(layout);
+  }
+
+  function applyLayout(layout) {
+    const daySections = document.querySelectorAll('.day-section');
+    const dayNav      = document.querySelector('.day-nav');
+    if (layout === 'daily') {
+      daySections.forEach(el => el.style.display = 'none');
+      if (dayNav) dayNav.style.display = 'flex';
+    } else {
+      daySections.forEach(el => el.style.display = '');
+      if (dayNav) dayNav.style.display = '';
+    }
+  }
+
   function windDeg(u, v) {
     return (Math.atan2(-u, -v) * 180 / Math.PI + 360) % 360;
   }
@@ -1248,6 +1272,7 @@
     });
 
     document.getElementById('output').innerHTML = html;
+    applyLayout(document.getElementById('layoutSelect').value);
   }
 
   // ── Shareable URL ───────────────────────────────────────────
@@ -1343,7 +1368,10 @@
 
   // ── Init ─────────────────────────────────────────────────────
   applyURLParams();
-  fetchForecast().then(() => startAutoRefresh());
+  // Restore saved layout
+  const savedLayout = localStorage.getItem('ssLayout') || 'hourly';
+  document.getElementById('layoutSelect').value = savedLayout;
+  fetchForecast().then(() => { applyLayout(savedLayout); startAutoRefresh(); });
 </script>
 
 <footer class="app-footer">
