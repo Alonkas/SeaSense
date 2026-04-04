@@ -469,7 +469,6 @@
   <button class="btn" id="sunBtn" onclick="openSunModal()" style="background:var(--elevated);border:1px solid var(--border);color:var(--text)">☀️ Sun &amp; UV</button>
   <button class="btn" id="shareBtn" onclick="copyShareURL()" style="background:var(--elevated);border:1px solid var(--border);color:var(--text)">🔗 Share</button>
   <button class="btn" id="a2hsBtn" onclick="openA2HS()" style="background:var(--elevated);border:1px solid var(--border);color:var(--text)">📱 Add to Phone</button>
-  <button class="btn" onclick="openAbout()" style="background:var(--elevated);border:1px solid var(--border);color:var(--text)">ℹ️ About</button>
   <button class="btn mobile-only" onclick="toggleDrawer()" style="background:var(--elevated);border:1px solid var(--border);color:var(--text)">⚙️ Settings</button>
 </div>
 <div id="toast"></div>
@@ -1333,6 +1332,8 @@
   <span>Made with ❤️ by <strong style="color:var(--muted)">Alon Kassir</strong></span>
   <span style="color:var(--border)">·</span>
   <span>Data: <a href="https://open-meteo.com" target="_blank">Open-Meteo</a></span>
+  <span style="color:var(--border)">·</span>
+  <button onclick="openAbout()" style="background:none;border:none;color:var(--dim);font-size:0.72rem;cursor:pointer;padding:0;text-decoration:underline;text-underline-offset:3px">ℹ️ About</button>
 </footer>
 </body>
 </html>
