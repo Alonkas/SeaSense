@@ -428,6 +428,34 @@
     /* ── Meta row ── */
     .meta-row { font-size: 0.73rem; color: var(--dim); margin-bottom: 18px; display: flex; gap: 16px; }
 
+    /* ── Column Layout ── */
+    .col-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: 8px; border: 1px solid var(--border); }
+    .col-table { width: 100%; border-collapse: collapse; font-size: 0.84rem; min-width: 600px; }
+    .col-table thead tr { background: var(--elevated); }
+    .col-table th {
+      text-align: left; font-size: 0.67rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.09em; color: var(--dim);
+      padding: 9px 14px 9px 10px; border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+    .col-table td {
+      padding: 9px 14px 9px 10px;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      vertical-align: middle; white-space: nowrap;
+    }
+    .col-table tbody tr:last-child td { border-bottom: none; }
+    .col-table tbody tr:hover td { background: rgba(255,255,255,0.025); }
+    .col-time { font-size: 0.9rem; font-weight: 700; color: var(--text); }
+    .col-dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+    .col-dot.go      { background: #10b981; box-shadow: 0 0 5px rgba(16,185,129,0.5); }
+    .col-dot.caution { background: #f59e0b; box-shadow: 0 0 5px rgba(245,158,11,0.5); }
+    .col-dot.danger  { background: #ef4444; box-shadow: 0 0 5px rgba(239,68,68,0.5); }
+    .col-val  { font-weight: 700; }
+    .col-sub  { font-size: 0.75rem; color: var(--muted); margin-left: 2px; }
+    .col-dir  { font-size: 0.8rem; color: var(--muted); }
+    .col-temp { font-size: 0.84rem; font-weight: 600; }
+    .col-rain { font-size: 0.84rem; font-weight: 600; }
+
     /* ── Footer ── */
     .app-footer {
       text-align: center; padding: 18px 16px;
@@ -491,6 +519,7 @@
   <label class="model-label">Layout:</label>
   <select id="layoutSelect" onchange="onLayoutChange()">
     <option value="hourly-box">Hourly Box</option>
+    <option value="column">Column Layout</option>
   </select>
   <div class="bar-sep"></div>
   <label class="model-label">Wind Units:</label>
@@ -634,6 +663,9 @@
 <script>
   const OM_WIND_URL   = 'https://api.open-meteo.com/v1/forecast';
   const OM_MARINE_URL = 'https://marine-api.open-meteo.com/v1/marine';
+
+  let _lastWindData  = null;
+  let _lastWaveLookup = null;
 
   const LOCATIONS = {
     michmoret: { name: 'Michmoret',             lat: 32.40, lon: 34.87, sea: 'Mediterranean Sea' },
@@ -985,6 +1017,8 @@
       ]);
 
       setStatus('', '');
+      _lastWindData   = windData;
+      _lastWaveLookup = waveLookup;
       renderForecast(windData, waveLookup);
     } catch (e) {
       setStatus('Error: ' + e.message, 'error');
@@ -1022,12 +1056,10 @@
   function onLayoutChange() {
     const layout = document.getElementById('layoutSelect').value;
     localStorage.setItem('ssLayout', layout);
-    applyLayout(layout);
+    if (_lastWindData && _lastWaveLookup) renderForecast(_lastWindData, _lastWaveLookup);
   }
 
-  function applyLayout(layout) {
-    // Additional layout modes will be handled here
-  }
+  function applyLayout(layout) { /* rendering handled in renderForecast */ }
 
   function windDeg(u, v) {
     return (Math.atan2(-u, -v) * 180 / Math.PI + 360) % 360;
@@ -1179,99 +1211,170 @@
 
     html += `</div>`;
 
-    dayOrder.forEach(dk => {
-      const { rows } = days[dk];
-      const goCnt   = rows.filter(r => r.st === 'go').length;
-      const cautCnt = rows.filter(r => r.st === 'caution').length;
-      const dangerCnt = rows.filter(r => r.st === 'danger').length;
-      const id = 'day-' + dk.replace(/\W/g,'_');
+    const currentLayout = document.getElementById('layoutSelect').value;
 
-      html += `<div class="day-section" id="${id}">
-        <div class="day-header">
-          <div class="day-title">${dk}</div>
-          <div class="day-badges">
-            ${goCnt   > 0 ? `<span class="dbadge go">${goCnt} GO</span>` : ''}
-            ${cautCnt > 0 ? `<span class="dbadge caution">${cautCnt} CAUTION</span>` : ''}
-            ${dangerCnt > 0 ? `<span class="dbadge danger">${dangerCnt} DANGER</span>` : ''}
-          </div>
-        </div>
-        <div class="cards">`;
+    if (currentLayout === 'column') {
+      // ── Column (table) layout ────────────────────────────────
+      dayOrder.forEach(dk => {
+        const { rows } = days[dk];
+        const goCnt    = rows.filter(r => r.st === 'go').length;
+        const cautCnt  = rows.filter(r => r.st === 'caution').length;
+        const dangerCnt = rows.filter(r => r.st === 'danger').length;
+        const id = 'day-' + dk.replace(/\W/g,'_');
 
-      rows.forEach(r => {
-        const time  = r.d.toLocaleTimeString('en-IL', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jerusalem' });
-        const wc    = windColor(r.windKt);
-        const gc    = windColor(r.gustKt);
-        const whC   = waveColor(r.wh);
-        const sw1C  = waveColor(r.sw1);
-        const sw2C  = waveColor(r.sw2);
-        const rc       = rainColor(r.rainMm);
-        const fmtW     = m => m != null ? `${m.toFixed(2)}<sup>m</sup>` : '—';
-        const rainMmStr  = r.rainMm < 0.05 ? '' : `${r.rainMm.toFixed(1)} mm`;
-        const rainPctStr = r.rainPct != null ? `${r.rainPct}%` : '—';
-        const rainPctColor = r.rainPct == null ? 'var(--dim)'
-          : r.rainPct < 20 ? 'var(--dim)'
-          : r.rainPct < 50 ? '#93c5fd'
-          : r.rainPct < 75 ? '#3b82f6'
-          : '#a78bfa';
-        const airTempStr   = r.airTempC   != null ? `${Math.round(r.airTempC)}°C`   : '—';
-        const waterTempStr = r.waterTempC != null ? `${Math.round(r.waterTempC)}°C` : '—';
-        const airTempColor = r.airTempC == null ? 'var(--dim)'
-          : r.airTempC < 15 ? '#93c5fd'
-          : r.airTempC < 25 ? '#34d399'
-          : '#fb923c';
-        const waterTempColor = r.waterTempC == null ? 'var(--dim)'
-          : r.waterTempC < 18 ? '#93c5fd'
-          : r.waterTempC < 24 ? '#34d399'
-          : '#fb923c';
-
-        html += `
-        <div class="fc">
-          <div class="fc-top ${r.st}"></div>
-          <div class="fc-body">
-            <div class="fc-head">
-              <span class="fc-time">${time}</span>
-              <span class="fc-status ${r.st}">${STATUS_ICONS[r.st]}</span>
-            </div>
-
-            <div class="fc-section-label wind">Wind</div>
-            <div class="fc-section">
-              <div class="fc-section-left">
-                <div class="fc-wind-speed" style="color:${wc}">${windDisp(r.windKt).toFixed(1)}<sup>${windUnitLabel()}</sup></div>
-                <div class="fc-wind-sub">${dirLabel(r.deg)} ${Math.round(r.deg)}°</div>
-                <div class="fc-wind-sub">Gusts <span class="fc-gust-val" style="color:${gc}">${windDisp(r.gustKt).toFixed(1)} ${windUnitLabel()}</span></div>
-              </div>
-              ${bigDirArrow(r.deg, wc)}
-            </div>
-
-            <div class="fc-hr"></div>
-
-            <div class="fc-section-label waves">Waves</div>
-            <div class="fc-section">
-              <div class="fc-section-left">
-                <div class="fc-wave-val" style="color:${whC}">${fmtW(r.wh)}</div>
-                ${r.whd != null ? `<div class="fc-wind-sub">${dirLabel(r.whd)} ${Math.round(r.whd)}°</div>` : ''}
-              </div>
-              ${bigDirArrow(r.whd, whC)}
-            </div>
-            ${(r.sw1 != null || r.sw2 != null) ? `<div class="fc-swell-row">
-              <div class="fc-swell"><span class="fc-swell-lbl">S1</span><span style="color:${sw1C}">${r.sw1 != null ? r.sw1.toFixed(2)+'m' : '—'}</span>${r.sw1d != null ? ` <span class="dir-arrow" style="color:var(--muted)">${dirArrow(r.sw1d)}</span><span style="color:var(--muted);font-size:0.7rem">${dirLabel(r.sw1d)}</span>` : ''}</div>
-              <div class="fc-swell"><span class="fc-swell-lbl">S2</span><span style="color:${sw2C}">${r.sw2 != null ? r.sw2.toFixed(2)+'m' : '—'}</span>${r.sw2d != null ? ` <span class="dir-arrow" style="color:var(--muted)">${dirArrow(r.sw2d)}</span><span style="color:var(--muted);font-size:0.7rem">${dirLabel(r.sw2d)}</span>` : ''}</div>
-            </div>` : ''}
-
-            <div class="fc-hr"></div>
-
-            <div class="fc-temp-row">
-              <div class="fc-temp-item"><span style="color:var(--dim)">🌡</span><span style="color:${airTempColor}">${airTempStr}</span><span style="color:var(--dim);margin-left:4px;font-size:0.7rem">💧</span><span style="color:${waterTempColor};font-size:0.7rem">${waterTempStr}</span></div>
-              <div class="fc-temp-item" style="gap:2px">
-                <span style="color:var(--dim)">🌧</span><span style="color:${rainPctColor};font-weight:700">${rainPctStr}</span>${rainMmStr ? `<span style="color:var(--dim);font-size:0.72rem;margin-left:3px">${rainMmStr}</span>` : ''}
-              </div>
+        html += `<div class="day-section" id="${id}">
+          <div class="day-header">
+            <div class="day-title">${dk}</div>
+            <div class="day-badges">
+              ${goCnt    > 0 ? `<span class="dbadge go">${goCnt} GO</span>` : ''}
+              ${cautCnt  > 0 ? `<span class="dbadge caution">${cautCnt} CAUTION</span>` : ''}
+              ${dangerCnt > 0 ? `<span class="dbadge danger">${dangerCnt} DANGER</span>` : ''}
             </div>
           </div>
-        </div>`;
+          <div class="col-table-wrap">
+            <table class="col-table">
+              <thead><tr>
+                <th>Time</th>
+                <th></th>
+                <th>💨 Wind</th>
+                <th>Direction</th>
+                <th>Gusts</th>
+                <th>🌊 Waves</th>
+                <th>Wave Dir</th>
+                <th>🌡 Air</th>
+                <th>💧 Sea</th>
+                <th>🌧 Rain</th>
+              </tr></thead>
+              <tbody>`;
+
+        rows.forEach(r => {
+          const time = r.d.toLocaleTimeString('en-IL', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jerusalem' });
+          const wc  = windColor(r.windKt);
+          const gc  = windColor(r.gustKt);
+          const whC = waveColor(r.wh);
+          const airTempStr   = r.airTempC   != null ? `${Math.round(r.airTempC)}°C`   : '—';
+          const waterTempStr = r.waterTempC != null ? `${Math.round(r.waterTempC)}°C` : '—';
+          const airTempColor   = r.airTempC   == null ? 'var(--dim)' : r.airTempC   < 15 ? '#93c5fd' : r.airTempC   < 25 ? '#34d399' : '#fb923c';
+          const waterTempColor = r.waterTempC == null ? 'var(--dim)' : r.waterTempC < 18 ? '#93c5fd' : r.waterTempC < 24 ? '#34d399' : '#fb923c';
+          const rainPctStr   = r.rainPct != null ? `${r.rainPct}%` : '—';
+          const rainMmStr    = r.rainMm >= 0.05 ? ` <span class="col-sub">${r.rainMm.toFixed(1)} mm</span>` : '';
+          const rainPctColor = r.rainPct == null ? 'var(--dim)' : r.rainPct < 20 ? 'var(--dim)' : r.rainPct < 50 ? '#93c5fd' : r.rainPct < 75 ? '#3b82f6' : '#a78bfa';
+          const waveStr  = r.wh  != null ? `${r.wh.toFixed(2)} m`  : '—';
+          const windDir  = `${dirArrow(r.deg)} ${dirLabel(r.deg)} ${Math.round(r.deg)}°`;
+          const waveDir  = r.whd != null ? `${dirArrow(r.whd)} ${dirLabel(r.whd)} ${Math.round(r.whd)}°` : '—';
+
+          html += `<tr>
+              <td><span class="col-time">${time}</span></td>
+              <td><span class="col-dot ${r.st}"></span></td>
+              <td><span class="col-val" style="color:${wc}">${windDisp(r.windKt).toFixed(1)}</span><span class="col-sub">${windUnitLabel()}</span></td>
+              <td><span class="col-dir">${windDir}</span></td>
+              <td><span class="col-val" style="color:${gc}">${windDisp(r.gustKt).toFixed(1)}</span><span class="col-sub">${windUnitLabel()}</span></td>
+              <td><span class="col-val" style="color:${whC}">${waveStr}</span></td>
+              <td><span class="col-dir">${waveDir}</span></td>
+              <td><span class="col-temp" style="color:${airTempColor}">${airTempStr}</span></td>
+              <td><span class="col-temp" style="color:${waterTempColor}">${waterTempStr}</span></td>
+              <td><span class="col-rain" style="color:${rainPctColor}">${rainPctStr}</span>${rainMmStr}</td>
+            </tr>`;
+        });
+
+        html += `</tbody></table></div></div>`;
       });
 
-      html += `</div></div>`;
-    });
+    } else {
+      // ── Hourly Box layout ────────────────────────────────────
+      dayOrder.forEach(dk => {
+        const { rows } = days[dk];
+        const goCnt   = rows.filter(r => r.st === 'go').length;
+        const cautCnt = rows.filter(r => r.st === 'caution').length;
+        const dangerCnt = rows.filter(r => r.st === 'danger').length;
+        const id = 'day-' + dk.replace(/\W/g,'_');
+
+        html += `<div class="day-section" id="${id}">
+          <div class="day-header">
+            <div class="day-title">${dk}</div>
+            <div class="day-badges">
+              ${goCnt   > 0 ? `<span class="dbadge go">${goCnt} GO</span>` : ''}
+              ${cautCnt > 0 ? `<span class="dbadge caution">${cautCnt} CAUTION</span>` : ''}
+              ${dangerCnt > 0 ? `<span class="dbadge danger">${dangerCnt} DANGER</span>` : ''}
+            </div>
+          </div>
+          <div class="cards">`;
+
+        rows.forEach(r => {
+          const time  = r.d.toLocaleTimeString('en-IL', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jerusalem' });
+          const wc    = windColor(r.windKt);
+          const gc    = windColor(r.gustKt);
+          const whC   = waveColor(r.wh);
+          const sw1C  = waveColor(r.sw1);
+          const sw2C  = waveColor(r.sw2);
+          const fmtW     = m => m != null ? `${m.toFixed(2)}<sup>m</sup>` : '—';
+          const rainMmStr  = r.rainMm < 0.05 ? '' : `${r.rainMm.toFixed(1)} mm`;
+          const rainPctStr = r.rainPct != null ? `${r.rainPct}%` : '—';
+          const rainPctColor = r.rainPct == null ? 'var(--dim)'
+            : r.rainPct < 20 ? 'var(--dim)'
+            : r.rainPct < 50 ? '#93c5fd'
+            : r.rainPct < 75 ? '#3b82f6'
+            : '#a78bfa';
+          const airTempStr   = r.airTempC   != null ? `${Math.round(r.airTempC)}°C`   : '—';
+          const waterTempStr = r.waterTempC != null ? `${Math.round(r.waterTempC)}°C` : '—';
+          const airTempColor = r.airTempC == null ? 'var(--dim)'
+            : r.airTempC < 15 ? '#93c5fd'
+            : r.airTempC < 25 ? '#34d399'
+            : '#fb923c';
+          const waterTempColor = r.waterTempC == null ? 'var(--dim)'
+            : r.waterTempC < 18 ? '#93c5fd'
+            : r.waterTempC < 24 ? '#34d399'
+            : '#fb923c';
+
+          html += `
+          <div class="fc">
+            <div class="fc-top ${r.st}"></div>
+            <div class="fc-body">
+              <div class="fc-head">
+                <span class="fc-time">${time}</span>
+                <span class="fc-status ${r.st}">${STATUS_ICONS[r.st]}</span>
+              </div>
+
+              <div class="fc-section-label wind">Wind</div>
+              <div class="fc-section">
+                <div class="fc-section-left">
+                  <div class="fc-wind-speed" style="color:${wc}">${windDisp(r.windKt).toFixed(1)}<sup>${windUnitLabel()}</sup></div>
+                  <div class="fc-wind-sub">${dirLabel(r.deg)} ${Math.round(r.deg)}°</div>
+                  <div class="fc-wind-sub">Gusts <span class="fc-gust-val" style="color:${gc}">${windDisp(r.gustKt).toFixed(1)} ${windUnitLabel()}</span></div>
+                </div>
+                ${bigDirArrow(r.deg, wc)}
+              </div>
+
+              <div class="fc-hr"></div>
+
+              <div class="fc-section-label waves">Waves</div>
+              <div class="fc-section">
+                <div class="fc-section-left">
+                  <div class="fc-wave-val" style="color:${whC}">${fmtW(r.wh)}</div>
+                  ${r.whd != null ? `<div class="fc-wind-sub">${dirLabel(r.whd)} ${Math.round(r.whd)}°</div>` : ''}
+                </div>
+                ${bigDirArrow(r.whd, whC)}
+              </div>
+              ${(r.sw1 != null || r.sw2 != null) ? `<div class="fc-swell-row">
+                <div class="fc-swell"><span class="fc-swell-lbl">S1</span><span style="color:${sw1C}">${r.sw1 != null ? r.sw1.toFixed(2)+'m' : '—'}</span>${r.sw1d != null ? ` <span class="dir-arrow" style="color:var(--muted)">${dirArrow(r.sw1d)}</span><span style="color:var(--muted);font-size:0.7rem">${dirLabel(r.sw1d)}</span>` : ''}</div>
+                <div class="fc-swell"><span class="fc-swell-lbl">S2</span><span style="color:${sw2C}">${r.sw2 != null ? r.sw2.toFixed(2)+'m' : '—'}</span>${r.sw2d != null ? ` <span class="dir-arrow" style="color:var(--muted)">${dirArrow(r.sw2d)}</span><span style="color:var(--muted);font-size:0.7rem">${dirLabel(r.sw2d)}</span>` : ''}</div>
+              </div>` : ''}
+
+              <div class="fc-hr"></div>
+
+              <div class="fc-temp-row">
+                <div class="fc-temp-item"><span style="color:var(--dim)">🌡</span><span style="color:${airTempColor}">${airTempStr}</span><span style="color:var(--dim);margin-left:4px;font-size:0.7rem">💧</span><span style="color:${waterTempColor};font-size:0.7rem">${waterTempStr}</span></div>
+                <div class="fc-temp-item" style="gap:2px">
+                  <span style="color:var(--dim)">🌧</span><span style="color:${rainPctColor};font-weight:700">${rainPctStr}</span>${rainMmStr ? `<span style="color:var(--dim);font-size:0.72rem;margin-left:3px">${rainMmStr}</span>` : ''}
+                </div>
+              </div>
+            </div>
+          </div>`;
+        });
+
+        html += `</div></div>`;
+      });
+    }
 
     document.getElementById('output').innerHTML = html;
   }
