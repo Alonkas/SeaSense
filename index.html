@@ -156,6 +156,7 @@
 
       /* Settings bar */
       .ctrl-bar { flex-wrap: wrap; gap: 8px; padding: 8px 14px; }
+      .layout-ctrl-group { display: none; }
       .ctrl-bar select, .ctrl-bar input { font-size: 0.8rem; }
       .bar-sep { display: none; }
 
@@ -515,12 +516,14 @@
     <option value="ecmwf">ECMWF IFS — Global (high res)</option>
     <option value="gfs">GFS — Global</option>
   </select>
-  <div class="bar-sep"></div>
-  <label class="model-label">Layout:</label>
-  <select id="layoutSelect" onchange="onLayoutChange()">
-    <option value="hourly-box">Hourly Box</option>
-    <option value="column">Column Layout</option>
-  </select>
+  <span class="layout-ctrl-group">
+    <div class="bar-sep"></div>
+    <label class="model-label">Layout:</label>
+    <select id="layoutSelect" onchange="onLayoutChange()">
+      <option value="hourly-box">Hourly Box</option>
+      <option value="column">Column Layout</option>
+    </select>
+  </span>
   <div class="bar-sep"></div>
   <label class="model-label">Wind Units:</label>
   <select id="windUnitSelect" onchange="onUnitChange()">
@@ -618,6 +621,14 @@
       <div class="sb-model-name" id="modelInfoName"></div>
       <div class="sb-model-desc" id="modelInfoDesc"></div>
     </div>
+
+    <div class="sb-sep"></div>
+
+    <div class="sb-title">📐 Layout</div>
+    <select id="layoutSelectSb" onchange="onLayoutChangeSb()" class="sb-input" style="cursor:pointer">
+      <option value="hourly-box">Hourly Box</option>
+      <option value="column">Column Layout</option>
+    </select>
 
     <div class="sb-sep"></div>
 
@@ -1056,6 +1067,15 @@
   function onLayoutChange() {
     const layout = document.getElementById('layoutSelect').value;
     localStorage.setItem('ssLayout', layout);
+    const sb = document.getElementById('layoutSelectSb');
+    if (sb) sb.value = layout;
+    if (_lastWindData && _lastWaveLookup) renderForecast(_lastWindData, _lastWaveLookup);
+  }
+
+  function onLayoutChangeSb() {
+    const layout = document.getElementById('layoutSelectSb').value;
+    document.getElementById('layoutSelect').value = layout;
+    localStorage.setItem('ssLayout', layout);
     if (_lastWindData && _lastWaveLookup) renderForecast(_lastWindData, _lastWaveLookup);
   }
 
@@ -1474,6 +1494,8 @@
   applyURLParams();
   const savedLayout = localStorage.getItem('ssLayout') || 'hourly-box';
   document.getElementById('layoutSelect').value = savedLayout;
+  const sbLayoutEl = document.getElementById('layoutSelectSb');
+  if (sbLayoutEl) sbLayoutEl.value = savedLayout;
   fetchForecast().then(() => { applyLayout(savedLayout); startAutoRefresh(); });
 </script>
 
