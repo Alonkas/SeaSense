@@ -431,16 +431,16 @@
 
     /* ── Column Layout ── */
     .col-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: 8px; border: 1px solid var(--border); }
-    .col-table { width: 100%; border-collapse: collapse; font-size: 0.84rem; min-width: 600px; }
+    .col-table { border-collapse: collapse; font-size: 0.84rem; min-width: 520px; }
     .col-table thead tr { background: var(--elevated); }
     .col-table th {
       text-align: left; font-size: 0.67rem; font-weight: 700;
       text-transform: uppercase; letter-spacing: 0.09em; color: var(--dim);
-      padding: 9px 14px 9px 10px; border-bottom: 1px solid var(--border);
+      padding: 8px 16px 8px 8px; border-bottom: 1px solid var(--border);
       white-space: nowrap;
     }
     .col-table td {
-      padding: 9px 14px 9px 10px;
+      padding: 8px 16px 8px 8px;
       border-bottom: 1px solid rgba(255,255,255,0.04);
       vertical-align: middle; white-space: nowrap;
     }
@@ -477,7 +477,7 @@
       <img src="icons/compass.svg" alt="SeaSense logo" class="header-logo" />
       <div class="header-title-group">
         <h1><em>SeaSense</em></h1>
-        <div class="header-tagline">Know before you go · Catch the right moment <span style="opacity:0.55;margin-left:6px">v2.0.0</span></div>
+        <div class="header-tagline">Know before you go · Catch the right moment <span style="opacity:0.55;margin-left:6px">v2.1.0</span></div>
       </div>
     </div>
     <div class="header-right">
@@ -586,7 +586,7 @@
       </ul>
 
       <div class="about-footer-note">All data is free — no API key required.<br>
-      Built by <strong>Alon Kassir</strong> &nbsp;·&nbsp; v2.0.0</div>
+      Built by <strong>Alon Kassir</strong> &nbsp;·&nbsp; v2.1.0</div>
     </div>
   </div>
 </div>
@@ -1258,9 +1258,9 @@
                 <th></th>
                 <th>💨 Wind</th>
                 <th>Direction</th>
-                <th>Gusts</th>
                 <th>🌊 Waves</th>
                 <th>Wave Dir</th>
+                <th>Gusts</th>
                 <th>🌡 Air</th>
                 <th>💧 Sea</th>
                 <th>🌧 Rain</th>
@@ -1288,9 +1288,9 @@
               <td><span class="col-dot ${r.st}"></span></td>
               <td><span class="col-val" style="color:${wc}">${windDisp(r.windKt).toFixed(1)}</span><span class="col-sub">${windUnitLabel()}</span></td>
               <td><span class="col-dir">${windDir}</span></td>
-              <td><span class="col-val" style="color:${gc}">${windDisp(r.gustKt).toFixed(1)}</span><span class="col-sub">${windUnitLabel()}</span></td>
               <td><span class="col-val" style="color:${whC}">${waveStr}</span></td>
               <td><span class="col-dir">${waveDir}</span></td>
+              <td><span class="col-val" style="color:${gc}">${windDisp(r.gustKt).toFixed(1)}</span><span class="col-sub">${windUnitLabel()}</span></td>
               <td><span class="col-temp" style="color:${airTempColor}">${airTempStr}</span></td>
               <td><span class="col-temp" style="color:${waterTempColor}">${waterTempStr}</span></td>
               <td><span class="col-rain" style="color:${rainPctColor}">${rainPctStr}</span>${rainMmStr}</td>
@@ -1500,7 +1500,7 @@
 </script>
 
 <footer class="app-footer">
-  <span>SeaSense <strong style="color:var(--muted)">v2.0.0</strong></span>
+  <span>SeaSense <strong style="color:var(--muted)">v2.1.0</strong></span>
   <span style="color:var(--border)">·</span>
   <span>Made with ❤️ by <strong style="color:var(--muted)">Alon Kassir</strong></span>
   <span style="color:var(--border)">·</span>
