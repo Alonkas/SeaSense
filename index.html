@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>SeaSense</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
     :root {
       --bg:       #060e1e;
@@ -48,7 +49,7 @@
       background: var(--surface);
       padding: 10px 32px;
       border-bottom: 1px solid var(--border);
-      display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+      display: flex; align-items: center; gap: 10px; flex-wrap: nowrap;
     }
     .ctrl-bar label { font-size: 0.78rem; color: var(--dim); white-space: nowrap; }
     .ctrl-bar select {
@@ -64,6 +65,7 @@
     }
     .ctrl-bar input:focus { border-color: var(--accent); }
     .bar-sep { width: 1px; height: 22px; background: var(--border); margin: 0 4px; }
+    .layout-ctrl-group { display: flex; align-items: center; gap: 10px; }
     .model-label { font-size: 0.78rem; color: var(--dim); white-space: nowrap; margin-left: 6px; }
     #apiKeyInput { max-width: 280px; flex: 1; }
     #customLat, #customLon { width: 90px; }
@@ -464,6 +466,8 @@
     }
 
     .col-model-label { font-size: 0.72rem; color: var(--muted); display: block; font-weight: 500; margin-top: 1px; }
+    #mapPickerEl .leaflet-container { background: #0a1628; }
+    @media (max-width: 768px) { #mapPickerEl { height: 320px !important; } }
     .col-model-sep td { border-bottom: 1px solid var(--border) !important; }
 
     /* ── Footer ── */
@@ -486,13 +490,15 @@
       <img src="icons/compass.svg" alt="SeaSense logo" class="header-logo" />
       <div class="header-title-group">
         <h1><em>SeaSense</em></h1>
-        <div class="header-tagline">Know before you go · Catch the right moment <span style="opacity:0.55;margin-left:6px">v3.2.0</span></div>
+        <div class="header-tagline">Know before you go · Catch the right moment <span style="opacity:0.55;margin-left:6px">v3.7.0</span></div>
       </div>
     </div>
     <div class="header-right">
       <div class="header-loc">
-        <label>📍 Location:</label>
+        <label>Location:</label>
+        <button class="btn" onclick="openMapPicker()" title="Pick location on map" style="padding:4px 10px;font-size:0.85rem">🌐</button>
         <select id="locationSelect" onchange="onLocationChange()">
+          <option value="amigo">Amigo Surfski Club</option>
           <option value="michmoret">Michmoret</option>
           <option value="netanya">Netanya</option>
           <option value="herzliya">Herzliya Marina</option>
@@ -596,7 +602,7 @@
       </ul>
 
       <div class="about-footer-note">All data is free — no API key required.<br>
-      Built by <strong>Alon Kassir</strong> &nbsp;·&nbsp; v3.2.0</div>
+      Built by <strong>Alon Kassir</strong> &nbsp;·&nbsp; v3.7.0</div>
     </div>
   </div>
 </div>
@@ -616,6 +622,19 @@
     <button class="modal-close" onclick="closeSunModal()">✕</button>
     <div class="modal-title">☀️ Sunrise, Sunset &amp; UV Index</div>
     <div id="sunModalBody"><div class="modal-loading">Loading…</div></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="mapModal" onclick="closeMapOutside(event)">
+  <div class="modal-box" style="max-width:680px;padding:0;overflow:hidden">
+    <button class="modal-close" onclick="closeMapModal()" style="z-index:1000;background:var(--surface)">✕</button>
+    <div style="padding:16px 20px 10px;font-weight:700;font-size:1rem">🗺 Pick a Location</div>
+    <div style="padding:0 16px 8px;font-size:0.78rem;color:var(--muted)">Click a marker or anywhere on the map, then press Apply.</div>
+    <div id="mapPickerEl" style="height:420px;width:100%"></div>
+    <div style="padding:12px 16px;display:flex;align-items:center;justify-content:space-between;border-top:1px solid var(--border)">
+      <span id="mapSelectionLabel" style="font-size:0.85rem;color:var(--muted)">No selection</span>
+      <button class="btn" onclick="applyMapSelection()" style="padding:7px 20px">Apply</button>
+    </div>
   </div>
 </div>
 
@@ -691,6 +710,7 @@
   let _lastWindDataAll = null;
 
   const LOCATIONS = {
+    amigo:     { name: 'Amigo Surfski Club',     lat: 32.4116, lon: 34.8697, sea: 'Mediterranean Sea' },
     michmoret: { name: 'Michmoret',             lat: 32.40, lon: 34.87, sea: 'Mediterranean Sea' },
     netanya:   { name: 'Netanya',               lat: 32.33, lon: 34.86, sea: 'Mediterranean Sea' },
     herzliya:  { name: 'Herzliya Marina',        lat: 32.16, lon: 34.79, sea: 'Mediterranean Sea' },
@@ -722,6 +742,78 @@
   }
 
   // ── About Modal ─────────────────────────────────────────────
+  let _leafletMap = null;
+  let _customMarker = null;
+  let _pendingMapSelection = null; // { type: 'preset', key } or { type: 'custom', lat, lng }
+
+  function _setMapSelectionLabel(text) {
+    document.getElementById('mapSelectionLabel').textContent = text;
+  }
+
+  function openMapPicker() {
+    _pendingMapSelection = null;
+    // Show current location as initial label
+    const curSel = document.getElementById('locationSelect').value;
+    const curLoc = LOCATIONS[curSel];
+    _setMapSelectionLabel(curLoc ? curLoc.name : 'No selection');
+
+    document.getElementById('mapModal').classList.add('open');
+    if (!_leafletMap) {
+      _leafletMap = L.map('mapPickerEl').setView([32.0, 34.9], 7);
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+        attribution: '© OpenStreetMap contributors © CARTO', maxZoom: 19, subdomains: 'abcd'
+      }).addTo(_leafletMap);
+
+      // Predefined location markers
+      Object.entries(LOCATIONS).forEach(([key, loc]) => {
+        if (key === 'custom' || loc.lat == null) return;
+        const marker = L.circleMarker([loc.lat, loc.lon], {
+          radius: 8, color: '#38bdf8', fillColor: '#0ea5e9',
+          fillOpacity: 0.9, weight: 2
+        }).addTo(_leafletMap);
+        marker.bindTooltip(loc.name, { permanent: false, direction: 'top', offset: [0, -6] });
+        marker.on('click', e => {
+          L.DomEvent.stopPropagation(e);
+          _pendingMapSelection = { type: 'preset', key };
+          _setMapSelectionLabel(loc.name);
+          if (_customMarker) { _leafletMap.removeLayer(_customMarker); _customMarker = null; }
+        });
+      });
+
+      // Free-click for custom coordinates
+      _leafletMap.on('click', e => {
+        const { lat, lng } = e.latlng;
+        _pendingMapSelection = { type: 'custom', lat, lng };
+        _setMapSelectionLabel(`Custom: ${lat.toFixed(4)}, ${lng.toFixed(4)}`);
+        if (_customMarker) _leafletMap.removeLayer(_customMarker);
+        _customMarker = L.marker([lat, lng]).addTo(_leafletMap);
+      });
+    }
+    // Sync crosshair to current custom position if set
+    const loc = getCoords();
+    if (_customMarker) { _leafletMap.removeLayer(_customMarker); _customMarker = null; }
+    if (curSel === 'custom' && loc) {
+      _customMarker = L.marker([loc.lat, loc.lon]).addTo(_leafletMap);
+    }
+    setTimeout(() => _leafletMap.invalidateSize(), 50);
+  }
+
+  function applyMapSelection() {
+    if (!_pendingMapSelection) { closeMapModal(); return; }
+    if (_pendingMapSelection.type === 'preset') {
+      document.getElementById('locationSelect').value = _pendingMapSelection.key;
+    } else {
+      document.getElementById('locationSelect').value = 'custom';
+      document.getElementById('customLat').value = _pendingMapSelection.lat.toFixed(4);
+      document.getElementById('customLon').value = _pendingMapSelection.lng.toFixed(4);
+    }
+    onLocationChange();
+    closeMapModal();
+  }
+
+  function closeMapModal()      { document.getElementById('mapModal').classList.remove('open'); }
+  function closeMapOutside(e)   { if (e.target === document.getElementById('mapModal')) closeMapModal(); }
+
   function openAbout()        { document.getElementById('aboutModal').classList.add('open'); }
   function closeAbout()       { document.getElementById('aboutModal').classList.remove('open'); }
   function closeAboutOutside(e) { if (e.target === document.getElementById('aboutModal')) closeAbout(); }
@@ -895,6 +987,13 @@
     const sel = document.getElementById('locationSelect').value;
     const coords = document.getElementById('customCoords');
     coords.classList.toggle('visible', sel === 'custom');
+    localStorage.setItem('windyLocation', sel);
+    if (sel === 'custom') {
+      const lat = document.getElementById('customLat').value;
+      const lon = document.getElementById('customLon').value;
+      if (lat) localStorage.setItem('customLat', lat);
+      if (lon) localStorage.setItem('customLon', lon);
+    }
     updateHeaderLocation();
   }
 
@@ -908,7 +1007,16 @@
   const savedModel  = localStorage.getItem('ssModel') || 'iconEu';
   const savedLoc    = localStorage.getItem('windyLocation');
   modelSelect.value = savedModel;
-  if (savedLoc)   { document.getElementById('locationSelect').value = savedLoc; onLocationChange(); }
+  if (savedLoc) {
+    document.getElementById('locationSelect').value = savedLoc;
+    if (savedLoc === 'custom') {
+      const sLat = localStorage.getItem('customLat');
+      const sLon = localStorage.getItem('customLon');
+      if (sLat) document.getElementById('customLat').value = sLat;
+      if (sLon) document.getElementById('customLon').value = sLon;
+    }
+    onLocationChange();
+  }
   updateHeaderLocation();
   const savedUnit = localStorage.getItem('windUnit');
   if (savedUnit)  document.getElementById('windUnitSelect').value = savedUnit;
@@ -1639,7 +1747,7 @@
 </script>
 
 <footer class="app-footer">
-  <span>SeaSense <strong style="color:var(--muted)">v3.2.0</strong></span>
+  <span>SeaSense <strong style="color:var(--muted)">v3.7.0</strong></span>
   <span style="color:var(--border)">·</span>
   <span>Made with ❤️ by <strong style="color:var(--muted)">Alon Kassir</strong></span>
   <span style="color:var(--border)">·</span>
@@ -1647,5 +1755,6 @@
   <span style="color:var(--border)">·</span>
   <button onclick="openAbout()" style="background:none;border:none;color:var(--dim);font-size:0.72rem;cursor:pointer;padding:0;text-decoration:underline;text-underline-offset:3px">ℹ️ About</button>
 </footer>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </body>
 </html>
