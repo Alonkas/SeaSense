@@ -456,13 +456,15 @@
     .col-dir  { font-size: 0.8rem; color: var(--muted); }
     .col-temp { font-size: 0.84rem; font-weight: 600; }
     .col-rain { font-size: 0.84rem; font-weight: 600; }
-    .col-inline-dir { display: none; font-size: 0.72rem; color: var(--muted); margin-top: 2px; }
+    .col-hide-mobile { display: none; }
+    .col-inline-dir { display: block; font-size: 0.72rem; color: var(--muted); margin-top: 2px; }
     @media (max-width: 768px) {
-      .col-hide-mobile  { display: none; }
-      .col-inline-dir   { display: block; }
       .col-table th, .col-table td { padding: 7px 10px 7px 6px; }
       .col-table { font-size: 0.8rem; }
     }
+
+    .col-model-label { font-size: 0.72rem; color: var(--muted); display: block; font-weight: 500; margin-top: 1px; }
+    .col-model-sep td { border-bottom: 1px solid var(--border) !important; }
 
     /* ── Footer ── */
     .app-footer {
@@ -484,7 +486,7 @@
       <img src="icons/compass.svg" alt="SeaSense logo" class="header-logo" />
       <div class="header-title-group">
         <h1><em>SeaSense</em></h1>
-        <div class="header-tagline">Know before you go · Catch the right moment <span style="opacity:0.55;margin-left:6px">v2.1.1</span></div>
+        <div class="header-tagline">Know before you go · Catch the right moment <span style="opacity:0.55;margin-left:6px">v3.2.0</span></div>
       </div>
     </div>
     <div class="header-right">
@@ -529,6 +531,7 @@
     <select id="layoutSelect" onchange="onLayoutChange()">
       <option value="hourly-box">Hourly Box</option>
       <option value="column">Column Layout</option>
+      <option value="model-comparison">Model Comparison</option>
     </select>
   </span>
   <div class="bar-sep"></div>
@@ -537,7 +540,7 @@
     <option value="kn">Knots (kn)</option>
     <option value="kmh">km/h</option>
   </select>
-  <button class="btn" id="fetchBtn" onclick="fetchForecast()">Get Forecast</button>
+  <button class="btn" id="fetchBtn" onclick="location.reload()">Get Forecast</button>
   <div class="sec-btns">
     <button class="btn" id="sunBtn" onclick="openSunModal()">☀️ Sun &amp; UV</button>
     <button class="btn" id="shareBtn" onclick="copyShareURL()">🔗 Share</button>
@@ -593,7 +596,7 @@
       </ul>
 
       <div class="about-footer-note">All data is free — no API key required.<br>
-      Built by <strong>Alon Kassir</strong> &nbsp;·&nbsp; v2.1.1</div>
+      Built by <strong>Alon Kassir</strong> &nbsp;·&nbsp; v3.2.0</div>
     </div>
   </div>
 </div>
@@ -635,6 +638,7 @@
     <select id="layoutSelectSb" onchange="onLayoutChangeSb()" class="sb-input" style="cursor:pointer">
       <option value="hourly-box">Hourly Box</option>
       <option value="column">Column Layout</option>
+      <option value="model-comparison">Model Comparison</option>
     </select>
 
     <div class="sb-sep"></div>
@@ -684,6 +688,7 @@
 
   let _lastWindData  = null;
   let _lastWaveLookup = null;
+  let _lastWindDataAll = null;
 
   const LOCATIONS = {
     michmoret: { name: 'Michmoret',             lat: 32.40, lon: 34.87, sea: 'Mediterranean Sea' },
@@ -1029,15 +1034,29 @@
     document.getElementById('output').innerHTML = '';
 
     try {
-      const [windData, waveLookup] = await Promise.all([
-        fetchOpenMeteoWind(modelSelect.value),
-        fetchEcmwfWam()
-      ]);
-
-      setStatus('', '');
-      _lastWindData   = windData;
-      _lastWaveLookup = waveLookup;
-      renderForecast(windData, waveLookup);
+      const currentLayout = document.getElementById('layoutSelect').value;
+      if (currentLayout === 'model-comparison') {
+        const [windIconEu, windEcmwf, windGfs, waveLookup] = await Promise.all([
+          fetchOpenMeteoWind('iconEu'),
+          fetchOpenMeteoWind('ecmwf'),
+          fetchOpenMeteoWind('gfs'),
+          fetchEcmwfWam()
+        ]);
+        setStatus('', '');
+        _lastWindDataAll = { iconEu: windIconEu, ecmwf: windEcmwf, gfs: windGfs };
+        _lastWindData   = windIconEu;
+        _lastWaveLookup = waveLookup;
+        renderForecast(windIconEu, waveLookup);
+      } else {
+        const [windData, waveLookup] = await Promise.all([
+          fetchOpenMeteoWind(modelSelect.value),
+          fetchEcmwfWam()
+        ]);
+        setStatus('', '');
+        _lastWindData   = windData;
+        _lastWaveLookup = waveLookup;
+        renderForecast(windData, waveLookup);
+      }
     } catch (e) {
       setStatus('Error: ' + e.message, 'error');
     } finally {
@@ -1307,6 +1326,119 @@
         html += `</tbody></table></div></div>`;
       });
 
+    } else if (currentLayout === 'model-comparison') {
+      // ── Model Comparison layout ──────────────────────────────
+      const allModels = _lastWindDataAll;
+      if (!allModels) {
+        html += '<p style="color:var(--muted);padding:16px">Please click Get Forecast to load model comparison data.</p>';
+      } else {
+        const modelDefs = [
+          { key: 'iconEu', label: 'ICON EU',    data: allModels.iconEu },
+          { key: 'ecmwf',  label: 'ECMWF IFS',  data: allModels.ecmwf },
+          { key: 'gfs',    label: 'GFS',         data: allModels.gfs }
+        ];
+        const modelMaps = {};
+        modelDefs.forEach(m => {
+          modelMaps[m.key] = {};
+          m.data.ts.forEach((t, i) => { modelMaps[m.key][t] = i; });
+        });
+
+        dayOrder.forEach(dk => {
+          const { rows } = days[dk];
+          let goCnt = 0, cautCnt = 0, dangerCnt = 0;
+          rows.forEach(r => {
+            let worst = 'go';
+            const wv = wLookup[r.t] || findNearest(wLookup, r.t) || {};
+            const wh = wv.wh ?? 0;
+            modelDefs.forEach(m => {
+              const idx = modelMaps[m.key][r.t];
+              if (idx === undefined) return;
+              const st = status(m.data.windKt[idx], m.data.gustKt[idx], wh);
+              if (st === 'danger') worst = 'danger';
+              else if (st === 'caution' && worst !== 'danger') worst = 'caution';
+            });
+            if (worst === 'go') goCnt++;
+            else if (worst === 'caution') cautCnt++;
+            else dangerCnt++;
+          });
+
+          const id = 'day-' + dk.replace(/\W/g,'_');
+          html += `<div class="day-section" id="${id}">
+            <div class="day-header">
+              <div class="day-title">${dk}</div>
+              <div class="day-badges">
+                ${goCnt    > 0 ? `<span class="dbadge go">${goCnt} GO</span>` : ''}
+                ${cautCnt  > 0 ? `<span class="dbadge caution">${cautCnt} CAUTION</span>` : ''}
+                ${dangerCnt > 0 ? `<span class="dbadge danger">${dangerCnt} DANGER</span>` : ''}
+              </div>
+            </div>
+            <div class="col-table-wrap">
+              <table class="col-table">
+                <thead><tr>
+                  <th>Time</th>
+                  <th></th>
+                  <th>💨 Wind</th>
+                  <th class="col-hide-mobile">Direction</th>
+                  <th>🌊 Waves</th>
+                  <th class="col-hide-mobile">Wave Dir</th>
+                  <th>Gusts</th>
+                  <th>🌡 Air</th>
+                  <th>💧 Sea</th>
+                  <th>🌧 Rain</th>
+                </tr></thead>
+                <tbody>`;
+
+          rows.forEach(r => {
+            const time = r.d.toLocaleTimeString('en-IL', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jerusalem' });
+            const wv   = wLookup[r.t] || findNearest(wLookup, r.t) || {};
+            const wh   = wv.wh  ?? null;
+            const whd  = wv.whd ?? null;
+            const waterTempC = wv.waterTempC ?? null;
+            const waveStr = wh != null ? `${wh.toFixed(2)} m` : '—';
+            const waveDir = whd != null ? `${dirArrow(whd)} ${dirLabel(whd)} ${Math.round(whd)}°` : '—';
+            const whC = waveColor(wh);
+            const waterTempStr   = waterTempC != null ? `${Math.round(waterTempC)}°C` : '—';
+            const waterTempColor = waterTempC == null ? 'var(--dim)' : waterTempC < 18 ? '#93c5fd' : waterTempC < 24 ? '#34d399' : '#fb923c';
+
+            modelDefs.forEach((m, mi) => {
+              const idx = modelMaps[m.key][r.t];
+              if (idx === undefined) return;
+              const windKt   = m.data.windKt[idx];
+              const gustKt   = m.data.gustKt[idx];
+              const deg      = m.data.deg[idx];
+              const rainMm   = m.data.rainMm[idx];
+              const rainPct  = m.data.rainPct?.[idx]  ?? null;
+              const airTempC = m.data.airTempC?.[idx] ?? null;
+              const st = status(windKt, gustKt, wh ?? 0);
+              const wc = windColor(windKt);
+              const gc = windColor(gustKt);
+              const windDir = `${dirArrow(deg)} ${dirLabel(deg)} ${Math.round(deg)}°`;
+              const airTempStr   = airTempC != null ? `${Math.round(airTempC)}°C` : '—';
+              const airTempColor = airTempC == null ? 'var(--dim)' : airTempC < 15 ? '#93c5fd' : airTempC < 25 ? '#34d399' : '#fb923c';
+              const rainPctStr   = rainPct != null ? `${rainPct}%` : '—';
+              const rainMmStr    = rainMm >= 0.05 ? ` <span class="col-sub">${rainMm.toFixed(1)} mm</span>` : '';
+              const rainPctColor = rainPct == null ? 'var(--dim)' : rainPct < 20 ? 'var(--dim)' : rainPct < 50 ? '#93c5fd' : rainPct < 75 ? '#3b82f6' : '#a78bfa';
+              const isLastModel  = mi === modelDefs.length - 1;
+
+              html += `<tr${isLastModel ? ' class="col-model-sep"' : ''}>
+                  <td>${mi === 0 ? `<span class="col-time">${time}</span>` : ''}<span class="col-model-label">${m.label}</span></td>
+                  <td><span class="col-dot ${st}"></span></td>
+                  <td><span class="col-val" style="color:${wc}">${windDisp(windKt).toFixed(1)}</span><span class="col-sub">${windUnitLabel()}</span><span class="col-inline-dir">${windDir}</span></td>
+                  <td class="col-hide-mobile"><span class="col-dir">${windDir}</span></td>
+                  <td><span class="col-val" style="color:${whC}">${waveStr}</span><span class="col-inline-dir">${waveDir}</span></td>
+                  <td class="col-hide-mobile"><span class="col-dir">${waveDir}</span></td>
+                  <td><span class="col-val" style="color:${gc}">${windDisp(gustKt).toFixed(1)}</span><span class="col-sub">${windUnitLabel()}</span></td>
+                  <td><span class="col-temp" style="color:${airTempColor}">${airTempStr}</span></td>
+                  <td><span class="col-temp" style="color:${waterTempColor}">${waterTempStr}</span></td>
+                  <td><span class="col-rain" style="color:${rainPctColor}">${rainPctStr}</span>${rainMmStr}</td>
+                </tr>`;
+            });
+          });
+
+          html += `</tbody></table></div></div>`;
+        });
+      }
+
     } else {
       // ── Hourly Box layout ────────────────────────────────────
       dayOrder.forEach(dk => {
@@ -1507,7 +1639,7 @@
 </script>
 
 <footer class="app-footer">
-  <span>SeaSense <strong style="color:var(--muted)">v2.1.1</strong></span>
+  <span>SeaSense <strong style="color:var(--muted)">v3.2.0</strong></span>
   <span style="color:var(--border)">·</span>
   <span>Made with ❤️ by <strong style="color:var(--muted)">Alon Kassir</strong></span>
   <span style="color:var(--border)">·</span>
