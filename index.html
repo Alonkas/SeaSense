@@ -691,6 +691,9 @@
     </div>
 
     <button class="sb-apply" onclick="applyThresholds()">✓ Apply</button>
+
+    <div class="sb-title" style="margin-top:18px">📊 Widget</div>
+    <button class="sb-apply" style="background:var(--card);border:1px solid var(--border);color:var(--text)" onclick="openWidget()">Open Widget Page →</button>
   </aside>
 
   <!-- Main content -->
@@ -1662,6 +1665,12 @@
     p.set('thdw',  document.getElementById('thDangerWind').value);
     p.set('thdwv', document.getElementById('thDangerWave').value);
     return `${location.origin}${location.pathname}?${p.toString()}`;
+  }
+
+  function openWidget() {
+    const loc = document.getElementById('locationSelect').value;
+    const url = loc && loc !== 'custom' ? `widget.html?loc=${loc}` : 'widget.html';
+    window.open(url, '_blank');
   }
 
   async function copyShareURL() {
