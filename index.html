@@ -490,7 +490,7 @@
       <img src="icons/compass.svg" alt="SeaSense logo" class="header-logo" />
       <div class="header-title-group">
         <h1><em>SeaSense</em></h1>
-        <div class="header-tagline">Know before you go · Catch the right moment <span style="opacity:0.55;margin-left:6px">v3.7.1</span></div>
+        <div class="header-tagline">Know before you go · Catch the right moment <span style="opacity:0.55;margin-left:6px">v3.7.2</span></div>
       </div>
     </div>
     <div class="header-right">
@@ -546,7 +546,7 @@
     <option value="kn">Knots (kn)</option>
     <option value="kmh">km/h</option>
   </select>
-  <button class="btn" id="fetchBtn" onclick="location.reload()">Get Forecast</button>
+  <button class="btn" id="fetchBtn" onclick="fetchForecast()">Get Forecast</button>
   <div class="sec-btns">
     <button class="btn" id="sunBtn" onclick="openSunModal()">☀️ Sun &amp; UV</button>
     <button class="btn" id="shareBtn" onclick="copyShareURL()">🔗 Share</button>
@@ -602,7 +602,7 @@
       </ul>
 
       <div class="about-footer-note">All data is free — no API key required.<br>
-      Built by <strong>Alon Kassir</strong> &nbsp;·&nbsp; v3.7.1</div>
+      Built by <strong>Alon Kassir</strong> &nbsp;·&nbsp; v3.7.2</div>
     </div>
   </div>
 </div>
@@ -1416,7 +1416,7 @@
           const rainPctStr   = r.rainPct != null ? `${r.rainPct}%` : '—';
           const rainMmStr    = r.rainMm >= 0.05 ? ` <span class="col-sub">${r.rainMm.toFixed(1)} mm</span>` : '';
           const rainPctColor = r.rainPct == null ? 'var(--dim)' : r.rainPct < 20 ? 'var(--dim)' : r.rainPct < 50 ? '#93c5fd' : r.rainPct < 75 ? '#3b82f6' : '#a78bfa';
-          const waveStr  = r.wh  != null ? `${r.wh.toFixed(2)} m`  : '—';
+          const waveStr  = r.wh  != null ? `${r.wh.toFixed(1)} m`  : '—';
           const windDir  = `${dirArrow(r.deg)} ${dirLabel(r.deg)} ${Math.round(r.deg)}°`;
           const waveDir  = r.whd != null ? `${dirArrow(r.whd)} ${dirLabel(r.whd)} ${Math.round(r.whd)}°` : '—';
 
@@ -1505,7 +1505,7 @@
             const wh   = wv.wh  ?? null;
             const whd  = wv.whd ?? null;
             const waterTempC = wv.waterTempC ?? null;
-            const waveStr = wh != null ? `${wh.toFixed(2)} m` : '—';
+            const waveStr = wh != null ? `${wh.toFixed(1)} m` : '—';
             const waveDir = whd != null ? `${dirArrow(whd)} ${dirLabel(whd)} ${Math.round(whd)}°` : '—';
             const whC = waveColor(wh);
             const waterTempStr   = waterTempC != null ? `${Math.round(waterTempC)}°C` : '—';
@@ -1577,7 +1577,7 @@
           const whC   = waveColor(r.wh);
           const sw1C  = waveColor(r.sw1);
           const sw2C  = waveColor(r.sw2);
-          const fmtW     = m => m != null ? `${m.toFixed(2)}<sup>m</sup>` : '—';
+          const fmtW     = m => m != null ? `${m.toFixed(1)}<sup>m</sup>` : '—';
           const rainMmStr  = r.rainMm < 0.05 ? '' : `${r.rainMm.toFixed(1)} mm`;
           const rainPctStr = r.rainPct != null ? `${r.rainPct}%` : '—';
           const rainPctColor = r.rainPct == null ? 'var(--dim)'
@@ -1626,8 +1626,8 @@
                 ${bigDirArrow(r.whd, whC)}
               </div>
               ${(r.sw1 != null || r.sw2 != null) ? `<div class="fc-swell-row">
-                <div class="fc-swell"><span class="fc-swell-lbl">S1</span><span style="color:${sw1C}">${r.sw1 != null ? r.sw1.toFixed(2)+'m' : '—'}</span>${r.sw1d != null ? ` <span class="dir-arrow" style="color:var(--muted)">${dirArrow(r.sw1d)}</span><span style="color:var(--muted);font-size:0.7rem">${dirLabel(r.sw1d)}</span>` : ''}</div>
-                <div class="fc-swell"><span class="fc-swell-lbl">S2</span><span style="color:${sw2C}">${r.sw2 != null ? r.sw2.toFixed(2)+'m' : '—'}</span>${r.sw2d != null ? ` <span class="dir-arrow" style="color:var(--muted)">${dirArrow(r.sw2d)}</span><span style="color:var(--muted);font-size:0.7rem">${dirLabel(r.sw2d)}</span>` : ''}</div>
+                <div class="fc-swell"><span class="fc-swell-lbl">S1</span><span style="color:${sw1C}">${r.sw1 != null ? r.sw1.toFixed(1)+'m' : '—'}</span>${r.sw1d != null ? ` <span class="dir-arrow" style="color:var(--muted)">${dirArrow(r.sw1d)}</span><span style="color:var(--muted);font-size:0.7rem">${dirLabel(r.sw1d)}</span>` : ''}</div>
+                <div class="fc-swell"><span class="fc-swell-lbl">S2</span><span style="color:${sw2C}">${r.sw2 != null ? r.sw2.toFixed(1)+'m' : '—'}</span>${r.sw2d != null ? ` <span class="dir-arrow" style="color:var(--muted)">${dirArrow(r.sw2d)}</span><span style="color:var(--muted);font-size:0.7rem">${dirLabel(r.sw2d)}</span>` : ''}</div>
               </div>` : ''}
 
               <div class="fc-hr"></div>
@@ -1756,7 +1756,7 @@
 </script>
 
 <footer class="app-footer">
-  <span>SeaSense <strong style="color:var(--muted)">v3.7.1</strong></span>
+  <span>SeaSense <strong style="color:var(--muted)">v3.7.2</strong></span>
   <span style="color:var(--border)">·</span>
   <span>Made with ❤️ by <strong style="color:var(--muted)">Alon Kassir</strong></span>
   <span style="color:var(--border)">·</span>
