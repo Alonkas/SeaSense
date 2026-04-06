@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="SeaSense">
+  <meta name="theme-color" content="#0a1628">
+  <title>SeaSense</title>
+  <style>
+    :root {
+      --bg:      #0a1628;
+      --card:    #112240;
+      --go:      #34d399;
+      --caution: #fbbf24;
+      --danger:  #f87171;
+      --text:    #e2e8f0;
+      --dim:     #8899aa;
+      --border:  #1e3a5f;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif;
+      min-height: 100dvh;
+      padding: env(safe-area-inset-top, 16px) 16px env(safe-area-inset-bottom, 16px);
+      padding-top: max(env(safe-area-inset-top), 20px);
+    }
+
+    /* ── Header ── */
+    .header {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      margin-bottom: 14px;
+    }
+    .loc-name {
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+    }
+    .updated {
+      font-size: 11px;
+      color: var(--dim);
+    }
+
+    /* ── Location picker ── */
+    .loc-bar {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+      overflow-x: auto;
+      scrollbar-width: none;
+      padding-bottom: 2px;
+    }
+    .loc-bar::-webkit-scrollbar { display: none; }
+    .loc-chip {
+      flex-shrink: 0;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 5px 12px;
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--dim);
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.15s;
+    }
+    .loc-chip.active {
+      background: var(--border);
+      color: var(--text);
+      border-color: transparent;
+    }
+
+    /* ── Day header ── */
+    .day-header {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      color: var(--dim);
+      margin: 16px 0 6px;
+    }
+    .day-header:first-of-type { margin-top: 0; }
+
+    /* ── Slot row ── */
+    .slot {
+      display: grid;
+      grid-template-columns: 46px 90px 1fr 1fr;
+      align-items: center;
+      gap: 6px;
+      padding: 11px 14px;
+      background: var(--card);
+      border-radius: 12px;
+      margin-bottom: 7px;
+    }
+
+    .slot-time {
+      font-size: 13px;
+      font-variant-numeric: tabular-nums;
+      color: var(--dim);
+      white-space: nowrap;
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 9px;
+      border-radius: 20px;
+      white-space: nowrap;
+    }
+    .status-go      { background: rgba(52,211,153,.15); color: var(--go); }
+    .status-caution { background: rgba(251,191,36,.15);  color: var(--caution); }
+    .status-danger  { background: rgba(248,113,113,.15); color: var(--danger); }
+
+    .cell-label {
+      font-size: 10px;
+      color: var(--dim);
+      margin-bottom: 1px;
+    }
+    .cell-val {
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    /* ── States ── */
+    .loading, .error-msg {
+      text-align: center;
+      padding: 60px 20px;
+      font-size: 15px;
+      color: var(--dim);
+    }
+    .error-msg { color: var(--danger); }
+
+    .footer {
+      text-align: center;
+      font-size: 11px;
+      color: var(--dim);
+      margin-top: 20px;
+      padding-bottom: 8px;
+      opacity: 0.6;
+    }
+    .refresh-btn {
+      display: inline-block;
+      margin-top: 12px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--dim);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 6px 16px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div id="app"><div class="loading">Loading forecast…</div></div>
+
+  <script>
+    const M2KT = 1.94384;
+
+    const LOCATIONS = {
+      amigo:     { name: 'Amigo Surfski',   lat: 32.4116, lon: 34.8697 },
+      michmoret: { name: 'Michmoret',       lat: 32.40,   lon: 34.87   },
+      netanya:   { name: 'Netanya',         lat: 32.33,   lon: 34.86   },
+      herzliya:  { name: 'Herzliya Marina', lat: 32.16,   lon: 34.79   },
+      tel_aviv:  { name: 'Tel Aviv',        lat: 32.08,   lon: 34.76   },
+      caesarea:  { name: 'Caesarea',        lat: 32.50,   lon: 34.90   },
+      haifa:     { name: 'Haifa',           lat: 32.82,   lon: 34.99   },
+      acre:      { name: 'Acre (Akko)',     lat: 32.93,   lon: 35.07   },
+      nahariya:  { name: 'Nahariya',        lat: 33.01,   lon: 35.10   },
+      ashdod:    { name: 'Ashdod',          lat: 31.80,   lon: 34.64   },
+      ashkelon:  { name: 'Ashkelon',        lat: 31.67,   lon: 34.57   },
+      eilat:     { name: 'Eilat',           lat: 29.56,   lon: 34.95   },
+    };
+
+    function dirArrow(deg) {
+      if (deg == null) return '';
+      return ['↓','↙','←','↖','↑','↗','→','↘'][Math.round(((deg + 180) % 360) / 45) % 8];
+    }
+
+    function computeStatus(windKt, waveM) {
+      if (windKt >= 18 || (waveM != null && waveM >= 1.0)) return 'danger';
+      if (windKt >= 12 || (waveM != null && waveM >= 0.6)) return 'caution';
+      return 'go';
+    }
+
+    function findNearest(lookup, ts) {
+      const keys = Object.keys(lookup).map(Number);
+      if (!keys.length) return null;
+      const closest = keys.reduce((a, b) => Math.abs(b - ts) < Math.abs(a - ts) ? b : a);
+      return Math.abs(closest - ts) < 2 * 3600000 ? lookup[closest] : null;
+    }
+
+    function fmtTime(d) {
+      return d.toLocaleTimeString('en-GB', {
+        timeZone: 'Asia/Jerusalem', hour: '2-digit', minute: '2-digit', hour12: false,
+      });
+    }
+
+    function fmtDay(d) {
+      return d.toLocaleDateString('en-GB', {
+        timeZone: 'Asia/Jerusalem', weekday: 'long', day: 'numeric', month: 'short',
+      });
+    }
+
+    function fmtUpdated() {
+      return new Date().toLocaleTimeString('en-GB', {
+        timeZone: 'Asia/Jerusalem', hour: '2-digit', minute: '2-digit', hour12: false,
+      });
+    }
+
+    function getCurrentLocKey() {
+      const params = new URLSearchParams(location.search);
+      return params.get('loc') || localStorage.getItem('widgetLoc') || 'michmoret';
+    }
+
+    function setLocKey(key) {
+      localStorage.setItem('widgetLoc', key);
+      const url = new URL(location.href);
+      url.searchParams.set('loc', key);
+      history.replaceState(null, '', url);
+    }
+
+    async function loadForecast(locKey) {
+      const loc = LOCATIONS[locKey] || LOCATIONS.michmoret;
+      const [wind, wave] = await Promise.all([
+        fetch(
+          `https://api.open-meteo.com/v1/forecast?latitude=${loc.lat}&longitude=${loc.lon}` +
+          `&hourly=windspeed_10m,windgusts_10m,winddirection_10m` +
+          `&wind_speed_unit=ms&timezone=UTC&forecast_days=3&models=icon_eu`
+        ).then(r => r.json()),
+        fetch(
+          `https://marine-api.open-meteo.com/v1/marine?latitude=${loc.lat}&longitude=${loc.lon}` +
+          `&hourly=wave_height,wave_direction&models=ecmwf_wam&timezone=UTC&forecast_days=3`
+        ).then(r => r.json()),
+      ]);
+
+      // Build wave lookup
+      const waveLookup = {};
+      wave.hourly.time.forEach((t, i) => {
+        waveLookup[new Date(t + 'Z').getTime()] = {
+          wh:  wave.hourly.wave_height[i],
+          whd: wave.hourly.wave_direction[i],
+        };
+      });
+
+      // Process slots (3-hourly, skip night, skip past)
+      const now = Date.now();
+      const slots = [];
+      wind.hourly.time.forEach((t, i) => {
+        const d = new Date(t + 'Z');
+        if (d.getUTCHours() % 3 !== 0) return;
+        const h = d.getUTCHours();
+        if (h === 0 || h === 3 || h === 21) return;
+        if (d.getTime() < now - 30 * 60000) return;
+        const windKt = wind.hourly.windspeed_10m[i] * M2KT;
+        const deg    = wind.hourly.winddirection_10m[i];
+        const wv     = findNearest(waveLookup, d.getTime());
+        const wh     = wv ? wv.wh  : null;
+        const whd    = wv ? wv.whd : null;
+        slots.push({ d, windKt, deg, wh, whd, status: computeStatus(windKt, wh) });
+      });
+
+      return { loc, slots };
+    }
+
+    function renderSlots(loc, slots, locKey) {
+      const statusLabels = { go: 'GO', caution: 'CAUTION', danger: 'DANGER' };
+
+      // Location picker chips
+      let chipsHtml = '<div class="loc-bar">';
+      Object.entries(LOCATIONS).forEach(([key, l]) => {
+        const active = key === locKey ? ' active' : '';
+        chipsHtml += `<div class="loc-chip${active}" data-loc="${key}">${l.name}</div>`;
+      });
+      chipsHtml += '</div>';
+
+      // Header
+      let html = `
+        ${chipsHtml}
+        <div class="header">
+          <span class="loc-name">${loc.name}</span>
+          <span class="updated">Updated ${fmtUpdated()}</span>
+        </div>`;
+
+      if (!slots.length) {
+        html += `<div class="loading" style="padding:40px 0">No upcoming forecast slots</div>`;
+      } else {
+        // Group by day
+        const days = {};
+        slots.forEach(s => {
+          const key = fmtDay(s.d);
+          if (!days[key]) days[key] = [];
+          days[key].push(s);
+        });
+
+        Object.entries(days).forEach(([day, daySlots]) => {
+          html += `<div class="day-header">${day}</div>`;
+          daySlots.forEach(s => {
+            const stClass = `status-${s.status}`;
+            const wave = s.wh != null ? `${s.wh.toFixed(1)} m ${dirArrow(s.whd)}` : '—';
+            html += `
+              <div class="slot">
+                <div class="slot-time">${fmtTime(s.d)}</div>
+                <div class="status-badge ${stClass}">${statusLabels[s.status]}</div>
+                <div>
+                  <div class="cell-label">Wind</div>
+                  <div class="cell-val">${s.windKt.toFixed(0)} kn ${dirArrow(s.deg)}</div>
+                </div>
+                <div>
+                  <div class="cell-label">Wave</div>
+                  <div class="cell-val">${wave}</div>
+                </div>
+              </div>`;
+          });
+        });
+      }
+
+      html += `
+        <div class="footer">
+          SeaSense · Open-Meteo · No API key required
+          <br><span class="refresh-btn" id="refreshBtn">Refresh</span>
+        </div>`;
+
+      document.getElementById('app').innerHTML = html;
+
+      // Location chip clicks
+      document.querySelectorAll('.loc-chip').forEach(chip => {
+        chip.addEventListener('click', () => {
+          const key = chip.dataset.loc;
+          setLocKey(key);
+          render(key);
+        });
+      });
+
+      document.getElementById('refreshBtn').addEventListener('click', () => render(locKey));
+    }
+
+    async function render(locKey) {
+      document.getElementById('app').innerHTML = '<div class="loading">Loading forecast…</div>';
+      try {
+        const { loc, slots } = await loadForecast(locKey);
+        renderSlots(loc, slots, locKey);
+      } catch (e) {
+        document.getElementById('app').innerHTML =
+          `<div class="error-msg">Could not load forecast.<br><small>${e.message}</small>
+           <br><span class="refresh-btn" onclick="render('${locKey}')">Retry</span></div>`;
+      }
+    }
+
+    render(getCurrentLocKey());
+  </script>
+</body>
+</html>
