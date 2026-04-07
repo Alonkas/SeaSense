@@ -318,6 +318,7 @@
     /* ── Status bar ── */
     .status-bar { padding: 11px 16px; border-radius: 8px; margin-bottom: 18px; font-size: 0.84rem; display: flex; align-items: center; gap: 8px; }
     .status-bar.error   { background: rgba(239,68,68,0.1);  border: 1px solid rgba(239,68,68,0.3);  color: #fca5a5; }
+    .status-bar.warning { background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.3); color: #fcd34d; }
     .status-bar.loading { background: rgba(59,130,246,0.1); border: 1px solid rgba(59,130,246,0.3); color: #93c5fd; }
     .spinner { width: 14px; height: 14px; border: 2px solid rgba(59,130,246,0.3); border-top-color: #3b82f6; border-radius: 50%; animation: spin 0.75s linear infinite; flex-shrink: 0; }
     @keyframes spin { to { transform: rotate(360deg); } }
@@ -490,7 +491,7 @@
       <img src="icons/compass.svg" alt="SeaSense logo" class="header-logo" />
       <div class="header-title-group">
         <h1><em>SeaSense</em></h1>
-        <div class="header-tagline">Know before you go · Catch the right moment <span style="opacity:0.55;margin-left:6px">v3.7.2</span></div>
+        <div class="header-tagline">Know before you go · Catch the right moment <span style="opacity:0.55;margin-left:6px">v3.7.3</span></div>
       </div>
     </div>
     <div class="header-right">
@@ -510,6 +511,7 @@
           <option value="ashdod">Ashdod</option>
           <option value="ashkelon">Ashkelon</option>
           <option value="eilat">Eilat (Red Sea)</option>
+          <option value="kinneret">Kinneret (Sea of Galilee)</option>
           <option value="custom">Custom coordinates...</option>
         </select>
       </div>
@@ -602,7 +604,7 @@
       </ul>
 
       <div class="about-footer-note">All data is free — no API key required.<br>
-      Built by <strong>Alon Kassir</strong> &nbsp;·&nbsp; v3.7.2</div>
+      Built by <strong>Alon Kassir</strong> &nbsp;·&nbsp; v3.7.3</div>
     </div>
   </div>
 </div>
@@ -725,6 +727,7 @@
     ashdod:    { name: 'Ashdod',                 lat: 31.80, lon: 34.64, sea: 'Mediterranean Sea' },
     ashkelon:  { name: 'Ashkelon',               lat: 31.67, lon: 34.57, sea: 'Mediterranean Sea' },
     eilat:     { name: 'Eilat',                  lat: 29.56, lon: 34.95, sea: 'Red Sea' },
+    kinneret:  { name: 'Kinneret (Sea of Galilee)', lat: 32.7919, lon: 35.5921, sea: 'Sea of Galilee' },
     custom:    { name: 'Custom',                 lat: null,  lon: null,  sea: '' },
   };
 
@@ -734,6 +737,7 @@
       const lat = parseFloat(document.getElementById('customLat').value);
       const lon = parseFloat(document.getElementById('customLon').value);
       if (isNaN(lat) || isNaN(lon)) return null;
+      if (lat < -90 || lat > 90 || lon < -180 || lon > 180) return null;
       return { lat, lon, name: `${lat.toFixed(2)}°N, ${lon.toFixed(2)}°E`, sea: '' };
     }
     return LOCATIONS[sel] || LOCATIONS.michmoret;
@@ -814,12 +818,15 @@
     closeMapModal();
   }
 
-  function closeMapModal()      { document.getElementById('mapModal').classList.remove('open'); }
-  function closeMapOutside(e)   { if (e.target === document.getElementById('mapModal')) closeMapModal(); }
+  function closeModal(id)           { document.getElementById(id).classList.remove('open'); }
+  function closeModalOutside(e, id) { if (e.target === document.getElementById(id)) closeModal(id); }
 
-  function openAbout()        { document.getElementById('aboutModal').classList.add('open'); }
-  function closeAbout()       { document.getElementById('aboutModal').classList.remove('open'); }
-  function closeAboutOutside(e) { if (e.target === document.getElementById('aboutModal')) closeAbout(); }
+  function closeMapModal()          { closeModal('mapModal'); }
+  function closeMapOutside(e)       { closeModalOutside(e, 'mapModal'); }
+
+  function openAbout()              { document.getElementById('aboutModal').classList.add('open'); }
+  function closeAbout()             { closeModal('aboutModal'); }
+  function closeAboutOutside(e)     { closeModalOutside(e, 'aboutModal'); }
 
   // ── Add to Home Screen ──────────────────────────────────────
   let _a2hsDeferredPrompt = null;
@@ -898,20 +905,16 @@
     document.getElementById('a2hsBody').innerHTML = html;
     document.getElementById('a2hsModal').classList.add('open');
   }
-  function closeA2HS() { document.getElementById('a2hsModal').classList.remove('open'); }
-  function closeA2HSOutside(e) { if (e.target === document.getElementById('a2hsModal')) closeA2HS(); }
+  function closeA2HS()          { closeModal('a2hsModal'); }
+  function closeA2HSOutside(e)  { closeModalOutside(e, 'a2hsModal'); }
 
   // ── Sun & UV Modal ──────────────────────────────────────────
   function openSunModal() {
     document.getElementById('sunModal').classList.add('open');
     loadSunUV();
   }
-  function closeSunModal() {
-    document.getElementById('sunModal').classList.remove('open');
-  }
-  function closeSunModalOutside(e) {
-    if (e.target === document.getElementById('sunModal')) closeSunModal();
-  }
+  function closeSunModal()          { closeModal('sunModal'); }
+  function closeSunModalOutside(e)  { closeModalOutside(e, 'sunModal'); }
 
   async function loadSunUV() {
     const body = document.getElementById('sunModalBody');
@@ -958,7 +961,7 @@
   }
 
   function renderSunUV(daily, locName) {
-    const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Jerusalem' }); // YYYY-MM-DD
+    const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: TIMEZONE }); // YYYY-MM-DD
     const days = daily.time || [];
     let rows = '';
     days.forEach((dateStr, i) => {
@@ -1131,9 +1134,23 @@
     return lookup;
   }
 
-  async function fetchForecast() {
+  function waveStatusMsg(errMsg) {
+    if (!errMsg) return 'Wave data unavailable — wind forecast only';
+    if (errMsg.includes('429')) return 'Wave data rate-limited — wind forecast only';
+    if (errMsg.includes('Failed to fetch') || errMsg.includes('NetworkError'))
+      return 'Wave server unreachable — wind forecast only';
+    return `Wave data unavailable (${errMsg}) — wind forecast only`;
+  }
+
+  async function fetchForecast(retryCount = 0) {
     const loc = getCoords();
     if (!loc) { setStatus('Please enter valid custom coordinates.', 'error'); return; }
+
+    if (!navigator.onLine) {
+      setStatus('No internet connection. Check your network and try again.', 'error');
+      return;
+    }
+
     localStorage.setItem('ssModel', modelSelect.value);
     localStorage.setItem('windyLocation', document.getElementById('locationSelect').value);
     updateHeaderLocation();
@@ -1144,40 +1161,70 @@
     setStatus('Fetching forecast data...', 'loading');
     document.getElementById('output').innerHTML = '';
 
+    let retrying = false;
     try {
       const currentLayout = document.getElementById('layoutSelect').value;
+      // Fetch wave data separately so a marine API failure doesn't kill wind data
+      let waveErrMsg = null;
+      const waveResult = await fetchEcmwfWam().catch(e => {
+        waveErrMsg = e.message;
+        return null; // continue without waves
+      });
       if (currentLayout === 'model-comparison') {
-        const [windIconEu, windEcmwf, windGfs, waveLookup] = await Promise.all([
+        const [windIconEu, windEcmwf, windGfs] = await Promise.all([
           fetchOpenMeteoWind('iconEu'),
           fetchOpenMeteoWind('ecmwf'),
           fetchOpenMeteoWind('gfs'),
-          fetchEcmwfWam()
         ]);
-        setStatus('', '');
+        if (!waveResult) setStatus(waveStatusMsg(waveErrMsg), 'warning');
         _lastWindDataAll = { iconEu: windIconEu, ecmwf: windEcmwf, gfs: windGfs };
         _lastWindData   = windIconEu;
-        _lastWaveLookup = waveLookup;
-        renderForecast(windIconEu, waveLookup);
+        _lastWaveLookup = waveResult ?? {};
+        renderForecast(windIconEu, waveResult ?? {});
       } else {
-        const [windData, waveLookup] = await Promise.all([
-          fetchOpenMeteoWind(modelSelect.value),
-          fetchEcmwfWam()
-        ]);
-        setStatus('', '');
-        _lastWindData   = windData;
-        _lastWaveLookup = waveLookup;
-        renderForecast(windData, waveLookup);
+        const windData = await fetchOpenMeteoWind(modelSelect.value);
+        if (!waveResult) setStatus(waveStatusMsg(waveErrMsg), 'warning');
+        _lastWindData    = windData;
+        _lastWaveLookup  = waveResult ?? {};
+        _lastWindDataAll = null;
+        renderForecast(windData, waveResult ?? {});
       }
     } catch (e) {
-      setStatus('Error: ' + e.message, 'error');
+      const isNetErr = e.message === 'Failed to fetch' ||
+                       e.message.includes('NetworkError') ||
+                       e.message.includes('network');
+      const is429 = e.message.includes('429');
+      if (is429 && retryCount < 1) {
+        retrying = true;
+        setStatus('Rate limited — retrying in 15 s…', 'loading');
+        setTimeout(() => fetchForecast(retryCount + 1), 15000);
+      } else if (isNetErr && retryCount < 1) {
+        retrying = true;
+        setStatus('Connection issue — retrying…', 'loading');
+        setTimeout(() => fetchForecast(retryCount + 1), 3000);
+      } else {
+        const msg = is429
+          ? 'Too many requests — Open-Meteo rate limit hit. Wait a minute and try again.'
+          : isNetErr
+            ? 'Cannot reach weather servers — they may be temporarily down or check your internet connection.'
+            : `Unable to load forecast: ${e.message}`;
+        setStatus(msg, 'error');
+      }
     } finally {
-      btn.disabled = false;
-      btn.textContent = 'Get Forecast';
+      if (!retrying) {
+        btn.disabled = false;
+        btn.textContent = 'Get Forecast';
+      }
     }
   }
 
-  const M2KT     = 1.94384;
+  const M2KT      = 1.94384;
   const KT_TO_KMH = 1.852;
+  const TIMEZONE  = 'Asia/Jerusalem';
+  const VALID_MODELS   = new Set(['iconEu', 'ecmwf', 'gfs']);
+  const VALID_UNITS    = new Set(['kn', 'kmh']);
+  const VALID_LOCS     = new Set([...Object.keys(LOCATIONS)]);
+  const WAVE_MATCH_MS  = 2 * 3600 * 1000; // 2-hour tolerance for findNearest
 
   function getWindUnit()   { return localStorage.getItem('windUnit') || 'kn'; }
   function windUnitLabel() { return getWindUnit() === 'kmh' ? 'km/h' : 'kn'; }
@@ -1215,8 +1262,6 @@
     localStorage.setItem('ssLayout', layout);
     if (_lastWindData && _lastWaveLookup) renderForecast(_lastWindData, _lastWaveLookup);
   }
-
-  function applyLayout(layout) { /* rendering handled in renderForecast */ }
 
   function windDeg(u, v) {
     return (Math.atan2(-u, -v) * 180 / Math.PI + 360) % 360;
@@ -1274,7 +1319,7 @@
     const keys = Object.keys(lookup).map(Number);
     if (!keys.length) return null;
     const closest = keys.reduce((a, b) => Math.abs(b - t) < Math.abs(a - t) ? b : a);
-    return Math.abs(closest - t) < 2 * 3600 * 1000 ? lookup[closest] : null;
+    return Math.abs(closest - t) < WAVE_MATCH_MS ? lookup[closest] : null;
   }
 
   function renderForecast(windData, wLookup) {
@@ -1285,11 +1330,11 @@
     const days = {}, dayOrder = [];
     ts.forEach((t, i) => {
       const d = new Date(t);
-      const localHour = parseInt(d.toLocaleTimeString('en-IL', { hour: '2-digit', hour12: false, timeZone: 'Asia/Jerusalem' }));
-      if ([21, 0, 3].includes(localHour)) return; // skip night slots
+      const localHour = parseInt(d.toLocaleTimeString('en-IL', { hour: '2-digit', hour12: false, timeZone: TIMEZONE }));
+      if ([21, 0, 3].includes(localHour)) return; // skip 9 PM / midnight / 3 AM — show active-day hours (6–18) only
       if (t < Date.now()) return; // skip past slots
-      const key = d.toLocaleDateString('en-IL', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'Asia/Jerusalem' });
-      const short = d.toLocaleDateString('en-IL', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'Asia/Jerusalem' });
+      const key = d.toLocaleDateString('en-IL', { weekday: 'long', day: 'numeric', month: 'long', timeZone: TIMEZONE });
+      const short = d.toLocaleDateString('en-IL', { weekday: 'short', day: 'numeric', month: 'short', timeZone: TIMEZONE });
       if (!days[key]) { days[key] = { rows: [], short }; dayOrder.push(key); }
 
       const windKt = windKts[i];
@@ -1314,7 +1359,7 @@
     // HTML
     let html = `
       <div class="meta-row">
-        <span>Last updated: ${new Date().toLocaleTimeString('en-IL', { timeZone: 'Asia/Jerusalem' })} IDT</span>
+        <span>Last updated: ${new Date().toLocaleTimeString('en-IL', { timeZone: TIMEZONE })} IDT</span>
         <span>${dayOrder.length} days</span>
         <span class="refresh-timer" id="refreshTimer" onclick="fetchForecast()" title="Click to refresh now">⟳ —</span>
       </div>
@@ -1405,7 +1450,7 @@
               <tbody>`;
 
         rows.forEach(r => {
-          const time = r.d.toLocaleTimeString('en-IL', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jerusalem' });
+          const time = r.d.toLocaleTimeString('en-IL', { hour: '2-digit', minute: '2-digit', timeZone: TIMEZONE });
           const wc  = windColor(r.windKt);
           const gc  = windColor(r.gustKt);
           const whC = waveColor(r.wh);
@@ -1500,7 +1545,7 @@
                 <tbody>`;
 
           rows.forEach(r => {
-            const time = r.d.toLocaleTimeString('en-IL', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jerusalem' });
+            const time = r.d.toLocaleTimeString('en-IL', { hour: '2-digit', minute: '2-digit', timeZone: TIMEZONE });
             const wv   = wLookup[r.t] || findNearest(wLookup, r.t) || {};
             const wh   = wv.wh  ?? null;
             const whd  = wv.whd ?? null;
@@ -1512,8 +1557,17 @@
             const waterTempColor = waterTempC == null ? 'var(--dim)' : waterTempC < 18 ? '#93c5fd' : waterTempC < 24 ? '#34d399' : '#fb923c';
 
             modelDefs.forEach((m, mi) => {
+              const isLastModel  = mi === modelDefs.length - 1;
               const idx = modelMaps[m.key][r.t];
-              if (idx === undefined) return;
+              if (idx === undefined) {
+                // Model has no data for this slot — render a placeholder row so all models always appear
+                html += `<tr${isLastModel ? ' class="col-model-sep"' : ''}>
+                    <td>${mi === 0 ? `<span class="col-time">${time}</span>` : ''}<span class="col-model-label">${m.label}</span></td>
+                    <td></td>
+                    <td colspan="8" style="color:var(--dim);font-size:0.8rem">No data</td>
+                  </tr>`;
+                return;
+              }
               const windKt   = m.data.windKt[idx];
               const gustKt   = m.data.gustKt[idx];
               const deg      = m.data.deg[idx];
@@ -1529,7 +1583,6 @@
               const rainPctStr   = rainPct != null ? `${rainPct}%` : '—';
               const rainMmStr    = rainMm >= 0.05 ? ` <span class="col-sub">${rainMm.toFixed(1)} mm</span>` : '';
               const rainPctColor = rainPct == null ? 'var(--dim)' : rainPct < 20 ? 'var(--dim)' : rainPct < 50 ? '#93c5fd' : rainPct < 75 ? '#3b82f6' : '#a78bfa';
-              const isLastModel  = mi === modelDefs.length - 1;
 
               html += `<tr${isLastModel ? ' class="col-model-sep"' : ''}>
                   <td>${mi === 0 ? `<span class="col-time">${time}</span>` : ''}<span class="col-model-label">${m.label}</span></td>
@@ -1571,7 +1624,7 @@
           <div class="cards">`;
 
         rows.forEach(r => {
-          const time  = r.d.toLocaleTimeString('en-IL', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jerusalem' });
+          const time  = r.d.toLocaleTimeString('en-IL', { hour: '2-digit', minute: '2-digit', timeZone: TIMEZONE });
           const wc    = windColor(r.windKt);
           const gc    = windColor(r.gustKt);
           const whC   = waveColor(r.wh);
@@ -1691,22 +1744,38 @@
   function applyURLParams() {
     const p = new URLSearchParams(location.search);
     if (!p.toString()) return; // nothing in URL
+
     if (p.has('loc')) {
-      const locEl = document.getElementById('locationSelect');
-      locEl.value = p.get('loc');
-      onLocationChange();
+      const loc = p.get('loc');
+      if (VALID_LOCS.has(loc)) {
+        document.getElementById('locationSelect').value = loc;
+        onLocationChange();
+      }
     }
-    if (p.has('lat')) document.getElementById('customLat').value = p.get('lat');
-    if (p.has('lon')) document.getElementById('customLon').value = p.get('lon');
-    if (p.has('model')) document.getElementById('modelSelect').value = p.get('model');
-    if (p.has('unit')) {
+    if (p.has('lat')) {
+      const lat = parseFloat(p.get('lat'));
+      if (!isNaN(lat) && lat >= -90 && lat <= 90)
+        document.getElementById('customLat').value = lat;
+    }
+    if (p.has('lon')) {
+      const lon = parseFloat(p.get('lon'));
+      if (!isNaN(lon) && lon >= -180 && lon <= 180)
+        document.getElementById('customLon').value = lon;
+    }
+    if (p.has('model') && VALID_MODELS.has(p.get('model')))
+      document.getElementById('modelSelect').value = p.get('model');
+
+    if (p.has('unit') && VALID_UNITS.has(p.get('unit'))) {
       document.getElementById('windUnitSelect').value = p.get('unit');
       localStorage.setItem('windUnit', p.get('unit'));
       document.querySelectorAll('.wind-unit-lbl').forEach(el => el.textContent = windUnitLabel());
     }
     const thMap = { thcw: 'thCautWind', thcwv: 'thCautWave', thdw: 'thDangerWind', thdwv: 'thDangerWave' };
     Object.entries(thMap).forEach(([key, id]) => {
-      if (p.has(key)) document.getElementById(id).value = p.get(key);
+      if (p.has(key)) {
+        const v = parseFloat(p.get(key));
+        if (!isNaN(v) && v >= 0) document.getElementById(id).value = v;
+      }
     });
   }
 
@@ -1752,11 +1821,11 @@
   document.getElementById('layoutSelect').value = savedLayout;
   const sbLayoutEl = document.getElementById('layoutSelectSb');
   if (sbLayoutEl) sbLayoutEl.value = savedLayout;
-  fetchForecast().then(() => { applyLayout(savedLayout); startAutoRefresh(); });
+  fetchForecast().then(() => { startAutoRefresh(); });
 </script>
 
 <footer class="app-footer">
-  <span>SeaSense <strong style="color:var(--muted)">v3.7.2</strong></span>
+  <span>SeaSense <strong style="color:var(--muted)">v3.7.3</strong></span>
   <span style="color:var(--border)">·</span>
   <span>Made with ❤️ by <strong style="color:var(--muted)">Alon Kassir</strong></span>
   <span style="color:var(--border)">·</span>
