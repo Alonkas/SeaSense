@@ -484,13 +484,21 @@
       width: fit-content;
     }
     .hourly-details-btn:hover, .hourly-details-btn.active { color: var(--accent); border-color: var(--accent); border-style: solid; }
+    @media (max-width: 768px) {
+      .hourly-details-btn { width: 100%; padding: 12px 14px; font-size: 0.85rem; text-align: center; }
+    }
     .col-time-hourly { font-size: 0.8rem; color: var(--muted); font-weight: 600; }
     .col-expand-btn {
-      background: none; border: none; color: var(--dim);
-      font-size: 0.78rem; cursor: pointer; padding: 0 0 0 5px; line-height: 1;
+      background: none; border: none; color: var(--muted);
+      font-size: 1rem; cursor: pointer; padding: 4px 6px 4px 6px; line-height: 1;
       transition: color 0.15s; vertical-align: middle;
     }
     .col-expand-btn:hover, .col-expand-btn.active { color: var(--accent); }
+    .col-expand-row td { padding: 2px 8px 6px; border-bottom: none; }
+    @media (max-width: 768px) {
+      .col-expand-btn { padding: 10px 10px 10px 8px; font-size: 1.1rem; }
+      .col-expand-row td { padding: 2px 6px 8px; }
+    }
     .col-table tr.hourly-col-row { display: none; }
     .col-table tr.hourly-col-row.open { display: table-row; }
     .col-table tr.hourly-col-row td { opacity: 0.72; }
@@ -1501,11 +1509,8 @@
           const windDir  = `${dirArrow(r.deg)} ${dirLabel(r.deg)} ${Math.round(r.deg)}°`;
           const waveDir  = r.whd != null ? `${dirArrow(r.whd)} ${dirLabel(r.whd)} ${Math.round(r.whd)}°` : '—';
           const gid = `hg${r.t}`;
-          const expandBtn = r.between && r.between.length > 0
-            ? `<button class="col-expand-btn" onclick="toggleColHours('${gid}',this)">▾</button>` : '';
-
           html += `<tr>
-              <td><span class="col-time">${time}</span>${expandBtn}</td>
+              <td><span class="col-time">${time}</span></td>
               <td><span class="col-dot ${r.st}"></span></td>
               <td><span class="col-val" style="color:${wc}">${windDisp(r.windKt).toFixed(1)}</span><span class="col-sub">${windUnitLabel()}</span><span class="col-inline-dir">${windDir}</span></td>
               <td class="col-hide-mobile"><span class="col-dir">${windDir}</span></td>
@@ -1518,6 +1523,7 @@
             </tr>`;
 
           if (r.between && r.between.length > 0) {
+            html += `<tr class="col-expand-row"><td colspan="10"><button class="hourly-details-btn" onclick="toggleColHours('${gid}',this)">▸ hourly details</button></td></tr>`;
             r.between.forEach(b => {
               const bt  = b.d.toLocaleTimeString('en-IL', { hour: '2-digit', minute: '2-digit', timeZone: TIMEZONE });
               const bwc = windColor(b.windKt);
@@ -1908,7 +1914,7 @@
     const rows = document.querySelectorAll(`tr[data-group="${gid}"]`);
     const open = !rows[0]?.classList.contains('open');
     rows.forEach(r => r.classList.toggle('open', open));
-    btn.textContent = open ? '▴' : '▾';
+    btn.textContent = open ? '▾ hourly details' : '▸ hourly details';
     btn.classList.toggle('active', open);
   }
 
