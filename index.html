@@ -1401,6 +1401,7 @@
     });
 
     // HTML
+    const currentLayout = document.getElementById('layoutSelect').value;
     let html = `
       <div class="meta-row">
         <span>Last updated: ${new Date().toLocaleTimeString('en-IL', { timeZone: TIMEZONE })} IDT</span>
@@ -1409,55 +1410,55 @@
       </div>
 
 
-      <div class="day-nav">`;
+      `;
 
-    dayOrder.forEach(dk => {
-      const { rows, short } = days[dk];
-      const [wd, ...rest] = short.split(' ');
+    if (currentLayout !== 'column') {
+      html += `<div class="day-nav">`;
+      dayOrder.forEach(dk => {
+        const { rows, short } = days[dk];
+        const [wd, ...rest] = short.split(' ');
 
-      const windMin  = Math.min(...rows.map(r => r.windKt));
-      const windMax  = Math.max(...rows.map(r => r.windKt));
-      const waves    = rows.map(r => r.wh).filter(w => w != null);
-      const waveMin  = waves.length ? Math.min(...waves) : null;
-      const waveMax  = waves.length ? Math.max(...waves) : null;
-      const rainPcts = rows.map(r => r.rainPct).filter(p => p != null);
-      const rainMax  = rainPcts.length ? Math.max(...rainPcts) : null;
+        const windMin  = Math.min(...rows.map(r => r.windKt));
+        const windMax  = Math.max(...rows.map(r => r.windKt));
+        const waves    = rows.map(r => r.wh).filter(w => w != null);
+        const waveMin  = waves.length ? Math.min(...waves) : null;
+        const waveMax  = waves.length ? Math.max(...waves) : null;
+        const rainPcts = rows.map(r => r.rainPct).filter(p => p != null);
+        const rainMax  = rainPcts.length ? Math.max(...rainPcts) : null;
 
-      const wMin    = windDisp(windMin).toFixed(0);
-      const wMax    = windDisp(windMax).toFixed(0);
-      const waveStr = waveMin != null ? `${waveMin.toFixed(1)}–${waveMax.toFixed(1)}` : '—';
-      const rainPillColor = rainMax == null ? 'var(--dim)'
-        : rainMax < 20 ? 'var(--dim)'
-        : rainMax < 50 ? '#93c5fd'
-        : rainMax < 75 ? '#3b82f6'
-        : '#a78bfa';
+        const wMin    = windDisp(windMin).toFixed(0);
+        const wMax    = windDisp(windMax).toFixed(0);
+        const waveStr = waveMin != null ? `${waveMin.toFixed(1)}–${waveMax.toFixed(1)}` : '—';
+        const rainPillColor = rainMax == null ? 'var(--dim)'
+          : rainMax < 20 ? 'var(--dim)'
+          : rainMax < 50 ? '#93c5fd'
+          : rainMax < 75 ? '#3b82f6'
+          : '#a78bfa';
 
-      html += `<a class="day-pill" href="#day-${dk.replace(/\W/g,'_')}">
-        <div class="dp-weekday">${wd}</div>
-        <div class="dp-date">${rest.join(' ')}</div>
-        <div class="dp-stats">
-          <div class="dp-stat-row">
-            <span class="dp-stat-icon"><img src="icons/Wind.png" alt="wind" style="height:0.9em;vertical-align:middle"></span>
-            <span class="dp-stat-val" style="color:${windColor(windMax)}">${wMin}–${wMax}</span>
-            <span class="dp-stat-unit">${windUnitLabel()}</span>
+        html += `<a class="day-pill" href="#day-${dk.replace(/\W/g,'_')}">
+          <div class="dp-weekday">${wd}</div>
+          <div class="dp-date">${rest.join(' ')}</div>
+          <div class="dp-stats">
+            <div class="dp-stat-row">
+              <span class="dp-stat-icon"><img src="icons/Wind.png" alt="wind" style="height:0.9em;vertical-align:middle"></span>
+              <span class="dp-stat-val" style="color:${windColor(windMax)}">${wMin}–${wMax}</span>
+              <span class="dp-stat-unit">${windUnitLabel()}</span>
+            </div>
+            <div class="dp-stat-row">
+              <span class="dp-stat-icon">🌊</span>
+              <span class="dp-stat-val" style="color:${waveColor(waveMax)}">${waveStr}</span>
+              <span class="dp-stat-unit">${waveMin != null ? 'm' : ''}</span>
+            </div>
+            <div class="dp-stat-row">
+              <span class="dp-stat-icon">🌧</span>
+              <span class="dp-stat-val" style="color:${rainPillColor}">${rainMax != null ? rainMax + '%' : '—'}</span>
+              <span class="dp-stat-unit">${rainMax != null ? 'max' : ''}</span>
+            </div>
           </div>
-          <div class="dp-stat-row">
-            <span class="dp-stat-icon">🌊</span>
-            <span class="dp-stat-val" style="color:${waveColor(waveMax)}">${waveStr}</span>
-            <span class="dp-stat-unit">${waveMin != null ? 'm' : ''}</span>
-          </div>
-          <div class="dp-stat-row">
-            <span class="dp-stat-icon">🌧</span>
-            <span class="dp-stat-val" style="color:${rainPillColor}">${rainMax != null ? rainMax + '%' : '—'}</span>
-            <span class="dp-stat-unit">${rainMax != null ? 'max' : ''}</span>
-          </div>
-        </div>
-      </a>`;
-    });
-
-    html += `</div>`;
-
-    const currentLayout = document.getElementById('layoutSelect').value;
+        </a>`;
+      });
+      html += `</div>`;
+    }
 
     if (currentLayout === 'column') {
       // ── Column (table) layout ────────────────────────────────
