@@ -1463,6 +1463,7 @@
       // ── Column (table) layout ────────────────────────────────
       dayOrder.forEach(dk => {
         const { rows } = days[dk];
+        const hasBetween = rows.some(r => r.between && r.between.length > 0);
         const goCnt    = rows.filter(r => r.st === 'go').length;
         const cautCnt  = rows.filter(r => r.st === 'caution').length;
         const dangerCnt = rows.filter(r => r.st === 'danger').length;
@@ -1523,7 +1524,6 @@
             </tr>`;
 
           if (r.between && r.between.length > 0) {
-            html += `<tr class="col-expand-row"><td colspan="10"><button class="hourly-details-btn" onclick="toggleColHours('${gid}',this)">▸ hourly details</button></td></tr>`;
             r.between.forEach(b => {
               const bt  = b.d.toLocaleTimeString('en-IL', { hour: '2-digit', minute: '2-digit', timeZone: TIMEZONE });
               const bwc = windColor(b.windKt);
@@ -1555,7 +1555,11 @@
           }
         });
 
-        html += `</tbody></table></div></div>`;
+        html += `</tbody></table></div>`;
+        if (hasBetween) {
+          html += `<button class="hourly-details-btn" onclick="toggleColHours('${id}',this)">▸ hourly details</button>`;
+        }
+        html += `</div>`;
       });
 
     } else if (currentLayout === 'model-comparison') {
@@ -1910,8 +1914,8 @@
     btn.classList.toggle('active', open);
     btn.textContent = open ? '▾ hourly details' : '▸ hourly details';
   }
-  function toggleColHours(gid, btn) {
-    const rows = document.querySelectorAll(`tr[data-group="${gid}"]`);
+  function toggleColHours(dayId, btn) {
+    const rows = document.querySelectorAll(`#${dayId} .hourly-col-row`);
     const open = !rows[0]?.classList.contains('open');
     rows.forEach(r => r.classList.toggle('open', open));
     btn.textContent = open ? '▾ hourly details' : '▸ hourly details';
