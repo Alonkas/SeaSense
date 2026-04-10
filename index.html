@@ -1412,7 +1412,7 @@
 
       `;
 
-    if (currentLayout !== 'column') {
+    if (currentLayout !== 'column' && currentLayout !== 'model-comparison') {
       html += `<div class="day-nav">`;
       dayOrder.forEach(dk => {
         const { rows, short } = days[dk];
