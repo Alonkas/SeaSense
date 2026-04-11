@@ -475,8 +475,9 @@
     .fc.fc-hourly { display: none; }
     .fc.fc-hourly.open { display: block; opacity: 0.82; }
     .fc.fc-hourly .fc-top { height: 2px; }
+    .day-header-left { display: flex; align-items: center; gap: 12px; }
     .hourly-details-btn {
-      display: block; margin-top: 8px;
+      display: block;
       background: var(--elevated); border: 1px solid var(--border);
       border-radius: 20px; color: var(--text);
       font-size: 0.75rem; padding: 5px 14px; cursor: pointer;
@@ -484,9 +485,6 @@
       width: fit-content;
     }
     .hourly-details-btn:hover, .hourly-details-btn.active { color: var(--accent); border-color: var(--accent); }
-    @media (max-width: 768px) {
-      .hourly-details-btn { width: 100%; padding: 12px 14px; font-size: 0.85rem; text-align: center; }
-    }
     .col-time-hourly { font-size: 0.8rem; color: var(--muted); font-weight: 600; }
     .col-expand-btn {
       background: none; border: none; color: var(--muted);
@@ -524,7 +522,7 @@
       <img src="icons/compass.svg" alt="SeaSense logo" class="header-logo" />
       <div class="header-title-group">
         <h1><em>SeaSense</em></h1>
-        <div class="header-tagline">Know before you go · Catch the right moment <span style="opacity:0.55;margin-left:6px">v8.2.0</span></div>
+        <div class="header-tagline">Know before you go · Catch the right moment <span style="opacity:0.55;margin-left:6px">v8.3.0</span></div>
       </div>
     </div>
     <div class="header-right">
@@ -637,7 +635,7 @@
       </ul>
 
       <div class="about-footer-note">All data is free — no API key required.<br>
-      Built by <strong>Alon Kassir</strong> &nbsp;·&nbsp; v8.2.0</div>
+      Built by <strong>Alon Kassir</strong> &nbsp;·&nbsp; v8.3.0</div>
     </div>
   </div>
 </div>
@@ -1369,7 +1367,7 @@
       const localHour = parseInt(d.toLocaleTimeString('en-IL', { hour: '2-digit', hour12: false, timeZone: TIMEZONE }));
       if (t < Date.now()) return; // skip past slots
       const isAnchor = localHour % 3 === 0;
-      if (isAnchor && [21, 0, 3].includes(localHour)) return; // skip night anchor slots
+      if (isAnchor && [0, 3].includes(localHour)) return; // skip night anchor slots
       const key   = d.toLocaleDateString('en-IL', { weekday: 'long', day: 'numeric', month: 'long', timeZone: TIMEZONE });
       const short = d.toLocaleDateString('en-IL', { weekday: 'short', day: 'numeric', month: 'short', timeZone: TIMEZONE });
       if (!days[key]) { days[key] = { rows: [], short, _last: null }; dayOrder.push(key); }
@@ -1412,7 +1410,7 @@
 
       `;
 
-    if (currentLayout !== 'column' && currentLayout !== 'model-comparison') {
+    if (currentLayout !== 'column' && currentLayout !== 'model-comparison' && currentLayout !== 'hourly-box') {
       html += `<div class="day-nav">`;
       dayOrder.forEach(dk => {
         const { rows, short } = days[dk];
@@ -1472,7 +1470,10 @@
 
         html += `<div class="day-section" id="${id}">
           <div class="day-header">
-            <div class="day-title">${dk}</div>
+            <div class="day-header-left">
+              <div class="day-title">${dk}</div>
+              ${hasBetween ? `<button class="hourly-details-btn" onclick="toggleColHours('${id}',this)">▸ hourly details</button>` : ''}
+            </div>
             <div class="day-badges">
               ${goCnt    > 0 ? `<span class="dbadge go">${goCnt} GO</span>` : ''}
               ${cautCnt  > 0 ? `<span class="dbadge caution">${cautCnt} CAUTION</span>` : ''}
@@ -1557,9 +1558,6 @@
         });
 
         html += `</tbody></table></div>`;
-        if (hasBetween) {
-          html += `<button class="hourly-details-btn" onclick="toggleColHours('${id}',this)">▸ hourly details</button>`;
-        }
         html += `</div>`;
       });
 
@@ -1600,9 +1598,13 @@
           });
 
           const id = 'day-' + dk.replace(/\W/g,'_');
+          const hasBetween = rows.some(r => r.between && r.between.length > 0);
           html += `<div class="day-section" id="${id}">
             <div class="day-header">
-              <div class="day-title">${dk}</div>
+              <div class="day-header-left">
+                <div class="day-title">${dk}</div>
+                ${hasBetween ? `<button class="hourly-details-btn" onclick="toggleColHours('${id}',this)">▸ hourly details</button>` : ''}
+              </div>
               <div class="day-badges">
                 ${goCnt    > 0 ? `<span class="dbadge go">${goCnt} GO</span>` : ''}
                 ${cautCnt  > 0 ? `<span class="dbadge caution">${cautCnt} CAUTION</span>` : ''}
@@ -1678,6 +1680,56 @@
                   <td><span class="col-rain" style="color:${rainPctColor}">${rainPctStr}</span>${rainMmStr}</td>
                 </tr>`;
             });
+
+            if (r.between && r.between.length > 0) {
+              r.between.forEach(b => {
+                const bt = b.d.toLocaleTimeString('en-IL', { hour: '2-digit', minute: '2-digit', timeZone: TIMEZONE });
+                const bWhC      = waveColor(b.wh);
+                const bWaveStr  = b.wh  != null ? `${b.wh.toFixed(1)} m` : '—';
+                const bWaveDir  = b.whd != null ? `${dirArrow(b.whd)} ${dirLabel(b.whd)} ${Math.round(b.whd)}°` : '—';
+                const bWatStr   = b.waterTempC != null ? `${Math.round(b.waterTempC)}°C` : '—';
+                const bWatCol   = b.waterTempC == null ? 'var(--dim)' : b.waterTempC < 18 ? '#93c5fd' : b.waterTempC < 24 ? '#34d399' : '#fb923c';
+                modelDefs.forEach((m, mi) => {
+                  const isLastModel = mi === modelDefs.length - 1;
+                  const idx = modelMaps[m.key][b.t];
+                  if (idx === undefined) {
+                    html += `<tr class="hourly-col-row${isLastModel ? ' col-model-sep' : ''}">
+                        <td>${mi === 0 ? `<span class="col-time col-time-hourly">${bt}</span>` : ''}<span class="col-model-label">${m.label}</span></td>
+                        <td></td>
+                        <td colspan="8" style="color:var(--dim);font-size:0.8rem">No data</td>
+                      </tr>`;
+                    return;
+                  }
+                  const bWindKt   = m.data.windKt[idx];
+                  const bGustKt   = m.data.gustKt[idx];
+                  const bDeg      = m.data.deg[idx];
+                  const bRainMm   = m.data.rainMm[idx];
+                  const bRainPct  = m.data.rainPct?.[idx]  ?? null;
+                  const bAirTempC = m.data.airTempC?.[idx] ?? null;
+                  const bSt       = status(bWindKt, bGustKt, b.wh ?? 0);
+                  const bWc       = windColor(bWindKt);
+                  const bGc       = windColor(bGustKt);
+                  const bWindDir  = `${dirArrow(bDeg)} ${dirLabel(bDeg)} ${Math.round(bDeg)}°`;
+                  const bAirStr   = bAirTempC != null ? `${Math.round(bAirTempC)}°C` : '—';
+                  const bAirCol   = bAirTempC == null ? 'var(--dim)' : bAirTempC < 15 ? '#93c5fd' : bAirTempC < 25 ? '#34d399' : '#fb923c';
+                  const bRainPctStr = bRainPct != null ? `${bRainPct}%` : '—';
+                  const bRainMmStr  = bRainMm >= 0.05 ? ` <span class="col-sub">${bRainMm.toFixed(1)} mm</span>` : '';
+                  const bRainCol    = bRainPct == null ? 'var(--dim)' : bRainPct < 20 ? 'var(--dim)' : bRainPct < 50 ? '#93c5fd' : bRainPct < 75 ? '#3b82f6' : '#a78bfa';
+                  html += `<tr class="hourly-col-row${isLastModel ? ' col-model-sep' : ''}">
+                      <td>${mi === 0 ? `<span class="col-time col-time-hourly">${bt}</span>` : ''}<span class="col-model-label">${m.label}</span></td>
+                      <td><span class="col-dot ${bSt}"></span></td>
+                      <td><span class="col-val" style="color:${bWc}">${windDisp(bWindKt).toFixed(1)}</span><span class="col-sub">${windUnitLabel()}</span><span class="col-inline-dir">${bWindDir}</span></td>
+                      <td class="col-hide-mobile"><span class="col-dir">${bWindDir}</span></td>
+                      <td><span class="col-val" style="color:${bWhC}">${bWaveStr}</span><span class="col-inline-dir">${bWaveDir}</span></td>
+                      <td class="col-hide-mobile"><span class="col-dir">${bWaveDir}</span></td>
+                      <td><span class="col-val" style="color:${bGc}">${windDisp(bGustKt).toFixed(1)}</span><span class="col-sub">${windUnitLabel()}</span></td>
+                      <td><span class="col-temp" style="color:${bAirCol}">${bAirStr}</span></td>
+                      <td><span class="col-temp" style="color:${bWatCol}">${bWatStr}</span></td>
+                      <td><span class="col-rain" style="color:${bRainCol}">${bRainPctStr}</span>${bRainMmStr}</td>
+                    </tr>`;
+                });
+              });
+            }
           });
 
           html += `</tbody></table></div></div>`;
@@ -1692,10 +1744,14 @@
         const cautCnt = rows.filter(r => r.st === 'caution').length;
         const dangerCnt = rows.filter(r => r.st === 'danger').length;
         const id = 'day-' + dk.replace(/\W/g,'_');
+        const hasBetween = rows.some(r => r.between && r.between.length > 0);
 
         html += `<div class="day-section" id="${id}">
           <div class="day-header">
-            <div class="day-title">${dk}</div>
+            <div class="day-header-left">
+              <div class="day-title">${dk}</div>
+              ${hasBetween ? `<button class="hourly-details-btn" onclick="toggleDayHours('${id}',this)">▸ hourly details</button>` : ''}
+            </div>
             <div class="day-badges">
               ${goCnt   > 0 ? `<span class="dbadge go">${goCnt} GO</span>` : ''}
               ${cautCnt > 0 ? `<span class="dbadge caution">${cautCnt} CAUTION</span>` : ''}
@@ -1775,18 +1831,13 @@
           </div>`;
         };
 
-        const hasBetween = rows.some(r => r.between && r.between.length > 0);
         rows.forEach(r => {
           html += mkCard(r, false);
           if (r.between && r.between.length > 0) {
             r.between.forEach(b => { html += mkCard(b, true); });
           }
         });
-        if (hasBetween) {
-          html += `</div><button class="hourly-details-btn" onclick="toggleDayHours('${id}',this)">▸ hourly details</button>`;
-        } else {
-          html += `</div>`;
-        }
+        html += `</div>`;
         html += `</div>`;
       });
     }
@@ -1933,7 +1984,7 @@
 </script>
 
 <footer class="app-footer">
-  <span>SeaSense <strong style="color:var(--muted)">v8.2.0</strong></span>
+  <span>SeaSense <strong style="color:var(--muted)">v8.3.0</strong></span>
   <span style="color:var(--border)">·</span>
   <span>Made with ❤️ by <strong style="color:var(--muted)">Alon Kassir</strong></span>
   <span style="color:var(--border)">·</span>
