@@ -402,6 +402,20 @@
 
     .fc-label { font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--dim); margin-bottom: 3px; }
     .fc-section-label { display: none; }
+    .fc-section-wrapper { display: flex; align-items: stretch; gap: 5px; }
+    .fc-side-label {
+      writing-mode: vertical-lr;
+      transform: rotate(180deg);
+      font-size: 0.55rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--dim);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 11px;
+    }
     .fc-temp-row  { display: flex; justify-content: space-between; align-items: center; margin-top: 2px; }
     .fc-temp-item { display: flex; align-items: center; gap: 3px; font-size: 0.75rem; font-weight: 600; }
 
@@ -522,7 +536,7 @@
       <img src="icons/compass.svg" alt="SeaSense logo" class="header-logo" />
       <div class="header-title-group">
         <h1><em>SeaSense</em></h1>
-        <div class="header-tagline">Know before you go · Catch the right moment <span style="opacity:0.55;margin-left:6px">v8.3.0</span></div>
+        <div class="header-tagline">Know before you go · Catch the right moment <span style="opacity:0.55;margin-left:6px">v8.5.0</span></div>
       </div>
     </div>
     <div class="header-right">
@@ -635,7 +649,7 @@
       </ul>
 
       <div class="about-footer-note">All data is free — no API key required.<br>
-      Built by <strong>Alon Kassir</strong> &nbsp;·&nbsp; v8.3.0</div>
+      Built by <strong>Alon Kassir</strong> &nbsp;·&nbsp; v8.5.0</div>
     </div>
   </div>
 </div>
@@ -1148,7 +1162,7 @@
   async function fetchEcmwfWam() {
     const { lat, lon } = getCoords();
     const url = `${OM_MARINE_URL}?latitude=${lat}&longitude=${lon}` +
-      `&hourly=wave_height,wave_direction,swell_wave_height,swell_wave_direction,secondary_swell_wave_height,secondary_swell_wave_direction,sea_surface_temperature` +
+      `&hourly=wave_height,wave_direction,wave_period,swell_wave_height,swell_wave_direction,swell_wave_period,secondary_swell_wave_height,secondary_swell_wave_direction,secondary_swell_wave_period,sea_surface_temperature` +
       `&models=ecmwf_wam&timezone=UTC&forecast_days=7`;
     const res = await fetch(url);
     if (!res.ok) throw new Error(`ECMWF WAM (Open-Meteo) HTTP ${res.status}`);
@@ -1159,10 +1173,13 @@
       lookup[t] = {
         wh:        data.hourly.wave_height?.[i]                         ?? null,
         whd:       data.hourly.wave_direction?.[i]                      ?? null,
+        wp:        data.hourly.wave_period?.[i]                         ?? null,
         sw1:       data.hourly.swell_wave_height?.[i]                   ?? null,
         sw1d:      data.hourly.swell_wave_direction?.[i]                ?? null,
+        sw1p:      data.hourly.swell_wave_period?.[i]                   ?? null,
         sw2:       data.hourly.secondary_swell_wave_height?.[i]         ?? null,
         sw2d:      data.hourly.secondary_swell_wave_direction?.[i]      ?? null,
+        sw2p:      data.hourly.secondary_swell_wave_period?.[i]         ?? null,
         waterTempC: data.hourly.sea_surface_temperature?.[i]            ?? null,
       };
     });
@@ -1259,6 +1276,12 @@
   const VALID_UNITS    = new Set(['kn', 'kmh']);
   const VALID_LOCS     = new Set([...Object.keys(LOCATIONS)]);
   const WAVE_MATCH_MS  = 2 * 3600 * 1000; // 2-hour tolerance for findNearest
+
+  // Komar & Gaughan (1972): Hb = 0.39 · g^(1/5) · (T · H₀²)^(2/5)
+  function komarBreaker(H0, T) {
+    if (H0 == null || T == null || H0 <= 0 || T <= 0) return null;
+    return 0.39 * Math.pow(9.81, 0.2) * Math.pow(T * H0 * H0, 0.4);
+  }
 
   function getWindUnit()   { return localStorage.getItem('windUnit') || 'kn'; }
   function windUnitLabel() { return getWindUnit() === 'kmh' ? 'km/h' : 'kn'; }
@@ -1381,13 +1404,16 @@
       const wv     = wLookup[t] || findNearest(wLookup, t) || {};
       const wh         = wv.wh         ?? null;
       const whd        = wv.whd        ?? null;
+      const wp         = wv.wp         ?? null;
       const sw1        = wv.sw1        ?? null;
       const sw1d       = wv.sw1d       ?? null;
+      const sw1p       = wv.sw1p       ?? null;
       const sw2        = wv.sw2        ?? null;
       const sw2d       = wv.sw2d       ?? null;
+      const sw2p       = wv.sw2p       ?? null;
       const waterTempC = wv.waterTempC ?? null;
       const st         = status(windKt, gustKt, wh ?? 0);
-      const slot = { t, d, windKt, gustKt, deg, rainMm, rainPct, airTempC, wh, whd, sw1, sw1d, sw2, sw2d, waterTempC, st };
+      const slot = { t, d, windKt, gustKt, deg, rainMm, rainPct, airTempC, wh, whd, wp, sw1, sw1d, sw1p, sw2, sw2d, sw2p, waterTempC, st };
 
       if (isAnchor) {
         slot.between = [];
@@ -1485,13 +1511,13 @@
               <thead><tr>
                 <th>Time</th>
                 <th></th>
+                <th>🏄 Surf</th>
+                <th>🌊 Swell</th>
+                <th class="col-hide-mobile">Swell Dir</th>
                 <th><img src="icons/Wind.png" alt="wind" style="height:1em;vertical-align:middle;margin-right:3px">Wind</th>
                 <th class="col-hide-mobile">Direction</th>
-                <th>🌊 Waves</th>
-                <th class="col-hide-mobile">Wave Dir</th>
                 <th>Gusts</th>
                 <th>🌡 Air</th>
-                <th>💧 Sea</th>
                 <th>🌧 Rain</th>
               </tr></thead>
               <tbody>`;
@@ -1510,18 +1536,22 @@
           const rainPctColor = r.rainPct == null ? 'var(--dim)' : r.rainPct < 20 ? 'var(--dim)' : r.rainPct < 50 ? '#93c5fd' : r.rainPct < 75 ? '#3b82f6' : '#a78bfa';
           const waveStr  = r.wh  != null ? `${r.wh.toFixed(1)} m`  : '—';
           const windDir  = `${dirArrow(r.deg)} ${dirLabel(r.deg)} ${Math.round(r.deg)}°`;
-          const waveDir  = r.whd != null ? `${dirArrow(r.whd)} ${dirLabel(r.whd)} ${Math.round(r.whd)}°` : '—';
+          let waveDir  = r.whd != null ? `${dirArrow(r.whd)} ${dirLabel(r.whd)} ${Math.round(r.whd)}°` : '—';
+          if (r.wp != null) waveDir = (r.whd != null ? waveDir + ' · ' : '') + `period ${Math.round(r.wp)}s`;
+          const surfHCol = komarBreaker(r.wh, r.wp);
+          const surfCCol = waveColor(surfHCol);
+          const surfStrCol = surfHCol != null ? `~${surfHCol.toFixed(1)} m` : '—';
           const gid = `hg${r.t}`;
           html += `<tr>
               <td><span class="col-time">${time}</span></td>
               <td><span class="col-dot ${r.st}"></span></td>
-              <td><span class="col-val" style="color:${wc}">${windDisp(r.windKt).toFixed(1)}</span><span class="col-sub">${windUnitLabel()}</span><span class="col-inline-dir">${windDir}</span></td>
-              <td class="col-hide-mobile"><span class="col-dir">${windDir}</span></td>
+              <td><span class="col-val" style="color:${surfCCol}">${surfStrCol}</span></td>
               <td><span class="col-val" style="color:${whC}">${waveStr}</span><span class="col-inline-dir">${waveDir}</span></td>
               <td class="col-hide-mobile"><span class="col-dir">${waveDir}</span></td>
+              <td><span class="col-val" style="color:${wc}">${windDisp(r.windKt).toFixed(1)}</span><span class="col-sub">${windUnitLabel()}</span><span class="col-inline-dir">${windDir}</span></td>
+              <td class="col-hide-mobile"><span class="col-dir">${windDir}</span></td>
               <td><span class="col-val" style="color:${gc}">${windDisp(r.gustKt).toFixed(1)}</span><span class="col-sub">${windUnitLabel()}</span></td>
               <td><span class="col-temp" style="color:${airTempColor}">${airTempStr}</span></td>
-              <td><span class="col-temp" style="color:${waterTempColor}">${waterTempStr}</span></td>
               <td><span class="col-rain" style="color:${rainPctColor}">${rainPctStr}</span>${rainMmStr}</td>
             </tr>`;
 
@@ -1540,17 +1570,21 @@
               const bRainCol  = b.rainPct == null ? 'var(--dim)' : b.rainPct < 20 ? 'var(--dim)' : b.rainPct < 50 ? '#93c5fd' : b.rainPct < 75 ? '#3b82f6' : '#a78bfa';
               const bWaveStr  = b.wh  != null ? `${b.wh.toFixed(1)} m` : '—';
               const bWindDir  = `${dirArrow(b.deg)} ${dirLabel(b.deg)} ${Math.round(b.deg)}°`;
-              const bWaveDir  = b.whd != null ? `${dirArrow(b.whd)} ${dirLabel(b.whd)} ${Math.round(b.whd)}°` : '—';
+              let bWaveDir  = b.whd != null ? `${dirArrow(b.whd)} ${dirLabel(b.whd)} ${Math.round(b.whd)}°` : '—';
+              if (b.wp != null) bWaveDir = (b.whd != null ? bWaveDir + ' · ' : '') + `period ${Math.round(b.wp)}s`;
+              const bSurfH = komarBreaker(b.wh, b.wp);
+              const bSurfC = waveColor(bSurfH);
+              const bSurfStr = bSurfH != null ? `~${bSurfH.toFixed(1)} m` : '—';
               html += `<tr class="hourly-col-row" data-group="${gid}">
                 <td><span class="col-time col-time-hourly">${bt}</span></td>
                 <td><span class="col-dot ${b.st}"></span></td>
-                <td><span class="col-val" style="color:${bwc}">${windDisp(b.windKt).toFixed(1)}</span><span class="col-sub">${windUnitLabel()}</span><span class="col-inline-dir">${bWindDir}</span></td>
-                <td class="col-hide-mobile"><span class="col-dir">${bWindDir}</span></td>
+                <td><span class="col-val" style="color:${bSurfC}">${bSurfStr}</span></td>
                 <td><span class="col-val" style="color:${bwhC}">${bWaveStr}</span><span class="col-inline-dir">${bWaveDir}</span></td>
                 <td class="col-hide-mobile"><span class="col-dir">${bWaveDir}</span></td>
+                <td><span class="col-val" style="color:${bwc}">${windDisp(b.windKt).toFixed(1)}</span><span class="col-sub">${windUnitLabel()}</span><span class="col-inline-dir">${bWindDir}</span></td>
+                <td class="col-hide-mobile"><span class="col-dir">${bWindDir}</span></td>
                 <td><span class="col-val" style="color:${bgc}">${windDisp(b.gustKt).toFixed(1)}</span><span class="col-sub">${windUnitLabel()}</span></td>
                 <td><span class="col-temp" style="color:${bAirCol}">${bAirStr}</span></td>
-                <td><span class="col-temp" style="color:${bWatCol}">${bWatStr}</span></td>
                 <td><span class="col-rain" style="color:${bRainCol}">${bRainPctStr}</span>${bRainMmStr}</td>
               </tr>`;
             });
@@ -1616,13 +1650,13 @@
                 <thead><tr>
                   <th>Time</th>
                   <th></th>
+                  <th>🏄 Surf</th>
+                  <th>🌊 Swell</th>
+                  <th class="col-hide-mobile">Swell Dir</th>
                   <th><img src="icons/Wind.png" alt="wind" style="height:1em;vertical-align:middle;margin-right:3px">Wind</th>
                   <th class="col-hide-mobile">Direction</th>
-                  <th>🌊 Waves</th>
-                  <th class="col-hide-mobile">Wave Dir</th>
                   <th>Gusts</th>
                   <th>🌡 Air</th>
-                  <th>💧 Sea</th>
                   <th>🌧 Rain</th>
                 </tr></thead>
                 <tbody>`;
@@ -1632,12 +1666,15 @@
             const wv   = wLookup[r.t] || findNearest(wLookup, r.t) || {};
             const wh   = wv.wh  ?? null;
             const whd  = wv.whd ?? null;
+            const wp   = wv.wp  ?? null;
             const waterTempC = wv.waterTempC ?? null;
             const waveStr = wh != null ? `${wh.toFixed(1)} m` : '—';
-            const waveDir = whd != null ? `${dirArrow(whd)} ${dirLabel(whd)} ${Math.round(whd)}°` : '—';
+            let waveDir = whd != null ? `${dirArrow(whd)} ${dirLabel(whd)} ${Math.round(whd)}°` : '—';
+            if (wp != null) waveDir = (whd != null ? waveDir + ' · ' : '') + `period ${Math.round(wp)}s`;
             const whC = waveColor(wh);
-            const waterTempStr   = waterTempC != null ? `${Math.round(waterTempC)}°C` : '—';
-            const waterTempColor = waterTempC == null ? 'var(--dim)' : waterTempC < 18 ? '#93c5fd' : waterTempC < 24 ? '#34d399' : '#fb923c';
+            const mcSurfH = komarBreaker(wh, wp);
+            const mcSurfC = waveColor(mcSurfH);
+            const mcSurfStr = mcSurfH != null ? `~${mcSurfH.toFixed(1)} m` : '—';
 
             modelDefs.forEach((m, mi) => {
               const isLastModel  = mi === modelDefs.length - 1;
@@ -1670,13 +1707,13 @@
               html += `<tr${isLastModel ? ' class="col-model-sep"' : ''}>
                   <td>${mi === 0 ? `<span class="col-time">${time}</span>` : ''}<span class="col-model-label">${m.label}</span></td>
                   <td><span class="col-dot ${st}"></span></td>
-                  <td><span class="col-val" style="color:${wc}">${windDisp(windKt).toFixed(1)}</span><span class="col-sub">${windUnitLabel()}</span><span class="col-inline-dir">${windDir}</span></td>
-                  <td class="col-hide-mobile"><span class="col-dir">${windDir}</span></td>
+                  <td><span class="col-val" style="color:${mcSurfC}">${mcSurfStr}</span></td>
                   <td><span class="col-val" style="color:${whC}">${waveStr}</span><span class="col-inline-dir">${waveDir}</span></td>
                   <td class="col-hide-mobile"><span class="col-dir">${waveDir}</span></td>
+                  <td><span class="col-val" style="color:${wc}">${windDisp(windKt).toFixed(1)}</span><span class="col-sub">${windUnitLabel()}</span><span class="col-inline-dir">${windDir}</span></td>
+                  <td class="col-hide-mobile"><span class="col-dir">${windDir}</span></td>
                   <td><span class="col-val" style="color:${gc}">${windDisp(gustKt).toFixed(1)}</span><span class="col-sub">${windUnitLabel()}</span></td>
                   <td><span class="col-temp" style="color:${airTempColor}">${airTempStr}</span></td>
-                  <td><span class="col-temp" style="color:${waterTempColor}">${waterTempStr}</span></td>
                   <td><span class="col-rain" style="color:${rainPctColor}">${rainPctStr}</span>${rainMmStr}</td>
                 </tr>`;
             });
@@ -1686,9 +1723,11 @@
                 const bt = b.d.toLocaleTimeString('en-IL', { hour: '2-digit', minute: '2-digit', timeZone: TIMEZONE });
                 const bWhC      = waveColor(b.wh);
                 const bWaveStr  = b.wh  != null ? `${b.wh.toFixed(1)} m` : '—';
-                const bWaveDir  = b.whd != null ? `${dirArrow(b.whd)} ${dirLabel(b.whd)} ${Math.round(b.whd)}°` : '—';
-                const bWatStr   = b.waterTempC != null ? `${Math.round(b.waterTempC)}°C` : '—';
-                const bWatCol   = b.waterTempC == null ? 'var(--dim)' : b.waterTempC < 18 ? '#93c5fd' : b.waterTempC < 24 ? '#34d399' : '#fb923c';
+                let bWaveDir  = b.whd != null ? `${dirArrow(b.whd)} ${dirLabel(b.whd)} ${Math.round(b.whd)}°` : '—';
+                if (b.wp != null) bWaveDir = (b.whd != null ? bWaveDir + ' · ' : '') + `period ${Math.round(b.wp)}s`;
+                const bMcSurfH = komarBreaker(b.wh, b.wp);
+                const bMcSurfC = waveColor(bMcSurfH);
+                const bMcSurfStr = bMcSurfH != null ? `~${bMcSurfH.toFixed(1)} m` : '—';
                 modelDefs.forEach((m, mi) => {
                   const isLastModel = mi === modelDefs.length - 1;
                   const idx = modelMaps[m.key][b.t];
@@ -1718,13 +1757,13 @@
                   html += `<tr class="hourly-col-row${isLastModel ? ' col-model-sep' : ''}">
                       <td>${mi === 0 ? `<span class="col-time col-time-hourly">${bt}</span>` : ''}<span class="col-model-label">${m.label}</span></td>
                       <td><span class="col-dot ${bSt}"></span></td>
-                      <td><span class="col-val" style="color:${bWc}">${windDisp(bWindKt).toFixed(1)}</span><span class="col-sub">${windUnitLabel()}</span><span class="col-inline-dir">${bWindDir}</span></td>
-                      <td class="col-hide-mobile"><span class="col-dir">${bWindDir}</span></td>
+                      <td><span class="col-val" style="color:${bMcSurfC}">${bMcSurfStr}</span></td>
                       <td><span class="col-val" style="color:${bWhC}">${bWaveStr}</span><span class="col-inline-dir">${bWaveDir}</span></td>
                       <td class="col-hide-mobile"><span class="col-dir">${bWaveDir}</span></td>
+                      <td><span class="col-val" style="color:${bWc}">${windDisp(bWindKt).toFixed(1)}</span><span class="col-sub">${windUnitLabel()}</span><span class="col-inline-dir">${bWindDir}</span></td>
+                      <td class="col-hide-mobile"><span class="col-dir">${bWindDir}</span></td>
                       <td><span class="col-val" style="color:${bGc}">${windDisp(bGustKt).toFixed(1)}</span><span class="col-sub">${windUnitLabel()}</span></td>
                       <td><span class="col-temp" style="color:${bAirCol}">${bAirStr}</span></td>
-                      <td><span class="col-temp" style="color:${bWatCol}">${bWatStr}</span></td>
                       <td><span class="col-rain" style="color:${bRainCol}">${bRainPctStr}</span>${bRainMmStr}</td>
                     </tr>`;
                 });
@@ -1760,13 +1799,15 @@
           </div>
           <div class="cards">`;
 
-        const mkCard = (r, hourly) => {
+        const mkCard = (r, hourly, showLabels = false) => {
           const time  = r.d.toLocaleTimeString('en-IL', { hour: '2-digit', minute: '2-digit', timeZone: TIMEZONE });
           const wc    = windColor(r.windKt);
           const gc    = windColor(r.gustKt);
           const whC   = waveColor(r.wh);
           const sw1C  = waveColor(r.sw1);
           const sw2C  = waveColor(r.sw2);
+          const surfH = komarBreaker(r.wh, r.wp);
+          const surfC = waveColor(surfH);
           const fmtW  = m => m != null ? `${m.toFixed(1)}<sup>m</sup>` : '—';
           const rainMmStr  = r.rainMm < 0.05 ? '' : `${r.rainMm.toFixed(1)} mm`;
           const rainPctStr = r.rainPct != null ? `${r.rainPct}%` : '—';
@@ -1794,30 +1835,51 @@
                 <span class="fc-status ${r.st}">${STATUS_ICONS[r.st]}</span>
               </div>
 
-              <div class="fc-section-label wind"><img src="icons/Wind.png" alt="wind" style="height:0.85em;vertical-align:middle;margin-right:4px">Wind</div>
-              <div class="fc-section">
-                <div class="fc-section-left">
-                  <div class="fc-wind-speed" style="color:${wc}">${windDisp(r.windKt).toFixed(1)}<sup>${windUnitLabel()}</sup></div>
-                  <div class="fc-wind-sub">${dirLabel(r.deg)} ${Math.round(r.deg)}°</div>
-                  <div class="fc-wind-sub">Gusts <span class="fc-gust-val" style="color:${gc}">${windDisp(r.gustKt).toFixed(1)} ${windUnitLabel()}</span></div>
+              ${surfH != null ? `<div class="fc-section-wrapper">
+                ${showLabels ? '<div class="fc-side-label">Surf</div>' : ''}
+                <div style="flex:1">
+                  <div class="fc-section">
+                    <div class="fc-section-left">
+                      <div class="fc-wave-val" style="color:${surfC}">~${surfH.toFixed(1)}<sup>m</sup></div>
+                      <div class="fc-wind-sub" style="color:var(--dim)">breaking wave</div>
+                    </div>
+                  </div>
                 </div>
-                ${bigDirArrow(r.deg, wc)}
+              </div>
+              <div class="fc-hr"></div>` : ''}
+
+              <div class="fc-section-wrapper">
+                ${showLabels ? '<div class="fc-side-label">Swell</div>' : ''}
+                <div style="flex:1">
+                  <div class="fc-section">
+                    <div class="fc-section-left">
+                      <div class="fc-wave-val" style="color:${whC}">${fmtW(r.wh)}</div>
+                      ${r.whd != null || r.wp != null ? `<div class="fc-wind-sub">${r.whd != null ? dirLabel(r.whd) + ' ' + Math.round(r.whd) + '°' : ''}${r.whd != null && r.wp != null ? ' · ' : ''}${r.wp != null ? 'period ' + Math.round(r.wp) + 's' : ''}</div>` : ''}
+                    </div>
+                    ${bigDirArrow(r.whd, whC)}
+                  </div>
+                  ${(r.sw1 != null || r.sw2 != null) ? `<div class="fc-swell-row">
+                    <div class="fc-swell"><span class="fc-swell-lbl">S1</span><span style="color:${sw1C}">${r.sw1 != null ? r.sw1.toFixed(1)+'m' : '—'}</span>${r.sw1p != null ? ` <span style="color:var(--dim);font-size:0.75rem;margin-left:2px">period ${Math.round(r.sw1p)}s</span>` : ''}${r.sw1d != null ? ` <span class="dir-arrow" style="color:var(--muted)">${dirArrow(r.sw1d)}</span><span style="color:var(--muted);font-size:0.7rem">${dirLabel(r.sw1d)}</span>` : ''}</div>
+                    <div class="fc-swell"><span class="fc-swell-lbl">S2</span><span style="color:${sw2C}">${r.sw2 != null ? r.sw2.toFixed(1)+'m' : '—'}</span>${r.sw2p != null ? ` <span style="color:var(--dim);font-size:0.75rem;margin-left:2px">period ${Math.round(r.sw2p)}s</span>` : ''}${r.sw2d != null ? ` <span class="dir-arrow" style="color:var(--muted)">${dirArrow(r.sw2d)}</span><span style="color:var(--muted);font-size:0.7rem">${dirLabel(r.sw2d)}</span>` : ''}</div>
+                  </div>` : ''}
+                </div>
               </div>
 
               <div class="fc-hr"></div>
 
-              <div class="fc-section-label waves">Waves</div>
-              <div class="fc-section">
-                <div class="fc-section-left">
-                  <div class="fc-wave-val" style="color:${whC}">${fmtW(r.wh)}</div>
-                  ${r.whd != null ? `<div class="fc-wind-sub">${dirLabel(r.whd)} ${Math.round(r.whd)}°</div>` : ''}
+              <div class="fc-section-wrapper">
+                ${showLabels ? '<div class="fc-side-label">Wind</div>' : ''}
+                <div style="flex:1">
+                  <div class="fc-section">
+                    <div class="fc-section-left">
+                      <div class="fc-wind-speed" style="color:${wc}">${windDisp(r.windKt).toFixed(1)}<sup>${windUnitLabel()}</sup></div>
+                      <div class="fc-wind-sub">${dirLabel(r.deg)} ${Math.round(r.deg)}°</div>
+                      <div class="fc-wind-sub">Gusts <span class="fc-gust-val" style="color:${gc}">${windDisp(r.gustKt).toFixed(1)} ${windUnitLabel()}</span></div>
+                    </div>
+                    ${bigDirArrow(r.deg, wc)}
+                  </div>
                 </div>
-                ${bigDirArrow(r.whd, whC)}
               </div>
-              ${(r.sw1 != null || r.sw2 != null) ? `<div class="fc-swell-row">
-                <div class="fc-swell"><span class="fc-swell-lbl">S1</span><span style="color:${sw1C}">${r.sw1 != null ? r.sw1.toFixed(1)+'m' : '—'}</span>${r.sw1d != null ? ` <span class="dir-arrow" style="color:var(--muted)">${dirArrow(r.sw1d)}</span><span style="color:var(--muted);font-size:0.7rem">${dirLabel(r.sw1d)}</span>` : ''}</div>
-                <div class="fc-swell"><span class="fc-swell-lbl">S2</span><span style="color:${sw2C}">${r.sw2 != null ? r.sw2.toFixed(1)+'m' : '—'}</span>${r.sw2d != null ? ` <span class="dir-arrow" style="color:var(--muted)">${dirArrow(r.sw2d)}</span><span style="color:var(--muted);font-size:0.7rem">${dirLabel(r.sw2d)}</span>` : ''}</div>
-              </div>` : ''}
 
               <div class="fc-hr"></div>
 
@@ -1831,10 +1893,10 @@
           </div>`;
         };
 
-        rows.forEach(r => {
-          html += mkCard(r, false);
+        rows.forEach((r, idx) => {
+          html += mkCard(r, false, idx === 0);
           if (r.between && r.between.length > 0) {
-            r.between.forEach(b => { html += mkCard(b, true); });
+            r.between.forEach(b => { html += mkCard(b, true, false); });
           }
         });
         html += `</div>`;
@@ -1984,7 +2046,7 @@
 </script>
 
 <footer class="app-footer">
-  <span>SeaSense <strong style="color:var(--muted)">v8.3.0</strong></span>
+  <span>SeaSense <strong style="color:var(--muted)">v8.5.0</strong></span>
   <span style="color:var(--border)">·</span>
   <span>Made with ❤️ by <strong style="color:var(--muted)">Alon Kassir</strong></span>
   <span style="color:var(--border)">·</span>
