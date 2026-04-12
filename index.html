@@ -361,6 +361,18 @@
       padding-bottom: 10px; margin-bottom: 14px;
       border-bottom: 1px solid var(--border);
     }
+    .tide-strip {
+      display: flex; flex-wrap: wrap; gap: 4px 14px;
+      padding: 4px 14px 8px;
+      margin-top: -10px; margin-bottom: 10px;
+      font-size: 0.72rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .tide-label { color: var(--dim); margin-right: 4px; }
+    .tide-event { white-space: nowrap; }
+    .tide-event.tide-high { color: #7dd3fc; }
+    .tide-event.tide-low  { color: #94a3b8; }
+    .tide-ht { opacity: 0.75; }
     .day-title { font-size: 1.05rem; font-weight: 700; }
     .day-badges { display: flex; gap: 8px; }
     .dbadge {
@@ -536,7 +548,7 @@
       <img src="icons/compass.svg" alt="SeaSense logo" class="header-logo" />
       <div class="header-title-group">
         <h1><em>SeaSense</em></h1>
-        <div class="header-tagline">Know before you go · Catch the right moment <span style="opacity:0.55;margin-left:6px">v8.5.0</span></div>
+        <div class="header-tagline">Know before you go · Catch the right moment <span style="opacity:0.55;margin-left:6px">v8.5.1</span></div>
       </div>
     </div>
     <div class="header-right">
@@ -649,7 +661,7 @@
       </ul>
 
       <div class="about-footer-note">All data is free — no API key required.<br>
-      Built by <strong>Alon Kassir</strong> &nbsp;·&nbsp; v8.5.0</div>
+      Built by <strong>Alon Kassir</strong> &nbsp;·&nbsp; v8.5.1</div>
     </div>
   </div>
 </div>
@@ -1161,12 +1173,15 @@
 
   async function fetchEcmwfWam() {
     const { lat, lon } = getCoords();
-    const url = `${OM_MARINE_URL}?latitude=${lat}&longitude=${lon}` +
+    const waveUrl = `${OM_MARINE_URL}?latitude=${lat}&longitude=${lon}` +
       `&hourly=wave_height,wave_direction,wave_period,swell_wave_height,swell_wave_direction,swell_wave_period,secondary_swell_wave_height,secondary_swell_wave_direction,secondary_swell_wave_period,sea_surface_temperature` +
       `&models=ecmwf_wam&timezone=UTC&forecast_days=7`;
-    const res = await fetch(url);
-    if (!res.ok) throw new Error(`ECMWF WAM (Open-Meteo) HTTP ${res.status}`);
-    const data = await res.json();
+    // sea_level_height_msl comes from MeteoFrance SMOC, not ecmwf_wam — fetch separately
+    const tideUrl = `${OM_MARINE_URL}?latitude=${lat}&longitude=${lon}` +
+      `&hourly=sea_level_height_msl&timezone=UTC&forecast_days=7`;
+    const [waveRes, tideRes] = await Promise.all([fetch(waveUrl), fetch(tideUrl).catch(() => null)]);
+    if (!waveRes.ok) throw new Error(`ECMWF WAM (Open-Meteo) HTTP ${waveRes.status}`);
+    const data = await waveRes.json();
     const lookup = {};
     (data.hourly?.time || []).forEach((isoStr, i) => {
       const t = new Date(isoStr + ':00Z').getTime();
@@ -1182,6 +1197,35 @@
         sw2p:      data.hourly.secondary_swell_wave_period?.[i]         ?? null,
         waterTempC: data.hourly.sea_surface_temperature?.[i]            ?? null,
       };
+    });
+    let tideLookup = {};
+    if (tideRes?.ok) {
+      const tideData = await tideRes.json();
+      tideLookup = buildTideLookup(tideData.hourly?.time ?? [], tideData.hourly?.sea_level_height_msl ?? []);
+    }
+    return { lookup, tideLookup };
+  }
+
+  function buildTideLookup(isoTimes, levels) {
+    const events = [];
+    const n = Math.min(isoTimes.length, levels.length);
+    let lastIdx = -4;
+    for (let i = 2; i < n - 2; i++) {
+      const h = levels;
+      if (h[i] == null || h[i-1] == null || h[i+1] == null || h[i-2] == null || h[i+2] == null) continue;
+      const isHigh = h[i] >= h[i-2] && h[i] >= h[i-1] && h[i] >= h[i+1] && h[i] >= h[i+2];
+      const isLow  = h[i] <= h[i-2] && h[i] <= h[i-1] && h[i] <= h[i+1] && h[i] <= h[i+2];
+      if ((isHigh || isLow) && i - lastIdx >= 3) {
+        const t = new Date(isoTimes[i] + ':00Z').getTime();
+        events.push({ t, type: isHigh ? 'high' : 'low', height: h[i] });
+        lastIdx = i;
+      }
+    }
+    const lookup = {};
+    events.forEach(ev => {
+      const dateStr = new Date(ev.t).toLocaleDateString('sv-SE', { timeZone: TIMEZONE });
+      if (!lookup[dateStr]) lookup[dateStr] = [];
+      lookup[dateStr].push(ev);
     });
     return lookup;
   }
@@ -1218,10 +1262,12 @@
       const currentLayout = document.getElementById('layoutSelect').value;
       // Fetch wave data separately so a marine API failure doesn't kill wind data
       let waveErrMsg = null;
-      const waveResult = await fetchEcmwfWam().catch(e => {
+      const waveRaw = await fetchEcmwfWam().catch(e => {
         waveErrMsg = e.message;
         return null; // continue without waves
       });
+      const waveResult = waveRaw?.lookup ?? null;
+      const tideLookup = waveRaw?.tideLookup ?? {};
       if (currentLayout === 'model-comparison') {
         // Sequential to avoid Open-Meteo rate limits (parallel bursts trigger 429s)
         const windIconEu = await fetchOpenMeteoWind('iconEu');
@@ -1231,14 +1277,14 @@
         _lastWindDataAll = { iconEu: windIconEu, ecmwf: windEcmwf, gfs: windGfs };
         _lastWindData   = windIconEu;
         _lastWaveLookup = waveResult ?? {};
-        renderForecast(windIconEu, waveResult ?? {});
+        renderForecast(windIconEu, waveResult ?? {}, tideLookup);
       } else {
         const windData = await fetchOpenMeteoWind(modelSelect.value);
         if (!waveResult) setStatus(waveStatusMsg(waveErrMsg), 'warning'); else setStatus('');
         _lastWindData    = windData;
         _lastWaveLookup  = waveResult ?? {};
         _lastWindDataAll = null;
-        renderForecast(windData, waveResult ?? {});
+        renderForecast(windData, waveResult ?? {}, tideLookup);
       }
     } catch (e) {
       const isNetErr = e.message === 'Failed to fetch' ||
@@ -1379,7 +1425,19 @@
     return Math.abs(closest - t) < WAVE_MATCH_MS ? lookup[closest] : null;
   }
 
-  function renderForecast(windData, wLookup) {
+  function fmtTideStrip(tideEvents) {
+    if (!tideEvents || tideEvents.length === 0) return '';
+    const parts = tideEvents.map(ev => {
+      const arrow = ev.type === 'high' ? '↑' : '↓';
+      const hStr  = ev.height != null ? ev.height.toFixed(2) + 'm' : '';
+      const time  = new Date(ev.t).toLocaleTimeString('en-IL',
+        { hour: '2-digit', minute: '2-digit', timeZone: TIMEZONE });
+      return `<span class="tide-event tide-${ev.type}">${arrow} ${time}${hStr ? ` <span class="tide-ht">(${hStr})</span>` : ''}</span>`;
+    });
+    return `<div class="tide-strip"><span class="tide-label">Tides:</span>${parts.join('')}</div>`;
+  }
+
+  function renderForecast(windData, wLookup, tideLookup = {}) {
     const th   = getThresholds();
     const { ts, windKt: windKts, gustKt: gustKts, deg: degs, rainMm: rains, rainPct: rainPcts, airTempC: airTemps } = windData;
 
@@ -1393,7 +1451,11 @@
       if (isAnchor && [0, 3].includes(localHour)) return; // skip night anchor slots
       const key   = d.toLocaleDateString('en-IL', { weekday: 'long', day: 'numeric', month: 'long', timeZone: TIMEZONE });
       const short = d.toLocaleDateString('en-IL', { weekday: 'short', day: 'numeric', month: 'short', timeZone: TIMEZONE });
-      if (!days[key]) { days[key] = { rows: [], short, _last: null }; dayOrder.push(key); }
+      if (!days[key]) {
+        const isoDate = d.toLocaleDateString('sv-SE', { timeZone: TIMEZONE });
+        days[key] = { rows: [], short, _last: null, isoDate };
+        dayOrder.push(key);
+      }
 
       const windKt = windKts[i];
       const gustKt = gustKts[i];
@@ -1506,6 +1568,7 @@
               ${dangerCnt > 0 ? `<span class="dbadge danger">${dangerCnt} DANGER</span>` : ''}
             </div>
           </div>
+          ${fmtTideStrip(tideLookup[days[dk].isoDate])}
           <div class="col-table-wrap">
             <table class="col-table">
               <thead><tr>
@@ -1645,6 +1708,7 @@
                 ${dangerCnt > 0 ? `<span class="dbadge danger">${dangerCnt} DANGER</span>` : ''}
               </div>
             </div>
+            ${fmtTideStrip(tideLookup[days[dk].isoDate])}
             <div class="col-table-wrap">
               <table class="col-table">
                 <thead><tr>
@@ -1797,6 +1861,7 @@
               ${dangerCnt > 0 ? `<span class="dbadge danger">${dangerCnt} DANGER</span>` : ''}
             </div>
           </div>
+          ${fmtTideStrip(tideLookup[days[dk].isoDate])}
           <div class="cards">`;
 
         const mkCard = (r, hourly, showLabels = false) => {
@@ -2046,7 +2111,7 @@
 </script>
 
 <footer class="app-footer">
-  <span>SeaSense <strong style="color:var(--muted)">v8.5.0</strong></span>
+  <span>SeaSense <strong style="color:var(--muted)">v8.5.1</strong></span>
   <span style="color:var(--border)">·</span>
   <span>Made with ❤️ by <strong style="color:var(--muted)">Alon Kassir</strong></span>
   <span style="color:var(--border)">·</span>
