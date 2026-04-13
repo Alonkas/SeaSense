@@ -722,6 +722,22 @@
 
     <div class="sb-sep"></div>
 
+    <div class="sb-title">🕐 Local Time</div>
+    <select id="timezoneSb" onchange="onTimezoneChange()" class="sb-input" style="cursor:pointer">
+      <option value="Asia/Jerusalem">Israel (Asia/Jerusalem)</option>
+      <option value="Europe/Athens">Greece (Europe/Athens)</option>
+      <option value="Europe/Istanbul">Turkey (Europe/Istanbul)</option>
+      <option value="Africa/Cairo">Egypt (Africa/Cairo)</option>
+      <option value="Europe/Rome">Italy (Europe/Rome)</option>
+      <option value="Europe/Paris">France (Europe/Paris)</option>
+      <option value="Europe/London">UK (Europe/London)</option>
+      <option value="America/New_York">US East (America/New_York)</option>
+      <option value="America/Los_Angeles">US West (America/Los_Angeles)</option>
+      <option value="UTC">UTC</option>
+    </select>
+
+    <div class="sb-sep"></div>
+
     <div class="sb-title">⚙️ Thresholds</div>
 
     <div class="sb-group">
@@ -1318,7 +1334,7 @@
 
   const M2KT      = 1.94384;
   const KT_TO_KMH = 1.852;
-  const TIMEZONE  = 'Asia/Jerusalem';
+  let TIMEZONE = localStorage.getItem('ssTimezone') || 'Asia/Jerusalem';
   const VALID_MODELS   = new Set(['iconEu', 'ecmwf', 'gfs']);
   const VALID_UNITS    = new Set(['kn', 'kmh']);
   const VALID_LOCS     = new Set([...Object.keys(LOCATIONS)]);
@@ -1350,6 +1366,12 @@
       saveThresholds();
     }
     document.querySelectorAll('.wind-unit-lbl').forEach(el => el.textContent = windUnitLabel());
+  }
+
+  function onTimezoneChange() {
+    TIMEZONE = document.getElementById('timezoneSb').value;
+    localStorage.setItem('ssTimezone', TIMEZONE);
+    if (_lastWindData && _lastWaveLookup) renderForecast(_lastWindData, _lastWaveLookup);
   }
 
   function onLayoutChange() {
@@ -1491,7 +1513,7 @@
     const currentLayout = document.getElementById('layoutSelect').value;
     let html = `
       <div class="meta-row">
-        <span>Last updated: ${new Date().toLocaleTimeString('en-IL', { timeZone: TIMEZONE })} IDT</span>
+        <span>Last updated: ${new Date().toLocaleTimeString('en-IL', { timeZone: TIMEZONE, timeZoneName: 'short' })}</span>
         <span>${dayOrder.length} days</span>
         <span class="refresh-timer" id="refreshTimer" onclick="fetchForecast()" title="Click to refresh now">⟳ —</span>
       </div>
@@ -2108,6 +2130,9 @@
   document.getElementById('layoutSelect').value = savedLayout;
   const sbLayoutEl = document.getElementById('layoutSelectSb');
   if (sbLayoutEl) sbLayoutEl.value = savedLayout;
+
+  const savedTz = localStorage.getItem('ssTimezone') || 'Asia/Jerusalem';
+  document.getElementById('timezoneSb').value = savedTz;
   fetchForecast().then(() => { startAutoRefresh(); });
 </script>
 
