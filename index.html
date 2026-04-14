@@ -512,6 +512,7 @@
       width: fit-content;
     }
     .hourly-details-btn:hover, .hourly-details-btn.active { color: var(--accent); border-color: var(--accent); }
+    .day-water-temp { color: #93c5fd; white-space: nowrap; }
     .col-time-hourly { font-size: 0.8rem; color: var(--muted); font-weight: 600; }
     .col-expand-btn {
       background: none; border: none; color: var(--muted);
@@ -549,7 +550,7 @@
       <img src="icons/compass.svg" alt="SeaSense logo" class="header-logo" />
       <div class="header-title-group">
         <h1><em>SeaSense</em></h1>
-        <div class="header-tagline">Know before you go · Catch the right moment <span style="opacity:0.55;margin-left:6px">v8.5.2</span></div>
+        <div class="header-tagline">Know before you go · Catch the right moment <span style="opacity:0.55;margin-left:6px">v8.6.0</span></div>
       </div>
     </div>
     <div class="header-right">
@@ -662,7 +663,7 @@
       </ul>
 
       <div class="about-footer-note">All data is free — no API key required.<br>
-      Built by <strong>Alon Kassir</strong> &nbsp;·&nbsp; v8.5.2</div>
+      Built by <strong>Alon Kassir</strong> &nbsp;·&nbsp; v8.6.0</div>
     </div>
   </div>
 </div>
@@ -1191,11 +1192,11 @@
   async function fetchEcmwfWam() {
     const { lat, lon } = getCoords();
     const waveUrl = `${OM_MARINE_URL}?latitude=${lat}&longitude=${lon}` +
-      `&hourly=wave_height,wave_direction,wave_period,swell_wave_height,swell_wave_direction,swell_wave_period,secondary_swell_wave_height,secondary_swell_wave_direction,secondary_swell_wave_period,sea_surface_temperature` +
+      `&hourly=wave_height,wave_direction,wave_period,swell_wave_height,swell_wave_direction,swell_wave_period,secondary_swell_wave_height,secondary_swell_wave_direction,secondary_swell_wave_period` +
       `&models=ecmwf_wam&timezone=UTC&forecast_days=7`;
-    // sea_level_height_msl comes from MeteoFrance SMOC, not ecmwf_wam — fetch separately
+    // sea_level_height_msl + sea_surface_temperature use the default model (ecmwf_wam doesn't provide SST)
     const tideUrl = `${OM_MARINE_URL}?latitude=${lat}&longitude=${lon}` +
-      `&hourly=sea_level_height_msl&timezone=UTC&forecast_days=7`;
+      `&hourly=sea_level_height_msl,sea_surface_temperature&timezone=UTC&forecast_days=7`;
     const [waveRes, tideRes] = await Promise.all([fetch(waveUrl), fetch(tideUrl).catch(() => null)]);
     if (!waveRes.ok) throw new Error(`ECMWF WAM (Open-Meteo) HTTP ${waveRes.status}`);
     const data = await waveRes.json();
@@ -1212,13 +1213,19 @@
         sw2:       data.hourly.secondary_swell_wave_height?.[i]         ?? null,
         sw2d:      data.hourly.secondary_swell_wave_direction?.[i]      ?? null,
         sw2p:      data.hourly.secondary_swell_wave_period?.[i]         ?? null,
-        waterTempC: data.hourly.sea_surface_temperature?.[i]            ?? null,
+        waterTempC: null,
       };
     });
     let tideLookup = {};
     if (tideRes?.ok) {
       const tideData = await tideRes.json();
       tideLookup = buildTideLookup(tideData.hourly?.time ?? [], tideData.hourly?.sea_level_height_msl ?? []);
+      // Merge SST — default model returns it; ecmwf_wam does not
+      (tideData.hourly?.time ?? []).forEach((isoStr, i) => {
+        const t = new Date(isoStr + ':00Z').getTime();
+        const sst = tideData.hourly.sea_surface_temperature?.[i] ?? null;
+        if (sst != null && lookup[t]) lookup[t].waterTempC = sst;
+      });
     }
     return { lookup, tideLookup };
   }
@@ -1448,8 +1455,13 @@
     return Math.abs(closest - t) < WAVE_MATCH_MS ? lookup[closest] : null;
   }
 
-  function fmtTideStrip(tideEvents) {
-    if (!tideEvents || tideEvents.length === 0) return '';
+  function fmtTideStrip(tideEvents, waterTempC = null) {
+    const sstHtml = waterTempC != null
+      ? `<span class="day-water-temp">💧 water temp ${Math.round(waterTempC)}°C</span>`
+      : '';
+    if (!tideEvents || tideEvents.length === 0) {
+      return sstHtml ? `<div class="tide-strip">${sstHtml}</div>` : '';
+    }
     const parts = tideEvents.map(ev => {
       const arrow = ev.type === 'high' ? '↑' : '↓';
       const hStr  = ev.height != null ? ev.height.toFixed(2) + 'm' : '';
@@ -1457,7 +1469,7 @@
         { hour: '2-digit', minute: '2-digit', timeZone: TIMEZONE });
       return `<span class="tide-event tide-${ev.type}">${arrow} ${time}${hStr ? ` <span class="tide-ht">(${hStr})</span>` : ''}</span>`;
     });
-    return `<div class="tide-strip"><span class="tide-label">Tides:</span>${parts.join('')}</div>`;
+    return `<div class="tide-strip"><span class="tide-label">Tides:</span>${parts.join('')}${sstHtml}</div>`;
   }
 
   function renderForecast(windData, wLookup, tideLookup = {}) {
@@ -1578,6 +1590,8 @@
         const cautCnt  = rows.filter(r => r.st === 'caution').length;
         const dangerCnt = rows.filter(r => r.st === 'danger').length;
         const id = 'day-' + dk.replace(/\W/g,'_');
+        const watTemps = rows.map(r => r.waterTempC).filter(v => v != null);
+        const dailyWaterTemp = watTemps.length ? watTemps.reduce((a, b) => a + b, 0) / watTemps.length : null;
 
         html += `<div class="day-section" id="${id}">
           <div class="day-header">
@@ -1591,7 +1605,7 @@
               ${dangerCnt > 0 ? `<span class="dbadge danger">${dangerCnt} DANGER</span>` : ''}
             </div>
           </div>
-          ${fmtTideStrip(tideLookup[days[dk].isoDate])}
+          ${fmtTideStrip(tideLookup[days[dk].isoDate], dailyWaterTemp)}
           <div class="col-table-wrap">
             <table class="col-table">
               <thead><tr>
@@ -1715,6 +1729,8 @@
 
           const id = 'day-' + dk.replace(/\W/g,'_');
           const hasBetween = rows.some(r => r.between && r.between.length > 0);
+          const mcWatTemps = rows.map(r => r.waterTempC).filter(v => v != null);
+          const mcDailyWaterTemp = mcWatTemps.length ? mcWatTemps.reduce((a, b) => a + b, 0) / mcWatTemps.length : null;
           html += `<div class="day-section" id="${id}">
             <div class="day-header">
               <div class="day-header-left">
@@ -1727,7 +1743,7 @@
                 ${dangerCnt > 0 ? `<span class="dbadge danger">${dangerCnt} DANGER</span>` : ''}
               </div>
             </div>
-            ${fmtTideStrip(tideLookup[days[dk].isoDate])}
+            ${fmtTideStrip(tideLookup[days[dk].isoDate], mcDailyWaterTemp)}
             <div class="col-table-wrap">
               <table class="col-table">
                 <thead><tr>
@@ -1867,6 +1883,8 @@
         const dangerCnt = rows.filter(r => r.st === 'danger').length;
         const id = 'day-' + dk.replace(/\W/g,'_');
         const hasBetween = rows.some(r => r.between && r.between.length > 0);
+        const hbWatTemps = rows.map(r => r.waterTempC).filter(v => v != null);
+        const hbDailyWaterTemp = hbWatTemps.length ? hbWatTemps.reduce((a, b) => a + b, 0) / hbWatTemps.length : null;
 
         html += `<div class="day-section" id="${id}">
           <div class="day-header">
@@ -1880,7 +1898,7 @@
               ${dangerCnt > 0 ? `<span class="dbadge danger">${dangerCnt} DANGER</span>` : ''}
             </div>
           </div>
-          ${fmtTideStrip(tideLookup[days[dk].isoDate])}
+          ${fmtTideStrip(tideLookup[days[dk].isoDate], hbDailyWaterTemp)}
           <div class="cards">`;
 
         const mkCard = (r, hourly, showLabels = false) => {
@@ -2128,7 +2146,7 @@
 </script>
 
 <footer class="app-footer">
-  <span>SeaSense <strong style="color:var(--muted)">v8.5.2</strong></span>
+  <span>SeaSense <strong style="color:var(--muted)">v8.6.0</strong></span>
   <span style="color:var(--border)">·</span>
   <span>Made with ❤️ by <strong style="color:var(--muted)">Alon Kassir</strong></span>
   <span style="color:var(--border)">·</span>

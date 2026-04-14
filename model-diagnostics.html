@@ -1,0 +1,873 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>SeaSense — Model Diagnostics</title>
+<script src="https://cdn.jsdelivr.net/npm/fzstd@0.1.0/umd/fzstd.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #0a1628; color: #e2e8f0; font-family: 'Courier New', monospace; font-size: 13px; padding: 20px; }
+  h1 { font-size: 1.2rem; color: #60a5fa; margin-bottom: 4px; }
+  .subtitle { color: #64748b; margin-bottom: 20px; font-size: 0.85rem; }
+  .controls { display: flex; gap: 10px; align-items: center; margin-bottom: 20px; flex-wrap: wrap; }
+  button { background: #1e3a5f; border: 1px solid #3b82f6; color: #93c5fd; padding: 8px 18px;
+           border-radius: 6px; cursor: pointer; font-family: inherit; font-size: 0.9rem; }
+  button:hover { background: #2563eb; }
+  button:disabled { opacity: 0.4; cursor: not-allowed; }
+  label { color: #94a3b8; font-size: 0.85rem; }
+  select, input { background: #0f2040; border: 1px solid #334155; color: #e2e8f0;
+                  padding: 6px 10px; border-radius: 5px; font-family: inherit; font-size: 0.85rem; }
+
+  .models-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; margin-bottom: 20px; }
+  .model-card { background: #0f2040; border: 1px solid #1e3a5f; border-radius: 8px; padding: 12px; }
+  .model-card .name { font-weight: bold; color: #93c5fd; margin-bottom: 6px; font-size: 0.9rem; }
+  .model-card .status { font-size: 0.8rem; color: #64748b; }
+  .model-card.ok    { border-color: #16a34a; }
+  .model-card.ok .status { color: #4ade80; }
+  .model-card.fail  { border-color: #dc2626; }
+  .model-card.fail .status { color: #f87171; }
+  .model-card.running { border-color: #d97706; }
+  .model-card.running .status { color: #fbbf24; }
+  .model-card.cors  { border-color: #7c3aed; }
+  .model-card.cors .status { color: #a78bfa; }
+  .model-card .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+  .model-card .run-btn { background: #0f2040; border: 1px solid #334155; color: #64748b;
+                         padding: 2px 8px; border-radius: 4px; cursor: pointer; font-size: 0.75rem;
+                         font-family: inherit; transition: border-color 0.15s, color 0.15s; }
+  .model-card .run-btn:hover { border-color: #3b82f6; color: #93c5fd; background: #1e3a5f; }
+  .model-card .run-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+  .model-card .sample { margin-top: 8px; font-size: 0.75rem; color: #94a3b8; line-height: 1.6; }
+  .model-card .sample span { color: #e2e8f0; }
+
+  .log-panel { background: #060e1c; border: 1px solid #1e3a5f; border-radius: 8px;
+               padding: 12px; height: 420px; overflow-y: auto; }
+  .log-panel h2 { color: #475569; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.1em;
+                  margin-bottom: 10px; border-bottom: 1px solid #1e3a5f; padding-bottom: 6px; }
+  .log-entry { padding: 2px 0; line-height: 1.6; white-space: pre-wrap; word-break: break-all; }
+  .log-entry .ts   { color: #334155; margin-right: 6px; }
+  .log-entry.info  .msg { color: #94a3b8; }
+  .log-entry.ok    .msg { color: #4ade80; }
+  .log-entry.warn  .msg { color: #fbbf24; }
+  .log-entry.error .msg { color: #f87171; }
+  .log-entry.head  .msg { color: #60a5fa; font-weight: bold; }
+  .log-entry.data  .msg { color: #c084fc; }
+
+</style>
+</head>
+<body>
+
+<h1>SeaSense — Model Diagnostics <span style="font-size:0.7em;color:#64748b">v3.0.0</span></h1>
+<p class="subtitle">Tests all 4 wind models + ECMWF WAM + CMEMS MED Waves (Zarr S3). Open browser console for raw responses.</p>
+
+<div class="controls">
+  <button id="runBtn" onclick="runAll()">▶ Run All Tests</button>
+  <button onclick="clearLog()">Clear Log</button>
+  <label>Lat: <input type="number" id="lat" value="32.08" step="0.01" style="width:90px"></label>
+  <label>Lon: <input type="number" id="lon" value="34.76" step="0.01" style="width:90px"></label>
+  <label style="color:#64748b;font-size:0.75rem">(Tel Aviv default)</label>
+</div>
+
+<div class="models-grid" id="cardsGrid">
+  <div class="model-card" id="card-iconEu">
+    <div class="card-header">
+      <div class="name">ICON EU</div>
+      <button class="run-btn" onclick="runSingle('iconEu')">▶</button>
+    </div>
+    <div class="status">Waiting…</div>
+    <div class="sample"></div>
+  </div>
+  <div class="model-card" id="card-ecmwf">
+    <div class="card-header">
+      <div class="name">ECMWF IFS</div>
+      <button class="run-btn" onclick="runSingle('ecmwf')">▶</button>
+    </div>
+    <div class="status">Waiting…</div>
+    <div class="sample"></div>
+  </div>
+  <div class="model-card" id="card-gfs">
+    <div class="card-header">
+      <div class="name">GFS</div>
+      <button class="run-btn" onclick="runSingle('gfs')">▶</button>
+    </div>
+    <div class="status">Waiting…</div>
+    <div class="sample"></div>
+  </div>
+  <div class="model-card" id="card-imsIconLam">
+    <div class="card-header">
+      <div class="name">ICON-LAM IL (IMS)</div>
+      <button class="run-btn" onclick="runSingle('imsIconLam')">▶</button>
+    </div>
+    <div class="status">Waiting…</div>
+    <div class="sample"></div>
+  </div>
+  <div class="model-card" id="card-ecmwfWam">
+    <div class="card-header">
+      <div class="name">ECMWF WAM — Waves</div>
+      <button class="run-btn" onclick="runSingle('ecmwfWam')">▶</button>
+    </div>
+    <div class="status">Waiting…</div>
+    <div class="sample"></div>
+  </div>
+  <div class="model-card" id="card-cmems">
+    <div class="card-header">
+      <div class="name">CMEMS MED — Waves</div>
+      <button class="run-btn" onclick="runSingle('cmems')">▶</button>
+    </div>
+    <div class="status">Waiting…</div>
+    <div class="sample"></div>
+  </div>
+</div>
+
+<div class="log-panel" id="logPanel">
+  <h2>Event Log</h2>
+  <div id="logBody"></div>
+</div>
+
+<script>
+// ── Config ────────────────────────────────────────────────────────────────
+const OM_WIND_URL   = 'https://api.open-meteo.com/v1/forecast';
+const OM_MARINE_URL = 'https://marine-api.open-meteo.com/v1/marine';
+const IMS_BASE    = 'https://ims.gov.il/en';
+const OM_MODEL_MAP = { iconEu: 'icon_eu', ecmwf: 'ecmwf_ifs025', gfs: 'gfs_seamless' };
+const M2KT        = 1.94384;
+const KT_TO_KMH   = 1.852;
+const IMS_DIR_DEG = { 1:360, 2:23, 3:45, 4:68, 5:90, 6:113, 7:135, 8:158,
+                      9:180, 10:203, 11:225, 12:248, 13:270, 14:293, 15:315, 16:338, 17:0 };
+// Hardcoded coastal + Kinneret + Eilat stations (avoids CORS fetch of locations_info)
+const IMS_LOCATIONS = [
+  {lid:"2",  name:"Tel Aviv Coast",       lat:32.0821, lon:34.7802},
+  {lid:"3",  name:"Haifa",                lat:32.7900, lon:34.9900},
+  {lid:"4",  name:"Rishon le Zion",       lat:31.9640, lon:34.8040},
+  {lid:"6",  name:"Ashdod",               lat:31.8011, lon:34.6410},
+  {lid:"7",  name:"Netania",              lat:32.3285, lon:34.8565},
+  {lid:"12", name:"Asheqelon",            lat:31.6654, lon:34.5638},
+  {lid:"14", name:"Bat Yam",              lat:32.0161, lon:34.7413},
+  {lid:"17", name:"Herzliya",             lat:32.1643, lon:34.8423},
+  {lid:"18", name:"Hadera",               lat:32.4351, lon:34.9136},
+  {lid:"27", name:"Nahariya",             lat:33.0070, lon:35.0979},
+  {lid:"31", name:"Eilat",                lat:29.5552, lon:34.9511},
+  {lid:"35", name:"Akko",                 lat:32.9249, lon:35.0713},
+  {lid:"40", name:"Tiberias",             lat:32.7920, lon:35.5390},
+  {lid:"45", name:"Kiryat Yam",           lat:32.8438, lon:35.0671},
+  {lid:"84", name:"Tel Aviv - Yafo",      lat:32.1300, lon:34.8324},
+  {lid:"208",name:"Akhziv",               lat:33.0488, lon:35.1019},
+  {lid:"228",name:"Dor-HaBonim",          lat:32.6387, lon:34.9247},
+  {lid:"235",name:"Taninim Stream",       lat:32.5449, lon:34.9154},
+  {lid:"236",name:"Caesarea",             lat:32.4960, lon:34.8918},
+  {lid:"237",name:"Tel Dor",              lat:32.6204, lon:34.9209},
+  {lid:"238",name:"Mikhmoret Sea Turtle", lat:32.4022, lon:34.8672},
+  {lid:"239",name:"Beit Yanai",           lat:32.3872, lon:34.8648},
+  {lid:"240",name:"Apollonia",            lat:32.1921, lon:34.8070},
+  {lid:"242",name:"Palmahim",             lat:31.9295, lon:34.6989},
+  {lid:"277",name:"Hay-Bar Yotvata",      lat:29.8691, lon:35.0430},
+  {lid:"278",name:"Coral Beach",          lat:29.5082, lon:34.9214},
+];
+
+// ── Logging ───────────────────────────────────────────────────────────────
+function log(msg, type = 'info') {
+  const panel = document.getElementById('logBody');
+  const ts    = new Date().toLocaleTimeString('en-GB', { hour12: false });
+  const el    = document.createElement('div');
+  el.className = `log-entry ${type}`;
+  const safe = msg.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  el.innerHTML = `<span class="ts">[${ts}]</span><span class="msg">${safe}</span>`;
+  panel.appendChild(el);
+  panel.parentElement.scrollTop = panel.parentElement.scrollHeight;
+}
+
+function clearLog() {
+  document.getElementById('logBody').innerHTML = '';
+  document.querySelectorAll('.model-card').forEach(c => {
+    c.className = 'model-card';
+    c.querySelector('.status').textContent = 'Waiting…';
+    c.querySelector('.sample').innerHTML = '';
+  });
+}
+
+function setCard(id, state, statusText, sampleHtml = '') {
+  const card = document.getElementById('card-' + id);
+  card.className = 'model-card ' + state;
+  card.querySelector('.status').textContent = statusText;
+  card.querySelector('.sample').innerHTML = sampleHtml;
+}
+
+// ── Open-Meteo helpers ────────────────────────────────────────────────────
+async function testOpenMeteoModel(key) {
+  const lat = parseFloat(document.getElementById('lat').value);
+  const lon = parseFloat(document.getElementById('lon').value);
+  const omModel = OM_MODEL_MAP[key];
+
+  log(`\n── Testing ${key} (Open-Meteo: ${omModel}) ──`, 'head');
+  setCard(key, 'running', 'Fetching…');
+
+  const url = `${OM_WIND_URL}?latitude=${lat}&longitude=${lon}` +
+    `&hourly=windspeed_10m,windgusts_10m,winddirection_10m` +
+    `&wind_speed_unit=ms&timezone=UTC&forecast_days=3&models=${omModel}`;
+
+  log(`GET ${url}`, 'info');
+
+  const t0  = Date.now();
+  const res = await fetch(url);
+  const ms  = Date.now() - t0;
+  log(`Response: HTTP ${res.status} in ${ms} ms`, res.ok ? 'ok' : 'error');
+
+  if (!res.ok) {
+    const body = await res.text();
+    log(`Error body: ${body.slice(0, 300)}`, 'error');
+    setCard(key, 'fail', `HTTP ${res.status}`);
+    return null;
+  }
+
+  const data = await res.json();
+  console.log(`[${key}] raw response`, data);
+
+  const times = data.hourly?.time ?? [];
+  const winds = data.hourly?.windspeed_10m ?? [];
+  const gusts = data.hourly?.windgusts_10m ?? [];
+  const dirs  = data.hourly?.winddirection_10m ?? [];
+
+  log(`Slots returned: ${times.length}`, 'info');
+
+  if (times.length === 0) {
+    log('WARNING: No time slots in response!', 'warn');
+    setCard(key, 'fail', 'No data in response');
+    return null;
+  }
+
+  // Find first non-null wind value
+  const first = winds.findIndex(v => v != null);
+  if (first === -1) {
+    log('WARNING: All wind values are null!', 'warn');
+    setCard(key, 'fail', 'All values null');
+    return null;
+  }
+
+  const wKt = (winds[first] * M2KT).toFixed(1);
+  const gKt = (gusts[first] * M2KT).toFixed(1);
+  log(`First valid slot: ${times[first]} — wind ${wKt} kt, gust ${gKt} kt, dir ${dirs[first]}°`, 'data');
+  log(`Last slot: ${times[times.length - 1]}`, 'info');
+
+  setCard(key, 'ok', `OK — ${times.length} slots`, `
+    <span>First: ${times[first]}</span><br>
+    Wind: <span>${wKt} kt</span> &nbsp; Gust: <span>${gKt} kt</span> &nbsp; Dir: <span>${dirs[first]}°</span><br>
+    Last: <span>${times[times.length - 1]}</span>
+  `);
+  return data;
+}
+
+// ── IMS helpers ───────────────────────────────────────────────────────────
+const imsTimedFetch = (u, ms = 10000) => {
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), ms);
+  return fetch(u, { signal: ctrl.signal }).finally(() => clearTimeout(t));
+};
+
+async function imsFetch(url, label) {
+  log(`GET ${url}`, 'info');
+  let res, usedProxy = false, proxyLabel = '';
+  try {
+    res = await fetch(url);
+  } catch (e) {
+    if (!(e instanceof TypeError)) throw e;
+    log(`Direct fetch blocked (CORS/network): ${e.message}`, 'warn');
+    const proxies = [
+      { label: 'corsproxy.io',   url: 'https://corsproxy.io/?' + encodeURIComponent(url) },
+      { label: 'allorigins.win', url: 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url) },
+      { label: 'thingproxy',     url: 'https://thingproxy.freeboard.io/fetch/' + url },
+      { label: 'codetabs',       url: 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(url) },
+    ];
+    let lastErr = e;
+    for (const proxy of proxies) {
+      log(`Retrying via ${proxy.label}…`, 'warn');
+      log(`GET ${proxy.url}`, 'info');
+      try {
+        const r = await imsTimedFetch(proxy.url);
+        if (!r.ok) {
+          const body = await r.text().catch(() => '');
+          log(`${proxy.label} returned HTTP ${r.status}${body ? ': ' + body.slice(0, 200) : ''}`, 'warn');
+          lastErr = new Error(`IMS HTTP ${r.status}`);
+          continue;
+        }
+        res = r;
+        usedProxy = true;
+        proxyLabel = proxy.label;
+        break;
+      } catch (pe) {
+        log(`${proxy.label} also failed: ${pe.message}`, 'warn');
+        lastErr = pe;
+      }
+    }
+    if (!res) throw lastErr;
+  }
+  log(`Response [${label}]: HTTP ${res.status}${usedProxy ? ` (via ${proxyLabel})` : ' (direct)'}`, res.ok ? 'ok' : 'error');
+  if (!res.ok) {
+    const body = await res.text().catch(() => '');
+    log(`Error body: ${body.slice(0, 300)}`, 'error');
+    throw new Error(`IMS HTTP ${res.status}`);
+  }
+  return res.json();
+}
+
+function israelOffsetStr() {
+  const parts = Intl.DateTimeFormat('en', {
+    timeZone: 'Asia/Jerusalem', timeZoneName: 'shortOffset'
+  }).formatToParts(new Date());
+  const tz = parts.find(p => p.type === 'timeZoneName')?.value ?? 'GMT+3';
+  const m  = tz.match(/GMT([+-]\d+)/);
+  if (!m) return '+03:00';
+  const h  = parseInt(m[1]);
+  return (h >= 0 ? '+' : '-') + String(Math.abs(h)).padStart(2, '0') + ':00';
+}
+
+async function testImsModel() {
+  const lat = parseFloat(document.getElementById('lat').value);
+  const lon = parseFloat(document.getElementById('lon').value);
+
+  log(`\n── Testing ICON-LAM IL (IMS) ──`, 'head');
+  setCard('imsIconLam', 'running', 'Fetching locations…');
+
+  // Step 1: locations (hardcoded — no network request needed)
+  log(`Step 1/3: IMS locations (hardcoded, ${IMS_LOCATIONS.length} stations)`, 'info');
+  const locs = IMS_LOCATIONS;
+  const sample = locs.slice(0, 3).map(l => `${l.lid}: ${l.name} (${l.lat}, ${l.lon})`).join(' | ');
+  log(`Sample: ${sample}`, 'data');
+
+  // Step 2: nearest location
+  log(`Step 2/3: Find nearest IMS location to (${lat}, ${lon})`, 'info');
+  let lid, nearestName;
+  try {
+    let bestDist = Infinity;
+    for (const loc of locs) {
+      if (loc.lat == null || loc.lon == null) continue;
+      const d = (loc.lat - lat) ** 2 + (loc.lon - lon) ** 2;
+      if (d < bestDist) { bestDist = d; lid = loc.lid ?? loc.id; nearestName = loc.name; }
+    }
+    if (!lid) throw new Error('No location found');
+    log(`Nearest: lid=${lid} name="${nearestName}" (dist²=${bestDist.toFixed(4)})`, 'data');
+    setCard('imsIconLam', 'running', `Nearest: ${nearestName} (lid ${lid})`);
+  } catch (e) {
+    log(`FAILED: ${e.message}`, 'error');
+    setCard('imsIconLam', 'fail', `Nearest: ${e.message}`);
+    return;
+  }
+
+  // Step 3: forecast
+  log(`Step 3/3: Fetch forecast for lid=${lid}`, 'info');
+  try {
+    const t0     = Date.now();
+    const data   = await imsFetch(`${IMS_BASE}/full_forecast_data/${lid}`, `forecast/${lid}`);
+    log(`full_forecast_data took ${Date.now() - t0} ms`, 'info');
+    console.log('[IMS] forecast raw', data);
+
+    const days = Object.keys(data.data ?? {});
+    log(`Days in response: ${days.length} — [${days.join(', ')}]`, 'info');
+
+    if (days.length === 0) throw new Error('No days in forecast response');
+
+    // Parse all slots
+    const offset = israelOffsetStr();
+    log(`Israel UTC offset: ${offset}`, 'info');
+
+    let totalSlots = 0, firstSlot = null;
+    for (const dayKey of days) {
+      const day = data.data[dayKey];
+      const hourlyKeys = Object.keys(day.hourly ?? {});
+      log(`  ${dayKey}: ${hourlyKeys.length} hourly slots — [${hourlyKeys.join(', ')}]`, 'info');
+
+      for (const [timeStr, h] of Object.entries(day.hourly ?? {})) {
+        const hour = parseInt(timeStr);
+        if (hour % 3 !== 0) continue;
+        const t = new Date(h.forecast_time.replace(' ', 'T') + offset).getTime();
+        if (isNaN(t)) { log(`  Bad timestamp: ${h.forecast_time}`, 'warn'); continue; }
+        totalSlots++;
+        if (!firstSlot) firstSlot = h;
+      }
+    }
+
+    log(`3-hourly slots parsed: ${totalSlots}`, totalSlots > 0 ? 'ok' : 'warn');
+
+    if (totalSlots === 0) throw new Error('No 3-hourly slots parsed');
+
+    const wKt  = (parseFloat(firstSlot.wind_speed)  / KT_TO_KMH).toFixed(1);
+    const gKt  = (parseFloat(firstSlot.gust_speed)  / KT_TO_KMH).toFixed(1);
+    const dirDeg = IMS_DIR_DEG[parseInt(firstSlot.wind_direction_id)] ?? '?';
+    log(`First 3-hourly slot: ${firstSlot.forecast_time} — wind ${wKt} kt (${firstSlot.wind_speed} km/h), gust ${gKt} kt, dir id=${firstSlot.wind_direction_id} (${dirDeg}°)`, 'data');
+
+    setCard('imsIconLam', 'ok', `OK — ${totalSlots} slots (${days.length} days)`, `
+      <span>Nearest: ${nearestName}</span><br>
+      Wind: <span>${wKt} kt</span> &nbsp; Gust: <span>${gKt} kt</span> &nbsp; Dir: <span>${dirDeg}°</span><br>
+      Days: <span>${days.length}</span> &nbsp; 3-hr slots: <span>${totalSlots}</span>
+    `);
+  } catch (e) {
+    log(`FAILED: ${e.message}`, 'error');
+    setCard('imsIconLam', 'fail', `Forecast: ${e.message}`);
+  }
+}
+
+// ── Wave data (ECMWF WAM via Open-Meteo Marine API) ───────────────────────
+async function testWaveData() {
+  const lat = parseFloat(document.getElementById('lat').value);
+  const lon = parseFloat(document.getElementById('lon').value);
+
+  log(`\n── Testing ECMWF WAM Wave Data (Open-Meteo Marine) ──`, 'head');
+  setCard('ecmwfWam', 'running', 'Fetching…');
+
+  const url = `${OM_MARINE_URL}?latitude=${lat}&longitude=${lon}` +
+    `&hourly=wave_height,wave_direction,swell_wave_height,swell_wave_direction,` +
+    `secondary_swell_wave_height,secondary_swell_wave_direction,sea_surface_temperature` +
+    `&timezone=UTC&forecast_days=3`;
+
+  log(`GET ${url}`, 'info');
+
+  const t0  = Date.now();
+  const res = await fetch(url);
+  const ms  = Date.now() - t0;
+  log(`Response: HTTP ${res.status} in ${ms} ms`, res.ok ? 'ok' : 'error');
+
+  if (!res.ok) {
+    const body = await res.text();
+    log(`Error body: ${body.slice(0, 300)}`, 'error');
+    setCard('ecmwfWam', 'fail', `HTTP ${res.status}`);
+    return null;
+  }
+
+  const data = await res.json();
+  console.log('[ecmwfWam] raw response', data);
+
+  const times = data.hourly?.time                          ?? [];
+  const wh    = data.hourly?.wave_height                   ?? [];
+  const whd   = data.hourly?.wave_direction                ?? [];
+  const sw1   = data.hourly?.swell_wave_height             ?? [];
+  const sw1d  = data.hourly?.swell_wave_direction          ?? [];
+  const sw2   = data.hourly?.secondary_swell_wave_height   ?? [];
+  const sw2d  = data.hourly?.secondary_swell_wave_direction ?? [];
+  const sst   = data.hourly?.sea_surface_temperature       ?? [];
+
+  log(`Slots returned: ${times.length}`, 'info');
+
+  if (times.length === 0) {
+    log('WARNING: No time slots in response!', 'warn');
+    setCard('ecmwfWam', 'fail', 'No data in response');
+    return null;
+  }
+
+  const first = wh.findIndex(v => v != null);
+  if (first === -1) {
+    log('WARNING: All wave_height values are null — location may be inland or outside marine coverage', 'warn');
+    setCard('ecmwfWam', 'fail', 'No wave data (inland?)');
+    return null;
+  }
+
+  log(`First valid slot: ${times[first]}`, 'info');
+  log(`  Total wave height : ${wh[first].toFixed(2)} m  @ ${whd[first] ?? '?'}°`, 'data');
+  log(`  Primary swell     : ${sw1[first] != null ? sw1[first].toFixed(2) + ' m' : '—'}  @ ${sw1d[first] ?? '—'}°`, 'data');
+  log(`  Secondary swell   : ${sw2[first] != null ? sw2[first].toFixed(2) + ' m' : '—'}  @ ${sw2d[first] ?? '—'}°`, 'data');
+  log(`  Wind sea (approx) : ${sw1[first] != null ? Math.max(0, wh[first] - sw1[first]).toFixed(2) + ' m' : '—'}  (wave − swell₁)`, 'data');
+  log(`  Water temp (SST)  : ${sst[first] != null ? sst[first].toFixed(1) + ' °C' : '— (null — not available for this location)'}`, sst[first] != null ? 'data' : 'warn');
+
+  // Log next 3 slots
+  for (let i = first + 1; i < Math.min(first + 4, times.length); i++) {
+    if (wh[i] == null) continue;
+    log(`  ${times[i]}: wave ${wh[i].toFixed(2)}m | sw1 ${sw1[i] != null ? sw1[i].toFixed(2) + 'm' : '—'} | sw2 ${sw2[i] != null ? sw2[i].toFixed(2) + 'm' : '—'}`, 'data');
+  }
+
+  log(`Last slot: ${times[times.length - 1]}`, 'info');
+
+  const firstSlotWave = {
+    wh:  wh[first],  whd:  whd[first],
+    sw1: sw1[first], sw1d: sw1d[first],
+    sw2: sw2[first], sw2d: sw2d[first],
+    sst: sst[first] ?? null,
+  };
+
+  setCard('ecmwfWam', 'ok', `OK — ${times.length} slots`,
+    waveBlockHtml(firstSlotWave, times[first], times[times.length - 1]));
+  return firstSlotWave;
+}
+
+function waveBlockHtml(s, firstTime = null, lastTime = null) {
+  const windSea = s.sw1 != null ? Math.max(0, s.wh - s.sw1).toFixed(2) + ' m' : '—';
+  const sstStr  = s.sst != null ? `<span>${s.sst.toFixed(1)} °C</span>` : `<span style="color:#64748b">— (unavailable)</span>`;
+  return `
+    ${firstTime ? `<span>First: ${firstTime}</span><br>` : ''}
+    Wave: <span>${s.wh.toFixed(2)} m</span> @ <span>${s.whd ?? '?'}°</span><br>
+    Swell 1: <span>${s.sw1 != null ? s.sw1.toFixed(2) + ' m' : '—'}</span> @ <span>${s.sw1d ?? '—'}°</span><br>
+    Swell 2: <span>${s.sw2 != null ? s.sw2.toFixed(2) + ' m' : '—'}</span> @ <span>${s.sw2d ?? '—'}°</span><br>
+    Wind sea ≈ <span>${windSea}</span><br>
+    Water temp: ${sstStr}
+    ${lastTime ? `<br>Last: <span>${lastTime}</span>` : ''}
+  `;
+}
+
+function appendWaveToCard(cardId, waveSlot) {
+  const sample = document.querySelector(`#card-${cardId} .sample`);
+  if (!sample) return;
+  const div = document.createElement('div');
+  div.style.cssText = 'margin-top:6px;padding-top:6px;border-top:1px solid #1e3a5f';
+  div.innerHTML = waveBlockHtml(waveSlot);
+  sample.appendChild(div);
+}
+
+// ── Blosc / LZ4 decoder (pure JS, no CDN needed) ─────────────────────────
+function lz4Decompress(src, expectedSize) {
+  const dst = new Uint8Array(expectedSize);
+  let sOff = 0, dOff = 0;
+  while (sOff < src.length && dOff < expectedSize) {
+    const token = src[sOff++];
+    let litLen = token >>> 4;
+    if (litLen === 15) { let s; do { s = src[sOff++]; litLen += s; } while (s === 255); }
+    const litEnd = sOff + litLen;
+    while (sOff < litEnd) dst[dOff++] = src[sOff++];
+    if (sOff >= src.length) break;
+    const matchOffset = src[sOff] | (src[sOff + 1] << 8); sOff += 2;
+    let matchLen = (token & 0xF) + 4;
+    if ((token & 0xF) === 15) { let s; do { s = src[sOff++]; matchLen += s; } while (s === 255); }
+    let mPos = dOff - matchOffset;
+    for (let i = 0; i < matchLen && dOff < expectedSize; i++) dst[dOff++] = dst[mPos++];
+  }
+  return dst;
+}
+
+function byteUnshuffle(src, typesize) {
+  const n = src.length, count = n / typesize, dst = new Uint8Array(n);
+  for (let i = 0; i < count; i++)
+    for (let j = 0; j < typesize; j++)
+      dst[i * typesize + j] = src[j * count + i];
+  return dst;
+}
+
+const BLOSC_CODEC_NAMES = ['blosclz','lz4','lz4hc','snappy','zlib','zstd'];
+
+function decompressBlosc(buffer) {
+  const src = new Uint8Array(buffer);
+  const view = new DataView(buffer);
+  const codecId  = src[1];
+  const flags    = src[2];
+  const typesize = src[3];
+  const nbytes   = view.getUint32(4, true);
+  const blocksize = view.getUint32(8, true);
+  const ctbytes  = view.getUint32(12, true);
+  const doShuffle = !!(flags & 0x1);
+  const nblocks  = Math.ceil(nbytes / blocksize);
+  const bstarts  = [];
+  for (let i = 0; i < nblocks; i++) bstarts.push(view.getUint32(16 + i * 4, true));
+  const out = new Uint8Array(nbytes);
+  let dstOff = 0;
+  for (let i = 0; i < nblocks; i++) {
+    const bStart = bstarts[i];
+    const bEnd   = i + 1 < nblocks ? bstarts[i + 1] : ctbytes;
+    const blockUncompSize = Math.min(blocksize, nbytes - dstOff);
+    const compBlock = src.subarray(bStart, bEnd);
+    let raw;
+    if (compBlock.length === blockUncompSize) {
+      // pass-through block (compression didn't help — stored as-is)
+      raw = compBlock;
+    } else if (codecId === 5) {
+      // ZSTD
+      if (typeof fzstd === 'undefined') throw new Error('fzstd library not loaded');
+      raw = fzstd.decompress(compBlock);
+    } else {
+      // LZ4 / LZ4HC / blosclz (all use same frame format here)
+      raw = lz4Decompress(compBlock, blockUncompSize);
+    }
+    out.set(doShuffle && typesize > 1 ? byteUnshuffle(raw, typesize) : raw, dstOff);
+    dstOff += blockUncompSize;
+  }
+  return out.buffer;
+}
+
+// ── CMEMS MED Waves — public S3 Zarr (no auth required) ──────────────────
+async function testCmemsZarr() {
+  const lat = parseFloat(document.getElementById('lat').value);
+  const lon = parseFloat(document.getElementById('lon').value);
+
+  const BASE = 'https://s3.waw3-1.cloudferro.com/mdl-arco-geo-034/arco/' +
+    'MEDSEA_ANALYSISFORECAST_WAV_006_017/cmems_mod_med_wav_anfc_4.2km_PT1H-i_202311/geoChunked.zarr';
+
+  // Grid constants — T/Y/X chunk dims overridden from .zarray; bigEndian defaults true (CMEMS is >i2)
+  const LAT0 = 30.19, LON0 = -18.13, DLAT = 0.042, DLON = 0.042;
+  let T_CHUNK = 3216, Y_CHUNK = 16, X_CHUNK = 16, bigEndian = true;
+  const T0_UNIX = 1698796800; // 2023-11-01 00:00 UTC
+  const FILL_I16 = -32767;
+  const Ks = 1.7; // default shoaling factor (Tel Aviv open beach)
+
+  log('\n── Testing CMEMS MED Waves (Zarr S3, no auth) ──', 'head');
+  setCard('cmems', 'running', 'Step 1/4: Metadata…');
+
+  // ── Step 1: .zmetadata (CORS gate test) ──────────────────────────────────
+  let vhm0SF, vhm0AO, vtm02SF, vtm02AO, vmdrSF, vmdrAO;
+  try {
+    log('Step 1/4 — GET .zmetadata (CORS gate)', 'info');
+    const t0 = Date.now();
+    const res = await fetch(`${BASE}/.zmetadata`);
+    log(`HTTP ${res.status} in ${Date.now() - t0} ms`, res.ok ? 'ok' : 'error');
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const meta = await res.json();
+    const za = k => meta.metadata?.[k] ?? {};
+    vhm0SF  = za('VHM0/.zattrs').scale_factor  ?? 0.001; vhm0AO  = za('VHM0/.zattrs').add_offset  ?? 0;
+    vtm02SF = za('VTM02/.zattrs').scale_factor ?? 0.001; vtm02AO = za('VTM02/.zattrs').add_offset ?? 0;
+    vmdrSF  = za('VMDR/.zattrs').scale_factor  ?? 0.01;  vmdrAO  = za('VMDR/.zattrs').add_offset  ?? 0;
+    log(`VHM0: scale=${vhm0SF} offset=${vhm0AO} | VTM02: scale=${vtm02SF} offset=${vtm02AO} | VMDR: scale=${vmdrSF} offset=${vmdrAO}`, 'data');
+    // Fetch per-variable .zarray to get chunk dims — variables may differ
+    let VT_T = T_CHUNK, VT_Y = Y_CHUNK, VT_X = X_CHUNK;
+    let VD_T = T_CHUNK, VD_Y = Y_CHUNK, VD_X = X_CHUNK;
+    const fetchZarray = async name => {
+      const zar = await fetch(`${BASE}/${name}/.zarray`).then(r => r.json());
+      return zar;
+    };
+    try {
+      const [vhm0Zar, vtm02Zar, vmdrZar] = await Promise.allSettled([
+        fetchZarray('VHM0'), fetchZarray('VTM02'), fetchZarray('VMDR')
+      ]);
+      if (vhm0Zar.status === 'fulfilled' && vhm0Zar.value.chunks?.length >= 3) {
+        const z = vhm0Zar.value;
+        T_CHUNK = z.chunks[0]; Y_CHUNK = z.chunks[1]; X_CHUNK = z.chunks[2];
+        const dtype = typeof z.dtype === 'string' ? z.dtype : '(unknown)';
+        // NOTE: CMEMS CloudFerro S3 Zarr physically stores int16 as big-endian even though
+        // the dtype metadata says "<i2". Do NOT use dtype to override bigEndian here.
+        log(`VHM0/.zarray:  chunks=[${T_CHUNK},${Y_CHUNK},${X_CHUNK}]  dtype=${dtype}  bigEndian=${bigEndian}`, 'data');
+      } else {
+        log(`VHM0/.zarray fetch failed — using hardcoded defaults`, 'warn');
+      }
+      if (vtm02Zar.status === 'fulfilled' && vtm02Zar.value.chunks?.length >= 3) {
+        const z = vtm02Zar.value;
+        VT_T = z.chunks[0]; VT_Y = z.chunks[1]; VT_X = z.chunks[2];
+        log(`VTM02/.zarray: chunks=[${VT_T},${VT_Y},${VT_X}]  dtype=${z.dtype ?? '?'}`, 'data');
+      } else {
+        log(`VTM02/.zarray fetch failed — reusing VHM0 dims for VTM02`, 'warn');
+      }
+      if (vmdrZar.status === 'fulfilled' && vmdrZar.value.chunks?.length >= 3) {
+        const z = vmdrZar.value;
+        VD_T = z.chunks[0]; VD_Y = z.chunks[1]; VD_X = z.chunks[2];
+        log(`VMDR/.zarray:  chunks=[${VD_T},${VD_Y},${VD_X}]  dtype=${z.dtype ?? '?'}`, 'data');
+      } else {
+        log(`VMDR/.zarray fetch failed — reusing VHM0 dims for VMDR`, 'warn');
+      }
+    } catch(e2) {
+      log(`VHM0/.zarray fetch failed (${e2.message}) — using hardcoded defaults`, 'warn');
+    }
+  } catch (e) {
+    log(`CORS/network error: ${e.message}`, 'error');
+    log('The CloudFerro S3 bucket may not send CORS headers for browser fetch.', 'warn');
+    setCard('cmems', 'cors', 'CORS blocked', `
+      S3 bucket missing CORS headers.<br>
+      Data IS public (no auth) but browser<br>
+      cross-origin fetch is blocked.<br>
+      <span style="color:#a78bfa">Use copernicusmarine CLI for now.</span>
+    `);
+    return null;
+  }
+
+  // ── Step 2: Compute indices ───────────────────────────────────────────────
+  log('Step 2/4 — Compute chunk indices', 'info');
+  const lat_i = Math.round((lat  - LAT0) / DLAT);
+  const lon_i = Math.round((lon  - LON0) / DLON);
+  const t_i   = Math.round((Date.now() / 1000 - T0_UNIX) / 3600);
+
+  if (lat_i < 0 || lat_i >= 380 || lon_i < 0 || lon_i >= 1307) {
+    log(`Location (${lat}, ${lon}) is outside CMEMS MED grid coverage`, 'error');
+    setCard('cmems', 'fail', 'Outside grid coverage');
+    return null;
+  }
+
+  const chunkIdx = (ti, yi, xi, TT, TY, TX) => ({
+    key:   `${Math.floor(ti/TT)}.${Math.floor(yi/TY)}.${Math.floor(xi/TX)}`,
+    t_loc: ti % TT, y_loc: yi % TY, x_loc: xi % TX,
+  });
+  const vhm0Idx  = chunkIdx(t_i, lat_i, lon_i, T_CHUNK, Y_CHUNK, X_CHUNK);
+  const vtm02Idx = chunkIdx(t_i, lat_i, lon_i, VT_T,    VT_Y,    VT_X);
+  const vmdrIdx  = chunkIdx(t_i, lat_i, lon_i, VD_T,    VD_Y,    VD_X);
+  const { key: chunkKey, t_loc: t_local, y_loc: y_local, x_loc: x_local } = vhm0Idx;
+
+  log(`Grid: lat_i=${lat_i} lon_i=${lon_i} t_i=${t_i}`, 'data');
+  log(`VHM0  chunk: ${vhm0Idx.key}  t_loc=${vhm0Idx.t_loc} y_loc=${vhm0Idx.y_loc} x_loc=${vhm0Idx.x_loc}`, 'data');
+  log(`VTM02 chunk: ${vtm02Idx.key}  t_loc=${vtm02Idx.t_loc} y_loc=${vtm02Idx.y_loc} x_loc=${vtm02Idx.x_loc}`, 'data');
+  log(`VMDR  chunk: ${vmdrIdx.key}  t_loc=${vmdrIdx.t_loc} y_loc=${vmdrIdx.y_loc} x_loc=${vmdrIdx.x_loc}`, 'data');
+
+  // ── Step 3: Fetch 3 data chunks in parallel ───────────────────────────────
+  log(`Step 3/4 — Fetch VHM0 / VTM02 / VMDR chunks (${chunkKey})`, 'info');
+  setCard('cmems', 'running', `Step 3/4: Fetching chunk ${chunkKey}…`);
+
+  let vhm0Buf, vtm02Buf, vmdrBuf;
+  try {
+    const t0 = Date.now();
+    [vhm0Buf, vtm02Buf, vmdrBuf] = await Promise.all([
+      fetch(`${BASE}/VHM0/${chunkKey}`).then(r  => { if (!r.ok)  throw new Error(`VHM0 HTTP ${r.status}`);  return r.arrayBuffer(); }),
+      fetch(`${BASE}/VTM02/${chunkKey}`).then(r => { if (!r.ok)  throw new Error(`VTM02 HTTP ${r.status}`); return r.arrayBuffer(); }),
+      fetch(`${BASE}/VMDR/${chunkKey}`).then(r  => { if (!r.ok)  throw new Error(`VMDR HTTP ${r.status}`);  return r.arrayBuffer(); }),
+    ]);
+    log(`Fetched in ${Date.now() - t0} ms — VHM0: ${(vhm0Buf.byteLength/1024).toFixed(0)} KB  VTM02: ${(vtm02Buf.byteLength/1024).toFixed(0)} KB  VMDR: ${(vmdrBuf.byteLength/1024).toFixed(0)} KB`, 'ok');
+    const detectedCodecId = new Uint8Array(vhm0Buf)[1];
+    const detectedCodec = BLOSC_CODEC_NAMES[detectedCodecId] ?? `unknown(${detectedCodecId})`;
+    log(`Blosc header — codec: ${detectedCodec}  shuffle: ${!!(new Uint8Array(vhm0Buf)[2] & 1)}  typesize: ${new Uint8Array(vhm0Buf)[3]}`, 'data');
+    console.log('[cmems] raw chunk buffers', { vhm0: vhm0Buf, vtm02: vtm02Buf, vmdr: vmdrBuf });
+  } catch (e) {
+    log(`Chunk fetch failed: ${e.message}`, 'error');
+    if (e.message.includes('404')) log('Chunk not found — t_i may be beyond dataset end or T0 estimate is off', 'warn');
+    setCard('cmems', 'fail', `Chunk ${chunkKey}: ${e.message}`);
+    return null;
+  }
+
+  // ── Step 4: Decode + extract time series ─────────────────────────────────
+  log('Step 4/4 — Blosc/LZ4 decode + extract point', 'info');
+  setCard('cmems', 'running', 'Step 4/4: Decoding…');
+
+  function extractSeries(buf, sf, ao) {
+    const dec = decompressBlosc(buf);
+    const dv = new DataView(dec);
+    const nElems = dec.byteLength >> 1;
+    const le = !bigEndian; // DataView: true = little-endian
+    const out = [];
+    for (let dt = 0; dt < 120; dt++) {
+      const idx = (t_local + dt) * Y_CHUNK * X_CHUNK + y_local * X_CHUNK + x_local;
+      if (idx >= nElems) { out.push(null); continue; }
+      const v = dv.getInt16(idx * 2, le);
+      out.push(v === FILL_I16 ? null : +(v * sf + ao).toFixed(3));
+    }
+    return out;
+  }
+
+  // ── Raw-value debug: show both endiannesses at target index ─────────────────
+  const idxDbg = t_local * Y_CHUNK * X_CHUNK + y_local * X_CHUNK + x_local;
+  try {
+    const decDbg = decompressBlosc(vhm0Buf);
+    const dvDbg = new DataView(decDbg);
+    const expectedSz = T_CHUNK * Y_CHUNK * X_CHUNK * 2;
+    const rawLE = dvDbg.getInt16(idxDbg * 2, true);
+    const rawBE = dvDbg.getInt16(idxDbg * 2, false);
+    const hdrBytes = new Uint8Array(vhm0Buf);
+    const nblks = Math.ceil(new DataView(vhm0Buf).getUint32(4, true) / new DataView(vhm0Buf).getUint32(8, true));
+    const bs0 = new DataView(vhm0Buf).getUint32(16, true);
+    const firstFour = Array.from(hdrBytes.subarray(bs0, bs0 + 4)).map(b => b.toString(16).padStart(2,'0')).join(' ');
+    log(`Decomp size: ${decDbg.byteLength} (expected ${expectedSz})  nblocks=${nblks}  bstart[0]=${bs0}  first4=${firstFour}`, 'data');
+    log(`VHM0  at idx ${idxDbg}: raw_LE=${rawLE} (${(rawLE*vhm0SF).toFixed(3)}m)  raw_BE=${rawBE} (${(rawBE*vhm0SF).toFixed(3)}m)  fill=${FILL_I16}`, 'data');
+  } catch(eDbg) {
+    log(`VHM0 debug decode error: ${eDbg.message}`, 'warn');
+  }
+  try {
+    const vtm02Hdr = new Uint8Array(vtm02Buf);
+    const vtm02Codec = BLOSC_CODEC_NAMES[vtm02Hdr[1]] ?? `unknown(${vtm02Hdr[1]})`;
+    const vtm02Shuffle = !!(vtm02Hdr[2] & 0x1);
+    const vtm02Typesize = vtm02Hdr[3];
+    const vtm02Nblks = Math.ceil(new DataView(vtm02Buf).getUint32(4, true) / new DataView(vtm02Buf).getUint32(8, true));
+    log(`VTM02 Blosc header — codec: ${vtm02Codec}  shuffle: ${vtm02Shuffle}  typesize: ${vtm02Typesize}  nblocks: ${vtm02Nblks}`, 'data');
+    const decVtm = decompressBlosc(vtm02Buf);
+    const dvVtm = new DataView(decVtm);
+    const vtm02rawLE = dvVtm.getInt16(idxDbg * 2, true);
+    const vtm02rawBE = dvVtm.getInt16(idxDbg * 2, false);
+    log(`VTM02 at idx ${idxDbg}: decomp=${decVtm.byteLength}B  int16_LE=${vtm02rawLE}(${(vtm02rawLE*vtm02SF).toFixed(3)}s)  int16_BE=${vtm02rawBE}(${(vtm02rawBE*vtm02SF).toFixed(3)}s)`, 'data');
+    // Also log next 3 timesteps to spot endianness pattern
+    for (let dt = 1; dt <= 3; dt++) {
+      const i2 = (idxDbg + dt * Y_CHUNK * X_CHUNK);
+      if (i2 * 2 + 2 <= decVtm.byteLength) {
+        const le2 = dvVtm.getInt16(i2 * 2, true), be2 = dvVtm.getInt16(i2 * 2, false);
+        log(`VTM02 +${dt}h idx ${i2}: LE=${le2}(${(le2*vtm02SF).toFixed(3)}s) BE=${be2}(${(be2*vtm02SF).toFixed(3)}s)`, 'data');
+      }
+    }
+  } catch(eDbg2) {
+    log(`VTM02 debug decode error: ${eDbg2.message}`, 'warn');
+  }
+
+  let wh, wt, wd;
+  try {
+    wh = extractSeries(vhm0Buf,  vhm0SF,  vhm0AO);
+    wt = extractSeries(vtm02Buf, vtm02SF, vtm02AO);
+    wd = extractSeries(vmdrBuf,  vmdrSF,  vmdrAO);
+  } catch (e) {
+    log(`Decode error: ${e.message}`, 'error');
+    log('Blosc header may differ from expected format — check console for raw buffer', 'warn');
+    setCard('cmems', 'fail', `Decode: ${e.message}`);
+    return null;
+  }
+
+  const validCount = wh.filter(v => v !== null).length;
+  log(`Valid slots (next 120 h): ${validCount}/120`, validCount > 60 ? 'ok' : 'warn');
+
+  const first = wh.findIndex(v => v !== null);
+  if (first === -1) {
+    log('All VHM0 values are fill — location may be inland, or T0 estimate is off', 'warn');
+    log(`T0 assumed: 2023-11-01 (unix ${T0_UNIX}). If wrong, adjust T0_UNIX in testCmemsZarr()`, 'info');
+    setCard('cmems', 'fail', 'All fill values');
+    return null;
+  }
+
+  const beach = ((wh[first] ?? 0) * Ks).toFixed(2);
+  for (let i = 0; i < 4; i++) {
+    const dt = first + i;
+    if (wh[dt] == null) continue;
+    const ts = new Date((T0_UNIX + (t_i + dt) * 3600) * 1000).toISOString().slice(0, 16) + 'Z';
+    const dirNorm = wd[dt] != null ? ((wd[dt] % 360) + 360) % 360 : null;
+    log(`  +${dt}h  ${ts}: Hs ${wh[dt].toFixed(2)} m  dir ${dirNorm?.toFixed(0) ?? '—'}°  T ${wt[dt]?.toFixed(1) ?? '—'} s`, 'data');
+  }
+
+  setCard('cmems', 'ok', `OK — ${validCount}/120 slots`, `
+    Offshore Hs: <span>${wh[first].toFixed(2)} m</span> @ <span>${wd[first] != null ? (((wd[first] % 360) + 360) % 360).toFixed(0) : '?'}°</span><br>
+    Period: <span>${wt[first]?.toFixed(1) ?? '—'} s</span><br>
+    Beach (Ks ${Ks}): <span>~${beach} m</span><br>
+    Source: <span>CMEMS geoChunked Zarr/S3</span>
+  `);
+  return { wh: wh[first], wt: wt[first], wd: wd[first] };
+}
+
+// ── Run single model ──────────────────────────────────────────────────────
+async function runSingle(key) {
+  const card = document.getElementById(`card-${key}`);
+  const btn = card.querySelector('.run-btn');
+  btn.disabled = true;
+  // reset only this card
+  card.className = 'model-card';
+  card.querySelector('.status').textContent = 'Running…';
+  card.querySelector('.sample').innerHTML = '';
+  // clear log
+  document.getElementById('logBody').innerHTML = '';
+  log(`=== Testing: ${key} ===`, 'head');
+  log(`Coordinates: lat=${document.getElementById('lat').value} lon=${document.getElementById('lon').value}`, 'info');
+  try {
+    if      (key === 'imsIconLam') await testImsModel();
+    else if (key === 'ecmwfWam')   await testWaveData();
+    else if (key === 'cmems')      await testCmemsZarr();
+    else                           await testOpenMeteoModel(key);
+  } catch (e) {
+    log(`Unexpected error: ${e.message}`, 'error');
+    console.error(e);
+  }
+  log('\n=== Done ===', 'head');
+  btn.disabled = false;
+}
+
+// ── Run all ───────────────────────────────────────────────────────────────
+function allRunBtns() { return document.querySelectorAll('.model-card .run-btn'); }
+
+async function runAll() {
+  const btn = document.getElementById('runBtn');
+  btn.disabled = true;
+  allRunBtns().forEach(b => b.disabled = true);
+  clearLog();
+  log('=== SeaSense Model Diagnostics ===', 'head');
+  log(`Coordinates: lat=${document.getElementById('lat').value} lon=${document.getElementById('lon').value}`, 'info');
+  log(`Time: ${new Date().toLocaleString()}`, 'info');
+
+  try {
+    await testOpenMeteoModel('iconEu');
+    await testOpenMeteoModel('ecmwf');
+    await testOpenMeteoModel('gfs');
+    await testImsModel();
+    const waveSlot = await testWaveData();
+    if (waveSlot) {
+      for (const id of ['iconEu', 'ecmwf', 'gfs', 'imsIconLam']) {
+        appendWaveToCard(id, waveSlot);
+      }
+    }
+    await testCmemsZarr();
+  } catch (e) {
+    log(`Unexpected error: ${e.message}`, 'error');
+    console.error(e);
+  }
+
+  log(`\n=== Done ===`, 'head');
+  btn.disabled = false;
+  allRunBtns().forEach(b => b.disabled = false);
+}
+</script>
+</body>
+</html>
