@@ -629,7 +629,7 @@
       <ul class="about-list">
         <li><strong>Wind speed & gusts</strong> — direction, bearing, and arrow for every 3-hour slot</li>
         <li><strong>Wave height & direction</strong> — from the ECMWF WAM ocean model</li>
-        <li><strong>Air & water temperature</strong> — so you know what to wear</li>
+        <li><strong>Air temperature</strong> — so you know what to wear</li>
         <li><strong>Rain probability & amount</strong> — per time slot and daily summary</li>
         <li><strong>Sunrise, sunset & UV index</strong> — via the ☀️ Sun & UV panel</li>
         <li><strong>GO / CAUTION / DANGER status</strong> — instantly at a glance, customisable thresholds</li>
@@ -1614,9 +1614,7 @@
           const gc  = windColor(r.gustKt);
           const whC = waveColor(r.wh);
           const airTempStr   = r.airTempC   != null ? `${Math.round(r.airTempC)}°C`   : '—';
-          const waterTempStr = r.waterTempC != null ? `${Math.round(r.waterTempC)}°C` : '—';
           const airTempColor   = r.airTempC   == null ? 'var(--dim)' : r.airTempC   < 15 ? '#93c5fd' : r.airTempC   < 25 ? '#34d399' : '#fb923c';
-          const waterTempColor = r.waterTempC == null ? 'var(--dim)' : r.waterTempC < 18 ? '#93c5fd' : r.waterTempC < 24 ? '#34d399' : '#fb923c';
           const rainPctStr   = r.rainPct != null ? `${r.rainPct}%` : '—';
           const rainMmStr    = r.rainMm >= 0.05 ? ` <span class="col-sub">${r.rainMm.toFixed(1)} mm</span>` : '';
           const rainPctColor = r.rainPct == null ? 'var(--dim)' : r.rainPct < 20 ? 'var(--dim)' : r.rainPct < 50 ? '#93c5fd' : r.rainPct < 75 ? '#3b82f6' : '#a78bfa';
@@ -1648,9 +1646,7 @@
               const bgc = windColor(b.gustKt);
               const bwhC = waveColor(b.wh);
               const bAirStr   = b.airTempC   != null ? `${Math.round(b.airTempC)}°C`   : '—';
-              const bWatStr   = b.waterTempC != null ? `${Math.round(b.waterTempC)}°C` : '—';
               const bAirCol   = b.airTempC   == null ? 'var(--dim)' : b.airTempC   < 15 ? '#93c5fd' : b.airTempC   < 25 ? '#34d399' : '#fb923c';
-              const bWatCol   = b.waterTempC == null ? 'var(--dim)' : b.waterTempC < 18 ? '#93c5fd' : b.waterTempC < 24 ? '#34d399' : '#fb923c';
               const bRainPctStr = b.rainPct != null ? `${b.rainPct}%` : '—';
               const bRainMmStr  = b.rainMm >= 0.05 ? ` <span class="col-sub">${b.rainMm.toFixed(1)} mm</span>` : '';
               const bRainCol  = b.rainPct == null ? 'var(--dim)' : b.rainPct < 20 ? 'var(--dim)' : b.rainPct < 50 ? '#93c5fd' : b.rainPct < 75 ? '#3b82f6' : '#a78bfa';
@@ -1905,14 +1901,9 @@
             : r.rainPct < 75 ? '#3b82f6'
             : '#a78bfa';
           const airTempStr   = r.airTempC   != null ? `${Math.round(r.airTempC)}°C`   : '—';
-          const waterTempStr = r.waterTempC != null ? `${Math.round(r.waterTempC)}°C` : '—';
           const airTempColor = r.airTempC == null ? 'var(--dim)'
             : r.airTempC < 15 ? '#93c5fd'
             : r.airTempC < 25 ? '#34d399'
-            : '#fb923c';
-          const waterTempColor = r.waterTempC == null ? 'var(--dim)'
-            : r.waterTempC < 18 ? '#93c5fd'
-            : r.waterTempC < 24 ? '#34d399'
             : '#fb923c';
           return `
           <div class="fc${hourly ? ' fc-hourly' : ''}">
@@ -1972,7 +1963,7 @@
               <div class="fc-hr"></div>
 
               <div class="fc-temp-row">
-                <div class="fc-temp-item"><span style="color:var(--dim)">🌡</span><span style="color:${airTempColor}">${airTempStr}</span><span style="color:var(--dim);margin-left:4px;font-size:0.7rem">💧</span><span style="color:${waterTempColor};font-size:0.7rem">${waterTempStr}</span></div>
+                <div class="fc-temp-item"><span style="color:var(--dim)">🌡</span><span style="color:${airTempColor}">${airTempStr}</span></div>
                 <div class="fc-temp-item" style="gap:2px">
                   <span style="color:var(--dim)">🌧</span><span style="color:${rainPctColor};font-weight:700">${rainPctStr}</span>${rainMmStr ? `<span style="color:var(--dim);font-size:0.72rem;margin-left:3px">${rainMmStr}</span>` : ''}
                 </div>
