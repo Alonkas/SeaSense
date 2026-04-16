@@ -419,7 +419,7 @@
     .fc-side-label {
       writing-mode: vertical-lr;
       transform: rotate(180deg);
-      font-size: 0.55rem;
+      font-size: 0.66rem;
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.1em;
@@ -1484,7 +1484,7 @@
     ts.forEach((t, i) => {
       const d = new Date(t);
       const localHour = parseInt(d.toLocaleTimeString('en-IL', { hour: '2-digit', hour12: false, timeZone: TIMEZONE }));
-      if (t < Date.now()) return; // skip past slots
+      if (t < Date.now() - 3 * 60 * 60 * 1000) return; // skip slots older than 3h (keeps current block visible)
       const isAnchor = localHour % 3 === 0;
       if (isAnchor && [0, 3].includes(localHour)) return; // skip night anchor slots
       const key   = d.toLocaleDateString('en-IL', { weekday: 'long', day: 'numeric', month: 'long', timeZone: TIMEZONE });
@@ -1954,7 +1954,7 @@
                   <div class="fc-section">
                     <div class="fc-section-left">
                       <div class="fc-wave-val" style="color:${whC}">${fmtW(r.wh)}</div>
-                      ${r.whd != null || r.wp != null ? `<div class="fc-wind-sub">${r.whd != null ? dirLabel(r.whd) + ' ' + Math.round(r.whd) + '°' : ''}${r.whd != null && r.wp != null ? ' · ' : ''}${r.wp != null ? 'period ' + Math.round(r.wp) + 's' : ''}</div>` : ''}
+                      ${r.wp != null ? `<div class="fc-wind-sub">period ${Math.round(r.wp)}s</div>` : ''}
                     </div>
                     ${bigDirArrow(r.whd, whC)}
                   </div>
@@ -1973,7 +1973,6 @@
                   <div class="fc-section">
                     <div class="fc-section-left">
                       <div class="fc-wind-speed" style="color:${wc}">${windDisp(r.windKt).toFixed(1)}<sup>${windUnitLabel()}</sup></div>
-                      <div class="fc-wind-sub">${dirLabel(r.deg)} ${Math.round(r.deg)}°</div>
                       <div class="fc-wind-sub">Gusts <span class="fc-gust-val" style="color:${gc}">${windDisp(r.gustKt).toFixed(1)} ${windUnitLabel()}</span></div>
                     </div>
                     ${bigDirArrow(r.deg, wc)}
