@@ -550,7 +550,7 @@
       <img src="icons/compass.svg" alt="SeaSense logo" class="header-logo" />
       <div class="header-title-group">
         <h1><em>SeaSense</em></h1>
-        <div class="header-tagline">Know before you go · Catch the right moment <span style="opacity:0.55;margin-left:6px">v8.6.0</span></div>
+        <div class="header-tagline">Know before you go · Catch the right moment <span style="opacity:0.55;margin-left:6px">v8.6.1</span></div>
       </div>
     </div>
     <div class="header-right">
@@ -663,7 +663,7 @@
       </ul>
 
       <div class="about-footer-note">All data is free — no API key required.<br>
-      Built by <strong>Alon Kassir</strong> &nbsp;·&nbsp; v8.6.0</div>
+      Built by <strong>Alon Kassir</strong> &nbsp;·&nbsp; v8.6.1</div>
     </div>
   </div>
 </div>
@@ -785,8 +785,9 @@
   const OM_WIND_URL   = 'https://api.open-meteo.com/v1/forecast';
   const OM_MARINE_URL = 'https://marine-api.open-meteo.com/v1/marine';
 
-  let _lastWindData  = null;
+  let _lastWindData   = null;
   let _lastWaveLookup = null;
+  let _lastTideLookup = {};
   let _lastWindDataAll = null;
 
   const LOCATIONS = {
@@ -1301,12 +1302,14 @@
         _lastWindDataAll = { iconEu: windIconEu, ecmwf: windEcmwf, gfs: windGfs };
         _lastWindData   = windIconEu;
         _lastWaveLookup = waveResult ?? {};
+        _lastTideLookup = tideLookup;
         renderForecast(windIconEu, waveResult ?? {}, tideLookup);
       } else {
         const windData = await fetchOpenMeteoWind(modelSelect.value);
         if (!waveResult) setStatus(waveStatusMsg(waveErrMsg), 'warning'); else setStatus('');
         _lastWindData    = windData;
         _lastWaveLookup  = waveResult ?? {};
+        _lastTideLookup  = tideLookup;
         _lastWindDataAll = null;
         renderForecast(windData, waveResult ?? {}, tideLookup);
       }
@@ -1378,7 +1381,7 @@
   function onTimezoneChange() {
     TIMEZONE = document.getElementById('timezoneSb').value;
     localStorage.setItem('ssTimezone', TIMEZONE);
-    if (_lastWindData && _lastWaveLookup) renderForecast(_lastWindData, _lastWaveLookup);
+    if (_lastWindData && _lastWaveLookup) renderForecast(_lastWindData, _lastWaveLookup, _lastTideLookup);
   }
 
   function onLayoutChange() {
@@ -1386,14 +1389,14 @@
     localStorage.setItem('ssLayout', layout);
     const sb = document.getElementById('layoutSelectSb');
     if (sb) sb.value = layout;
-    if (_lastWindData && _lastWaveLookup) renderForecast(_lastWindData, _lastWaveLookup);
+    if (_lastWindData && _lastWaveLookup) renderForecast(_lastWindData, _lastWaveLookup, _lastTideLookup);
   }
 
   function onLayoutChangeSb() {
     const layout = document.getElementById('layoutSelectSb').value;
     document.getElementById('layoutSelect').value = layout;
     localStorage.setItem('ssLayout', layout);
-    if (_lastWindData && _lastWaveLookup) renderForecast(_lastWindData, _lastWaveLookup);
+    if (_lastWindData && _lastWaveLookup) renderForecast(_lastWindData, _lastWaveLookup, _lastTideLookup);
   }
 
   function windDeg(u, v) {
@@ -2146,7 +2149,7 @@
 </script>
 
 <footer class="app-footer">
-  <span>SeaSense <strong style="color:var(--muted)">v8.6.0</strong></span>
+  <span>SeaSense <strong style="color:var(--muted)">v8.6.1</strong></span>
   <span style="color:var(--border)">·</span>
   <span>Made with ❤️ by <strong style="color:var(--muted)">Alon Kassir</strong></span>
   <span style="color:var(--border)">·</span>
