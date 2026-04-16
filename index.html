@@ -415,19 +415,17 @@
 
     .fc-label { font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--dim); margin-bottom: 3px; }
     .fc-section-label { display: none; }
-    .fc-section-wrapper { display: flex; align-items: stretch; gap: 5px; }
+    .fc-section-wrapper { display: flex; align-items: stretch; gap: 10px; }
     .fc-side-label {
-      writing-mode: vertical-lr;
-      transform: rotate(180deg);
       font-size: 0.66rem;
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.1em;
-      color: var(--dim);
+      color: #fff;
       display: flex;
       align-items: center;
       justify-content: center;
-      min-width: 11px;
+      min-width: 36px;
     }
     .fc-temp-row  { display: flex; justify-content: space-between; align-items: center; margin-top: 2px; }
     .fc-temp-item { display: flex; align-items: center; gap: 3px; font-size: 0.75rem; font-weight: 600; }
@@ -550,7 +548,7 @@
       <img src="icons/compass.svg" alt="SeaSense logo" class="header-logo" />
       <div class="header-title-group">
         <h1><em>SeaSense</em></h1>
-        <div class="header-tagline">Know before you go · Catch the right moment <span style="opacity:0.55;margin-left:6px">v8.6.1</span></div>
+        <div class="header-tagline">Know before you go · Catch the right moment <span style="opacity:0.55;margin-left:6px">v8.6.2</span></div>
       </div>
     </div>
     <div class="header-right">
@@ -663,7 +661,7 @@
       </ul>
 
       <div class="about-footer-note">All data is free — no API key required.<br>
-      Built by <strong>Alon Kassir</strong> &nbsp;·&nbsp; v8.6.1</div>
+      Built by <strong>Alon Kassir</strong> &nbsp;·&nbsp; v8.6.2</div>
     </div>
   </div>
 </div>
@@ -1936,12 +1934,11 @@
               </div>
 
               ${surfH != null ? `<div class="fc-section-wrapper">
-                ${showLabels ? '<div class="fc-side-label">Surf</div>' : ''}
+                ${showLabels ? '<div class="fc-side-label" style="text-align:center;line-height:1.1">BEACH<br>WAVES</div>' : ''}
                 <div style="flex:1">
                   <div class="fc-section">
                     <div class="fc-section-left">
                       <div class="fc-wave-val" style="color:${surfC}">~${surfH.toFixed(1)}<sup>m</sup></div>
-                      <div class="fc-wind-sub" style="color:var(--dim)">breaking wave</div>
                     </div>
                   </div>
                 </div>
@@ -1954,13 +1951,13 @@
                   <div class="fc-section">
                     <div class="fc-section-left">
                       <div class="fc-wave-val" style="color:${whC}">${fmtW(r.wh)}</div>
-                      ${r.wp != null ? `<div class="fc-wind-sub">period ${Math.round(r.wp)}s</div>` : ''}
+                      ${r.wp != null ? `<div class="fc-wind-sub">every <span style="font-size:1.3em;color:${whC}">${Math.round(r.wp)} Sec</span></div>` : ''}
                     </div>
                     ${bigDirArrow(r.whd, whC)}
                   </div>
                   ${(r.sw1 != null || r.sw2 != null) ? `<div class="fc-swell-row">
-                    <div class="fc-swell"><span class="fc-swell-lbl">S1</span><span style="color:${sw1C}">${r.sw1 != null ? r.sw1.toFixed(1)+'m' : '—'}</span>${r.sw1p != null ? ` <span style="color:var(--dim);font-size:0.75rem;margin-left:2px">period ${Math.round(r.sw1p)}s</span>` : ''}${r.sw1d != null ? ` <span class="dir-arrow" style="color:var(--muted)">${dirArrow(r.sw1d)}</span><span style="color:var(--muted);font-size:0.7rem">${dirLabel(r.sw1d)}</span>` : ''}</div>
-                    <div class="fc-swell"><span class="fc-swell-lbl">S2</span><span style="color:${sw2C}">${r.sw2 != null ? r.sw2.toFixed(1)+'m' : '—'}</span>${r.sw2p != null ? ` <span style="color:var(--dim);font-size:0.75rem;margin-left:2px">period ${Math.round(r.sw2p)}s</span>` : ''}${r.sw2d != null ? ` <span class="dir-arrow" style="color:var(--muted)">${dirArrow(r.sw2d)}</span><span style="color:var(--muted);font-size:0.7rem">${dirLabel(r.sw2d)}</span>` : ''}</div>
+                    <div class="fc-swell"><span class="fc-swell-lbl">S1</span><span style="color:${sw1C}">${r.sw1 != null ? r.sw1.toFixed(1)+'m' : '—'}</span>${r.sw1p != null ? ` <span style="font-size:0.75rem;margin-left:2px">every <span style="font-size:1.3em;color:${sw1C}">${Math.round(r.sw1p)} Sec</span></span>` : ''}${r.sw1d != null ? ` <span class="dir-arrow" style="color:var(--muted)">${dirArrow(r.sw1d)}</span><span style="color:var(--muted);font-size:0.7rem">${dirLabel(r.sw1d)}</span>` : ''}</div>
+                    <div class="fc-swell"><span class="fc-swell-lbl">S2</span><span style="color:${sw2C}">${r.sw2 != null ? r.sw2.toFixed(1)+'m' : '—'}</span>${r.sw2p != null ? ` <span style="font-size:0.75rem;margin-left:2px">every <span style="font-size:1.3em;color:${sw2C}">${Math.round(r.sw2p)} Sec</span></span>` : ''}${r.sw2d != null ? ` <span class="dir-arrow" style="color:var(--muted)">${dirArrow(r.sw2d)}</span><span style="color:var(--muted);font-size:0.7rem">${dirLabel(r.sw2d)}</span>` : ''}</div>
                   </div>` : ''}
                 </div>
               </div>
@@ -2148,7 +2145,7 @@
 </script>
 
 <footer class="app-footer">
-  <span>SeaSense <strong style="color:var(--muted)">v8.6.1</strong></span>
+  <span>SeaSense <strong style="color:var(--muted)">v8.6.2</strong></span>
   <span style="color:var(--border)">·</span>
   <span>Made with ❤️ by <strong style="color:var(--muted)">Alon Kassir</strong></span>
   <span style="color:var(--border)">·</span>
