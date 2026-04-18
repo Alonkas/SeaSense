@@ -548,7 +548,7 @@
       <img src="icons/compass.svg" alt="SeaSense logo" class="header-logo" />
       <div class="header-title-group">
         <h1><em>SeaSense</em></h1>
-        <div class="header-tagline">Know before you go · Catch the right moment <span style="opacity:0.55;margin-left:6px">v8.6.2</span></div>
+        <div class="header-tagline">Know before you go · Catch the right moment <span style="opacity:0.55;margin-left:6px">v8.6.3</span></div>
       </div>
     </div>
     <div class="header-right">
@@ -661,7 +661,7 @@
       </ul>
 
       <div class="about-footer-note">All data is free — no API key required.<br>
-      Built by <strong>Alon Kassir</strong> &nbsp;·&nbsp; v8.6.2</div>
+      Built by <strong>Alon Kassir</strong> &nbsp;·&nbsp; v8.6.3</div>
     </div>
   </div>
 </div>
@@ -1883,7 +1883,6 @@
         const cautCnt = rows.filter(r => r.st === 'caution').length;
         const dangerCnt = rows.filter(r => r.st === 'danger').length;
         const id = 'day-' + dk.replace(/\W/g,'_');
-        const hasBetween = rows.some(r => r.between && r.between.length > 0);
         const hbWatTemps = rows.map(r => r.waterTempC).filter(v => v != null);
         const hbDailyWaterTemp = hbWatTemps.length ? hbWatTemps.reduce((a, b) => a + b, 0) / hbWatTemps.length : null;
 
@@ -1891,7 +1890,6 @@
           <div class="day-header">
             <div class="day-header-left">
               <div class="day-title">${dk}</div>
-              ${hasBetween ? `<button class="hourly-details-btn" onclick="toggleDayHours('${id}',this)">▸ hourly details</button>` : ''}
             </div>
             <div class="day-badges">
               ${goCnt   > 0 ? `<span class="dbadge go">${goCnt} GO</span>` : ''}
@@ -1902,7 +1900,7 @@
           ${fmtTideStrip(tideLookup[days[dk].isoDate], hbDailyWaterTemp)}
           <div class="cards">`;
 
-        const mkCard = (r, hourly, showLabels = false) => {
+        const mkCard = (r, hourly, showLabels = false, autoOpen = false) => {
           const time  = r.d.toLocaleTimeString('en-IL', { hour: '2-digit', minute: '2-digit', timeZone: TIMEZONE });
           const wc    = windColor(r.windKt);
           const gc    = r.gustKt != null ? windColor(r.gustKt) : 'var(--dim)';
@@ -1925,7 +1923,7 @@
             : r.airTempC < 25 ? '#34d399'
             : '#fb923c';
           return `
-          <div class="fc${hourly ? ' fc-hourly' : ''}">
+          <div class="fc${hourly ? ' fc-hourly' : ''}${autoOpen ? ' open' : ''}">
             <div class="fc-top ${r.st}${hourly ? ' fc-top-thin' : ''}"></div>
             <div class="fc-body">
               <div class="fc-head">
@@ -1990,9 +1988,9 @@
         };
 
         rows.forEach((r, idx) => {
-          html += mkCard(r, false, idx === 0);
+          html += mkCard(r, false, true);
           if (r.between && r.between.length > 0) {
-            r.between.forEach(b => { html += mkCard(b, true, false); });
+            r.between.forEach(b => { html += mkCard(b, true, false, true); });
           }
         });
         html += `</div>`;
@@ -2145,7 +2143,7 @@
 </script>
 
 <footer class="app-footer">
-  <span>SeaSense <strong style="color:var(--muted)">v8.6.2</strong></span>
+  <span>SeaSense <strong style="color:var(--muted)">v8.6.3</strong></span>
   <span style="color:var(--border)">·</span>
   <span>Made with ❤️ by <strong style="color:var(--muted)">Alon Kassir</strong></span>
   <span style="color:var(--border)">·</span>
