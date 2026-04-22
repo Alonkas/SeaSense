@@ -85,6 +85,8 @@
     .btn:hover  { background: #2563eb; }
     .btn:active { transform: scale(0.97); }
     .btn:disabled { background: #1a3a5f; color: var(--dim); cursor: default; transform: none; }
+    #wizardBtn { background: #c45200; }
+    #wizardBtn:hover { background: #a34400; }
 
     /* ── Header right (location) ── */
     .header-right { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
@@ -428,7 +430,9 @@
       min-width: 36px;
     }
     .fc-temp-row  { display: flex; justify-content: space-between; align-items: center; margin-top: 2px; }
-    .fc-temp-item { display: flex; align-items: center; gap: 3px; font-size: 0.75rem; font-weight: 600; }
+    .fc-temp-item { display: flex; flex-direction: column; align-items: center; gap: 0; font-size: 0.75rem; font-weight: 600; }
+    .fc-temp-item-val { display: flex; align-items: center; gap: 3px; }
+    .fc-temp-lbl { font-size: 0.58rem; text-transform: uppercase; letter-spacing: 0.07em; color: var(--dim); font-weight: 500; margin-top: 2px; }
 
     .fc-wind-speed { font-size: 1.35rem; font-weight: 800; line-height: 1; }
     .fc-wind-speed sup { font-size: 0.65rem; font-weight: 500; color: var(--muted); vertical-align: super; margin-left: 1px; }
@@ -639,6 +643,14 @@
     .wz-loading .spinner { margin: 0 auto 14px; width: 32px; height: 32px; border-width: 3px; }
     .wz-error { text-align: center; padding: 30px 20px; color: #fca5a5; }
     .wz-error a { color: var(--accent); cursor: pointer; }
+    .wz-context-strip { display: flex; flex-wrap: wrap; gap: 6px; }
+    .wz-ctx-chip { font-size: 0.74rem; font-weight: 600; color: var(--muted); background: rgba(255,255,255,0.04); border: 1px solid var(--border); border-radius: 20px; padding: 3px 10px; }
+    .wz-threshold-row { font-size: 0.74rem; background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; display: flex; flex-direction: column; gap: 3px; }
+    .wz-th-label { font-size: 0.72rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 2px; }
+    .wz-th-go     { color: var(--go); }
+    .wz-th-caution { color: var(--caution); }
+    .wz-th-danger  { color: var(--nogo); }
+    .wz-body .fc:hover { transform: none; box-shadow: none; cursor: default; }
 
   </style>
 </head>
@@ -650,7 +662,7 @@
       <img src="icons/compass.svg" alt="SeaSense logo" class="header-logo" />
       <div class="header-title-group">
         <h1><em>SeaSense</em></h1>
-        <div class="header-tagline">Know before you go · Catch the right moment <span style="opacity:0.55;margin-left:6px">v8.7.1</span></div>
+        <div class="header-tagline">Know before you go · Catch the right moment <span style="opacity:0.55;margin-left:6px">v8.7.2</span></div>
       </div>
     </div>
     <div class="header-right">
@@ -764,7 +776,7 @@
       </ul>
 
       <div class="about-footer-note">All data is free — no API key required.<br>
-      Built by <strong>Alon Kassir</strong> &nbsp;·&nbsp; v8.7.1</div>
+      Built by <strong>Alon Kassir</strong> &nbsp;·&nbsp; v8.7.2</div>
     </div>
   </div>
 </div>
@@ -2087,10 +2099,8 @@
               <div class="fc-hr"></div>
 
               <div class="fc-temp-row">
-                <div class="fc-temp-item"><span style="color:var(--dim)">🌡</span><span style="color:${airTempColor}">${airTempStr}</span></div>
-                <div class="fc-temp-item" style="gap:2px">
-                  <span style="color:var(--dim)">🌧</span><span style="color:${rainPctColor};font-weight:700">${rainPctStr}</span>${rainMmStr ? `<span style="color:var(--dim);font-size:0.72rem;margin-left:3px">${rainMmStr}</span>` : ''}
-                </div>
+                <div class="fc-temp-item"><div class="fc-temp-item-val"><span style="color:var(--dim)">🌡</span><span style="color:${airTempColor}">${airTempStr}</span></div><div class="fc-temp-lbl">air temp</div></div>
+                <div class="fc-temp-item"><div class="fc-temp-item-val" style="gap:2px"><span style="color:var(--dim)">🌧</span><span style="color:${rainPctColor};font-weight:700">${rainPctStr}</span>${rainMmStr ? `<span style="color:var(--dim);font-size:0.72rem;margin-left:3px">${rainMmStr}</span>` : ''}</div></div>
               </div>
             </div>
           </div>`;
@@ -2451,8 +2461,8 @@
       const modelLabel = dayIndex <= 1 ? 'ICON EU' : 'ECMWF IFS';
 
       const [windResp, waveResp] = await Promise.all([
-        fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=wind_speed_10m,wind_gusts_10m,temperature_2m,precipitation&wind_speed_unit=ms&timezone=Asia%2FJerusalem&forecast_days=7&models=${windModel}`),
-        fetch(`https://marine-api.open-meteo.com/v1/marine?latitude=${lat}&longitude=${lon}&hourly=wave_height,swell_wave_height,swell_wave_period,sea_surface_temperature&timezone=Asia%2FJerusalem&forecast_days=7`),
+        fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=wind_speed_10m,wind_gusts_10m,wind_direction_10m,temperature_2m,precipitation&wind_speed_unit=ms&timezone=Asia%2FJerusalem&forecast_days=7&models=${windModel}`),
+        fetch(`https://marine-api.open-meteo.com/v1/marine?latitude=${lat}&longitude=${lon}&hourly=wave_height,swell_wave_height,swell_wave_direction,swell_wave_period,sea_surface_temperature&timezone=Asia%2FJerusalem&forecast_days=7`),
       ]);
       if (!windResp.ok || !waveResp.ok) throw new Error('API error');
       const windData = await windResp.json();
@@ -2502,10 +2512,22 @@
       const avgSwellPer  = avg(swellPers);
       const avgWaterTemp = avg(waterTemps);
 
+      const circMean = angles => {
+        if (!angles.length) return null;
+        const r = Math.PI / 180;
+        const s = angles.reduce((a, v) => a + Math.sin(v * r), 0);
+        const c = angles.reduce((a, v) => a + Math.cos(v * r), 0);
+        return (Math.atan2(s, c) / r + 360) % 360;
+      };
+      const windDirs   = windIdx.map(i => windData.hourly.wind_direction_10m?.[i]).filter(v => v != null);
+      const swellDirs  = waveIdx.map(i => waveData.hourly.swell_wave_direction?.[i]).filter(v => v != null);
+      const avgWindDir  = circMean(windDirs);
+      const avgSwellDir = circMean(swellDirs);
+
       const th      = wzCalcThresholds(wzState.sport, wzState.level);
       const verdict = wzStatus(avgWind, avgWave, th);
-      wzRenderResult({ avgWind, peakGust, avgWave, verdict, modelLabel,
-        avgAirTemp, totalRain, avgSwellHt, avgSwellPer, avgWaterTemp });
+      wzRenderResult({ avgWind, peakGust, avgWave, verdict, modelLabel, th, locName,
+        avgAirTemp, totalRain, avgSwellHt, avgSwellPer, avgWaterTemp, avgWindDir, avgSwellDir });
     } catch (e) {
       document.getElementById('wizardContent').innerHTML = `
         <div class="wz-header"><h2>🧙 Sea Wizard</h2><button class="wz-close" onclick="closeWizard()">✕</button></div>
@@ -2513,21 +2535,38 @@
     }
   }
 
-  function wzRenderResult({ avgWind, peakGust, avgWave, verdict, modelLabel,
-      avgAirTemp, totalRain, avgSwellHt, avgSwellPer, avgWaterTemp }) {
+  function wzRenderResult({ avgWind, peakGust, avgWave, verdict, modelLabel, th, locName,
+      avgAirTemp, totalRain, avgSwellHt, avgSwellPer, avgWaterTemp, avgWindDir, avgSwellDir }) {
     const isKmh  = getWindUnit() === 'kmh';
     const unit   = isKmh ? 'km/h' : 'kn';
     const disp   = v => (isKmh ? v * KT_TO_KMH : v).toFixed(1);
     const advice = WZ_ADVICE[wzState.sport]?.[wzState.level]?.[verdict] || '';
-    const badges = { go: 'GO ✓', caution: 'CAUTION', danger: '⚠ DANGER' };
     const fmtC   = v => v != null ? `${v.toFixed(1)}°C` : '—';
-    const fmtM   = v => v != null ? `${v.toFixed(2)} m` : '—';
-    const fmtS   = v => v != null ? `${Math.round(v)} s` : '—';
     const fmtMm  = v => v != null ? `${v.toFixed(1)} mm` : '—';
     const modelReasons = {
       'ICON EU':   'High-res coastal model · best for today & tomorrow',
       'ECMWF IFS': 'World-leading accuracy · best for 3–7 day planning',
     };
+
+    const sportObj    = WZ_SPORTS.find(s => s.key === wzState.sport) || {};
+    const tw          = WZ_TIME_WINDOWS.find(t => t.key === wzState.timeWindow) || {};
+    const levelLabel  = wzState.level.charAt(0).toUpperCase() + wzState.level.slice(1);
+    const sportLabel  = sportObj.label || wzState.sport;
+    const sportEmoji  = sportObj.emoji || '';
+    const twStart     = String(tw.range?.[0] || 0).padStart(2, '0');
+    const twEnd       = String(tw.range?.[1] || 0).padStart(2, '0');
+
+    const dayDate  = new Date(wzState.day + 'T00:00:00');
+    const today    = new Date(); today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today); tomorrow.setDate(today.getDate() + 1);
+    const dayLabel = dayDate.getTime() === today.getTime() ? 'Today'
+      : dayDate.getTime() === tomorrow.getTime() ? 'Tomorrow'
+      : dayDate.toLocaleDateString('en-IL', { weekday: 'short', month: 'numeric', day: 'numeric' });
+
+    const thCautWind   = disp(th.cautWind);
+    const thDangerWind = disp(th.dangerWind);
+    const verdictColor = { go: 'var(--go)', caution: 'var(--caution)', danger: 'var(--nogo)' }[verdict];
+    const verdictLabel = { go: 'GO ✓', caution: '⚠ CAUTION', danger: '✕ NO-GO' }[verdict];
 
     document.getElementById('wizardContent').innerHTML = `
       <div class="wz-header">
@@ -2539,19 +2578,72 @@
         <button class="wz-close" onclick="closeWizard()">✕</button>
       </div>
       <div class="wz-body">
-        <div style="text-align:center">
-          <div class="wz-badge ${verdict}">${badges[verdict]}</div>
+
+        <div class="wz-context-strip">
+          <span class="wz-ctx-chip">${sportEmoji} ${sportLabel}</span>
+          <span class="wz-ctx-chip">${levelLabel}</span>
+          <span class="wz-ctx-chip">📍 ${locName}</span>
+          <span class="wz-ctx-chip">📅 ${dayLabel} · ${tw.label || ''} ${twStart}:00–${twEnd}:00</span>
         </div>
-        <div class="wz-conditions">
-          <div class="wz-cond-item"><div class="wz-cval">${disp(avgWind)} ${unit}</div><div class="wz-clbl">Avg Wind</div></div>
-          <div class="wz-cond-item"><div class="wz-cval">${disp(peakGust)} ${unit}</div><div class="wz-clbl">Peak Gust</div></div>
-          <div class="wz-cond-item"><div class="wz-cval">${avgWave.toFixed(2)} m</div><div class="wz-clbl">Beach Waves</div></div>
-          <div class="wz-cond-item"><div class="wz-cval">${fmtM(avgSwellHt)}</div><div class="wz-clbl">Swell</div></div>
-          <div class="wz-cond-item"><div class="wz-cval">${fmtS(avgSwellPer)}</div><div class="wz-clbl">Every (period)</div></div>
-          <div class="wz-cond-item"><div class="wz-cval">${fmtC(avgAirTemp)}</div><div class="wz-clbl">Air Temp</div></div>
-          <div class="wz-cond-item"><div class="wz-cval">${fmtC(avgWaterTemp)}</div><div class="wz-clbl">Water Temp</div></div>
-          <div class="wz-cond-item"><div class="wz-cval">${fmtMm(totalRain)}</div><div class="wz-clbl">Rain</div></div>
+
+        <div class="fc" style="max-width:100%">
+          <div class="fc-top ${verdict}"></div>
+          <div class="fc-body">
+            <div class="fc-head">
+              <div>
+                <div class="fc-time">${tw.label || ''}</div>
+                <div style="font-size:0.72rem;color:var(--dim)">${dayLabel} · ${twStart}:00–${twEnd}:00</div>
+              </div>
+              <span class="fc-status ${verdict}" style="width:auto;border-radius:8px;padding:4px 10px;font-size:0.78rem;font-weight:800;letter-spacing:0.04em;white-space:nowrap">${verdictLabel}</span>
+            </div>
+
+            <div class="fc-section-wrapper">
+              <div class="fc-side-label" style="text-align:center;line-height:1.1">BEACH<br>WAVES</div>
+              <div style="flex:1">
+                <div class="fc-section">
+                  <div class="fc-section-left">
+                    <div class="fc-wave-val" style="color:${verdictColor}">~${avgWave.toFixed(1)}<sup style="font-size:0.63rem;font-weight:500;color:var(--muted);vertical-align:super">m</sup></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="fc-hr"></div>
+
+            <div class="fc-section-wrapper">
+              <div class="fc-side-label">Swell</div>
+              <div style="flex:1">
+                <div style="display:flex;align-items:center">
+                  <div class="fc-wave-val" style="color:var(--text)">${avgSwellHt != null ? `${avgSwellHt.toFixed(1)}<sup style="font-size:0.63rem;font-weight:500;color:var(--muted);vertical-align:super">m</sup>` : '—'}</div>
+                  ${avgSwellDir != null ? bigDirArrow(avgSwellDir, 'var(--text)') : ''}
+                </div>
+                ${avgSwellPer != null ? `<div class="fc-wind-sub">every <span style="font-size:1.3em;color:var(--text)">${Math.round(avgSwellPer)} Sec</span></div>` : ''}
+              </div>
+            </div>
+
+            <div class="fc-hr"></div>
+
+            <div class="fc-section-wrapper">
+              <div class="fc-side-label">Wind</div>
+              <div style="flex:1">
+                <div style="display:flex;align-items:center">
+                  <div class="fc-wind-speed" style="color:${verdictColor}">${disp(avgWind)}<sup style="font-size:0.65rem;font-weight:500;color:var(--muted);vertical-align:super"> ${unit}</sup></div>
+                  ${avgWindDir != null ? bigDirArrow(avgWindDir, verdictColor) : ''}
+                </div>
+                <div class="fc-wind-sub">Gusts <span class="fc-gust-val">${disp(peakGust)} ${unit}</span></div>
+              </div>
+            </div>
+
+            <div class="fc-hr"></div>
+
+            <div class="fc-temp-row">
+              ${avgAirTemp  != null ? `<div class="fc-temp-item"><div class="fc-temp-item-val"><span style="color:var(--dim)">🌡</span><span style="color:var(--text)">${fmtC(avgAirTemp)}</span></div><div class="fc-temp-lbl">air temp</div></div>` : ''}
+              ${avgWaterTemp != null ? `<div class="fc-temp-item"><div class="fc-temp-item-val"><span style="color:var(--dim)">💧</span><span style="color:#93c5fd">${fmtC(avgWaterTemp)}</span></div><div class="fc-temp-lbl">water temp</div></div>` : ''}
+              ${totalRain   != null ? `<div class="fc-temp-item"><div class="fc-temp-item-val"><span style="color:var(--dim)">🌧</span><span style="color:var(--muted)">${fmtMm(totalRain)}</span></div></div>` : ''}
+            </div>
+          </div>
         </div>
+
         <div class="wz-advice">${advice}</div>
         <button class="wz-apply-btn" onclick="wzApplyAndFetch()">Apply Settings &amp; Open Full Forecast</button>
         <div class="wz-back" onclick="wzRenderForm()">↩ Change selection</div>
@@ -2594,7 +2686,7 @@
 </script>
 
 <footer class="app-footer">
-  <span>SeaSense <strong style="color:var(--muted)">v8.7.1</strong></span>
+  <span>SeaSense <strong style="color:var(--muted)">v8.7.2</strong></span>
   <span style="color:var(--border)">·</span>
   <span>Made with ❤️ by <strong style="color:var(--muted)">Alon Kassir</strong></span>
   <span style="color:var(--border)">·</span>
