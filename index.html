@@ -538,6 +538,108 @@
     .app-footer a { color: var(--dim); text-decoration: none; }
     .app-footer a:hover { color: var(--muted); }
 
+    /* ── Sea Wizard ── */
+    .wizard-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.65);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 900; padding: 16px;
+    }
+    .wizard-modal {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 14px; width: 100%; max-width: 560px;
+      max-height: 90vh; overflow-y: auto;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    }
+    .wz-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 18px 20px 14px; border-bottom: 1px solid var(--border);
+    }
+    .wz-header h2 { margin: 0; font-size: 1.05rem; color: var(--text); }
+    .wz-close {
+      background: none; border: none; color: var(--dim); cursor: pointer;
+      font-size: 1.3rem; line-height: 1; padding: 0 4px;
+    }
+    .wz-close:hover { color: var(--text); }
+    .wz-body { padding: 16px 20px 20px; display: flex; flex-direction: column; gap: 14px; }
+    .wz-group {
+      background: rgba(255,255,255,0.03); border: 1px solid var(--border);
+      border-radius: 10px; padding: 14px 16px;
+    }
+    .wz-group.invalid { border-color: var(--nogo); }
+    .wz-group-label {
+      font-size: 0.78rem; font-weight: 700; color: var(--muted);
+      text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 10px;
+    }
+    .wz-pills { display: flex; flex-wrap: wrap; gap: 8px; }
+    .wz-pill {
+      padding: 6px 14px; border-radius: 20px; font-size: 0.82rem; font-weight: 600;
+      border: 1px solid var(--border); background: transparent; color: var(--muted);
+      cursor: pointer; transition: all 0.15s;
+    }
+    .wz-pill:hover { border-color: var(--accent); color: var(--text); }
+    .wz-pill.selected { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .wz-select {
+      width: 100%; padding: 7px 10px; border-radius: 7px;
+      border: 1px solid var(--border); background: var(--bg); color: var(--text);
+      font-size: 0.88rem;
+    }
+    .wz-custom-coords { display: flex; gap: 10px; margin-top: 8px; }
+    .wz-custom-coords input {
+      flex: 1; padding: 6px 10px; border-radius: 7px;
+      border: 1px solid var(--border); background: var(--bg); color: var(--text);
+      font-size: 0.85rem;
+    }
+    .wz-submit {
+      width: 100%; padding: 11px; border-radius: 8px;
+      background: var(--accent); border: none; color: #fff;
+      font-size: 0.95rem; font-weight: 700; cursor: pointer; margin-top: 4px;
+    }
+    .wz-submit:hover { opacity: 0.88; }
+    .wz-badge {
+      display: inline-block; padding: 10px 28px; border-radius: 10px;
+      font-size: 1.5rem; font-weight: 800; letter-spacing: 0.08em; margin-bottom: 14px;
+    }
+    .wz-badge.go    { background: rgba(34,197,94,0.15);  color: var(--go);      border: 2px solid var(--go); }
+    .wz-badge.caution { background: rgba(245,158,11,0.15); color: var(--caution); border: 2px solid var(--caution); }
+    .wz-badge.danger  { background: rgba(239,68,68,0.15);  color: var(--nogo);    border: 2px solid var(--nogo); }
+    .wz-conditions {
+      display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 14px;
+    }
+    .wz-cond-item {
+      flex: 1; min-width: 90px; background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border); border-radius: 8px;
+      padding: 10px 14px; text-align: center;
+    }
+    .wz-cond-item .wz-cval { font-size: 1.2rem; font-weight: 700; color: var(--text); }
+    .wz-cond-item .wz-clbl { font-size: 0.72rem; color: var(--dim); margin-top: 3px; }
+    .wz-advice {
+      font-size: 0.88rem; color: var(--muted); line-height: 1.55;
+      background: rgba(255,255,255,0.03); border: 1px solid var(--border);
+      border-radius: 8px; padding: 12px 14px; margin-bottom: 14px;
+    }
+    .wz-apply-btn {
+      width: 100%; padding: 11px; border-radius: 8px;
+      background: var(--go); border: none; color: #fff;
+      font-size: 0.95rem; font-weight: 700; cursor: pointer; margin-bottom: 10px;
+    }
+    .wz-apply-btn:hover { opacity: 0.88; }
+    .wz-back { text-align: center; font-size: 0.84rem; color: var(--accent); cursor: pointer; }
+    .wz-back:hover { text-decoration: underline; }
+    .wz-model-tag {
+      display: inline-block; font-size: 0.72rem; color: var(--accent);
+      padding: 2px 8px; border-radius: 10px; border: 1px solid var(--border);
+      background: rgba(255,255,255,0.05); margin-left: 8px; vertical-align: middle;
+    }
+    .wz-model-reason {
+      font-size: 0.7rem; color: var(--dim); text-align: center; margin-top: 2px; margin-bottom: 4px;
+    }
+    .wz-conditions { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 6px; }
+    .wz-cond-item  { flex: 1; min-width: 80px; }
+    .wz-loading { text-align: center; padding: 40px 20px; color: var(--muted); }
+    .wz-loading .spinner { margin: 0 auto 14px; width: 32px; height: 32px; border-width: 3px; }
+    .wz-error { text-align: center; padding: 30px 20px; color: #fca5a5; }
+    .wz-error a { color: var(--accent); cursor: pointer; }
+
   </style>
 </head>
 <body>
@@ -548,7 +650,7 @@
       <img src="icons/compass.svg" alt="SeaSense logo" class="header-logo" />
       <div class="header-title-group">
         <h1><em>SeaSense</em></h1>
-        <div class="header-tagline">Know before you go · Catch the right moment <span style="opacity:0.55;margin-left:6px">v8.6.3</span></div>
+        <div class="header-tagline">Know before you go · Catch the right moment <span style="opacity:0.55;margin-left:6px">v8.7.1</span></div>
       </div>
     </div>
     <div class="header-right">
@@ -606,6 +708,7 @@
     <option value="kmh">km/h</option>
   </select>
   <button class="btn" id="fetchBtn" onclick="fetchForecast()">Get Forecast</button>
+  <button class="btn" id="wizardBtn" onclick="openWizard()">🧙 Sea Wizard</button>
   <div class="sec-btns">
     <button class="btn" id="sunBtn" onclick="openSunModal()">☀️ Sun &amp; UV</button>
     <button class="btn" id="shareBtn" onclick="copyShareURL()">🔗 Share</button>
@@ -661,7 +764,7 @@
       </ul>
 
       <div class="about-footer-note">All data is free — no API key required.<br>
-      Built by <strong>Alon Kassir</strong> &nbsp;·&nbsp; v8.6.3</div>
+      Built by <strong>Alon Kassir</strong> &nbsp;·&nbsp; v8.7.1</div>
     </div>
   </div>
 </div>
@@ -694,6 +797,12 @@
       <span id="mapSelectionLabel" style="font-size:0.85rem;color:var(--muted)">No selection</span>
       <button class="btn" onclick="applyMapSelection()" style="padding:7px 20px">Apply</button>
     </div>
+  </div>
+</div>
+
+<div class="wizard-overlay" id="wizardModal" style="display:none" onclick="wzBackdrop(event)">
+  <div class="wizard-modal" onclick="event.stopPropagation()">
+    <div id="wizardContent"></div>
   </div>
 </div>
 
@@ -2140,10 +2249,352 @@
   const savedTz = localStorage.getItem('ssTimezone') || 'Asia/Jerusalem';
   document.getElementById('timezoneSb').value = savedTz;
   fetchForecast().then(() => { startAutoRefresh(); });
+
+  // ── Sea Wizard ───────────────────────────────────────────────
+
+  const WZ_SPORT_THRESHOLDS = {
+    general:  { cautWind: 12, cautWave: 0.6, dangerWind: 18, dangerWave: 1.0 },
+    swimming: { cautWind: 10, cautWave: 0.4, dangerWind: 16, dangerWave: 0.7 },
+    kayak:    { cautWind: 12, cautWave: 0.5, dangerWind: 18, dangerWave: 0.9 },
+    windsurf: { cautWind: 14, cautWave: 0.5, dangerWind: 28, dangerWave: 1.8 },
+    surf:     { cautWind: 12, cautWave: 0.6, dangerWind: 24, dangerWave: 2.0 },
+  };
+
+  const WZ_LEVEL_MULT = { beginner: 0.75, intermediate: 1.0, advanced: 1.3 };
+
+  const WZ_SPORTS = [
+    { key: 'general',  label: 'General Sea-Sense',            emoji: '🌊' },
+    { key: 'swimming', label: 'Swimming',                     emoji: '🏊' },
+    { key: 'kayak',    label: 'Kayaking / SUP',               emoji: '🚣' },
+    { key: 'windsurf', label: 'Windsurfing',                  emoji: '🪁' },
+    { key: 'surf',     label: 'Surfing / Kitesurf / Sailing', emoji: '🏄' },
+  ];
+
+  const WZ_TIME_WINDOWS = [
+    { key: 'morning',   label: 'Morning',   range: [6,  10] },
+    { key: 'midday',    label: 'Midday',    range: [10, 14] },
+    { key: 'afternoon', label: 'Afternoon', range: [14, 18] },
+    { key: 'evening',   label: 'Evening',   range: [18, 22] },
+  ];
+
+  const WZ_ADVICE = {
+    general: {
+      beginner:     { go: 'Calm conditions — great for a relaxed day on the water.', caution: 'Marginal sea state. Ideal for a short trip close to shore.', danger: 'Conditions are too rough for general activities. Wait for a better day.' },
+      intermediate: { go: 'Good all-round conditions. Enjoy your time on the water.', caution: 'Moderate sea state — stay alert and check the sky for changes.', danger: 'Challenging conditions. Only head out if experienced and well-equipped.' },
+      advanced:     { go: 'Excellent sea conditions. Make the most of it.', caution: 'Acceptable conditions for experienced users. Stay aware.', danger: 'Rough seas — assess risk carefully before heading out.' },
+    },
+    swimming: {
+      beginner:     { go: 'Clean, calm water — perfect for a swim.', caution: 'Marginal for beginner swimmers. Stay close to shore and watch for lifeguard flags.', danger: 'Not safe for swimming. Waves and wind are too strong.' },
+      intermediate: { go: 'Good swimming conditions. Enjoy the sea.', caution: 'Some chop — stay within the flagged zone.', danger: 'Too rough for open swimming. Stay out of the water.' },
+      advanced:     { go: 'Clean water conditions — ideal for open-water training.', caution: 'Manageable conditions for strong swimmers. Be cautious of currents.', danger: 'Even strong swimmers should avoid these conditions.' },
+    },
+    kayak: {
+      beginner:     { go: 'Flat water — great for a beginner paddle.', caution: 'A little choppy — stay near shore and wear your PFD.', danger: 'Conditions exceed safe limits for beginner paddlers. Stay ashore.' },
+      intermediate: { go: 'Good paddling conditions. A fun day on the water.', caution: 'Moderate conditions — paddle conservatively and stay close to land.', danger: 'Conditions exceed safe limits for recreational kayaking. Avoid the open coast.' },
+      advanced:     { go: 'Solid conditions for a kayak or SUP session.', caution: 'Some wind and swell — manageable for experienced paddlers.', danger: 'Rough water — expert-level conditions. Plan a safe exit point.' },
+    },
+    windsurf: {
+      beginner:     { go: 'Light wind — good for learning and control drills.', caution: 'Getting breezy. Stick to the shallows and a small rig.', danger: 'Too much wind for beginners. Wait for lighter conditions.' },
+      intermediate: { go: 'Good wind for a solid freeride session.', caution: 'Gusty and powered-up — rig down and sail conservatively.', danger: 'Overpowered conditions. Avoid unless very experienced.' },
+      advanced:     { go: 'Nice wind — good for freeriding or slalom. Check the gust spread to choose the right sail.', caution: 'Strong and gusty — great for advanced sailing with a smaller sail.', danger: 'Extreme conditions. Expert only, with safety cover.' },
+    },
+    surf: {
+      beginner:     { go: 'Small, clean swell — perfect for beginners on a longboard.', caution: 'Building swell — stick to sheltered breaks and go with a buddy.', danger: 'Too powerful for beginner surfers or kiteboarders.' },
+      intermediate: { go: 'Good surf conditions. Check local breaks for the best peaks.', caution: 'Sizeable swell — choose your spot carefully and read the sets.', danger: 'Heavy conditions — expert surfers only with knowledge of the break.' },
+      advanced:     { go: 'Quality swell — ideal for advanced surfing or kitesurfing.', caution: 'Powerful conditions — check currents and have a clear plan.', danger: 'Extreme surf. Only for elite surfers with full safety awareness.' },
+    },
+  };
+
+  let wzState = { location: null, day: null, timeWindow: null, sport: null, level: null, customLat: null, customLon: null };
+
+  function wzCalcThresholds(sport, level) {
+    const base = WZ_SPORT_THRESHOLDS[sport];
+    const m    = WZ_LEVEL_MULT[level];
+    return {
+      cautWind:   Math.round(base.cautWind   * m * 10) / 10,
+      cautWave:   Math.round(base.cautWave   * m * 10) / 10,
+      dangerWind: Math.round(base.dangerWind * m * 10) / 10,
+      dangerWave: Math.round(base.dangerWave * m * 10) / 10,
+    };
+  }
+
+  function wzStatus(windKt, waveM, th) {
+    if (windKt >= th.dangerWind || waveM >= th.dangerWave) return 'danger';
+    if (windKt >= th.cautWind   || waveM >= th.cautWave)   return 'caution';
+    return 'go';
+  }
+
+  function openWizard() {
+    const sel = document.getElementById('locationSelect').value;
+    wzState = { location: sel, day: null, timeWindow: null, sport: null, level: null,
+      customLat: parseFloat(document.getElementById('customLat').value) || null,
+      customLon: parseFloat(document.getElementById('customLon').value) || null };
+    document.getElementById('wizardModal').style.display = 'flex';
+    wzRenderForm();
+  }
+
+  function closeWizard() {
+    document.getElementById('wizardModal').style.display = 'none';
+  }
+
+  function wzBackdrop(e) {
+    if (e.target === document.getElementById('wizardModal')) closeWizard();
+  }
+
+  function wzRenderForm() {
+    const dayPills = Array.from({ length: 7 }, (_, i) => {
+      const d = new Date();
+      d.setDate(d.getDate() + i);
+      const label = i === 0 ? 'Today' : i === 1 ? 'Tomorrow'
+        : d.toLocaleDateString('en-IL', { weekday: 'short', month: 'numeric', day: 'numeric' });
+      const val = d.toLocaleDateString('en-CA');
+      return `<button class="wz-pill${wzState.day === val ? ' selected' : ''}" onclick="wzPick('day','${val}',this)">${label}</button>`;
+    }).join('');
+
+    const twPills = WZ_TIME_WINDOWS.map(tw =>
+      `<button class="wz-pill${wzState.timeWindow === tw.key ? ' selected' : ''}" onclick="wzPick('timeWindow','${tw.key}',this)">${tw.label} ${String(tw.range[0]).padStart(2,'0')}:00–${String(tw.range[1]).padStart(2,'0')}:00</button>`
+    ).join('');
+
+    const locOptions = Object.entries(LOCATIONS).map(([k, v]) =>
+      `<option value="${k}"${wzState.location === k ? ' selected' : ''}>${v.name}</option>`
+    ).join('');
+
+    const sportPills = WZ_SPORTS.map(s =>
+      `<button class="wz-pill${wzState.sport === s.key ? ' selected' : ''}" onclick="wzPick('sport','${s.key}',this)">${s.emoji} ${s.label}</button>`
+    ).join('');
+
+    const levelPills = ['beginner','intermediate','advanced'].map(lv =>
+      `<button class="wz-pill${wzState.level === lv ? ' selected' : ''}" onclick="wzPick('level','${lv}',this)">${lv.charAt(0).toUpperCase()+lv.slice(1)}</button>`
+    ).join('');
+
+    const customVis = wzState.location === 'custom' ? 'flex' : 'none';
+
+    document.getElementById('wizardContent').innerHTML = `
+      <div class="wz-header">
+        <h2>🧙 Sea Wizard</h2>
+        <button class="wz-close" onclick="closeWizard()">✕</button>
+      </div>
+      <div class="wz-body">
+        <div class="wz-group" id="wzg-location">
+          <div class="wz-group-label">📍 Where?</div>
+          <select class="wz-select" id="wzLocSelect" onchange="wzPickLocation(this.value)">${locOptions}</select>
+          <div id="wzCustomCoords" class="wz-custom-coords" style="display:${customVis}">
+            <input type="number" id="wzCustomLat" placeholder="Latitude"  step="0.0001" value="${wzState.customLat||''}" oninput="wzState.customLat=parseFloat(this.value)||null">
+            <input type="number" id="wzCustomLon" placeholder="Longitude" step="0.0001" value="${wzState.customLon||''}" oninput="wzState.customLon=parseFloat(this.value)||null">
+          </div>
+        </div>
+        <div class="wz-group" id="wzg-day">
+          <div class="wz-group-label">📅 Which Day?</div>
+          <div class="wz-pills">${dayPills}</div>
+        </div>
+        <div class="wz-group" id="wzg-timeWindow">
+          <div class="wz-group-label">🕐 Time Window?</div>
+          <div class="wz-pills">${twPills}</div>
+        </div>
+        <div class="wz-group" id="wzg-sport">
+          <div class="wz-group-label">🏄 Sport?</div>
+          <div class="wz-pills">${sportPills}</div>
+        </div>
+        <div class="wz-group" id="wzg-level">
+          <div class="wz-group-label">🎯 Your Level?</div>
+          <div class="wz-pills">${levelPills}</div>
+        </div>
+        <button class="wz-submit" onclick="wzSubmit()">Get My Reading 🔮</button>
+      </div>`;
+  }
+
+  function wzPickLocation(val) {
+    wzState.location = val;
+    const cc = document.getElementById('wzCustomCoords');
+    if (cc) cc.style.display = val === 'custom' ? 'flex' : 'none';
+    document.getElementById('wzg-location').classList.remove('invalid');
+  }
+
+  function wzPick(field, value, el) {
+    wzState[field] = value;
+    el.closest('.wz-pills').querySelectorAll('.wz-pill').forEach(b => b.classList.remove('selected'));
+    el.classList.add('selected');
+    const grp = document.getElementById('wzg-' + field);
+    if (grp) grp.classList.remove('invalid');
+  }
+
+  async function wzSubmit() {
+    const required = ['day', 'timeWindow', 'sport', 'level'];
+    let valid = true;
+    required.forEach(f => {
+      const grp = document.getElementById('wzg-' + f);
+      if (!wzState[f]) { if (grp) grp.classList.add('invalid');    valid = false; }
+      else             { if (grp) grp.classList.remove('invalid'); }
+    });
+    if (!wzState.location) { document.getElementById('wzg-location').classList.add('invalid'); valid = false; }
+    if (!valid) return;
+
+    let lat, lon, locName;
+    if (wzState.location === 'custom') {
+      lat = wzState.customLat; lon = wzState.customLon;
+      if (!lat || !lon) { document.getElementById('wzg-location').classList.add('invalid'); return; }
+      locName = `${lat.toFixed(2)}°N, ${lon.toFixed(2)}°E`;
+    } else {
+      const loc = LOCATIONS[wzState.location];
+      lat = loc.lat; lon = loc.lon; locName = loc.name;
+    }
+
+    document.getElementById('wizardContent').innerHTML = `
+      <div class="wz-header"><h2>🧙 Sea Wizard</h2><button class="wz-close" onclick="closeWizard()">✕</button></div>
+      <div class="wz-loading"><div class="spinner"></div><div>Fetching conditions for <strong>${locName}</strong>…</div></div>`;
+
+    try {
+      const today = new Date(); today.setHours(0,0,0,0);
+      const selDate = new Date(wzState.day + 'T00:00:00');
+      const dayIndex = Math.round((selDate - today) / 86400000);
+      const windModel = dayIndex <= 1 ? 'icon_eu' : 'ecmwf_ifs025';
+      const modelLabel = dayIndex <= 1 ? 'ICON EU' : 'ECMWF IFS';
+
+      const [windResp, waveResp] = await Promise.all([
+        fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=wind_speed_10m,wind_gusts_10m,temperature_2m,precipitation&wind_speed_unit=ms&timezone=Asia%2FJerusalem&forecast_days=7&models=${windModel}`),
+        fetch(`https://marine-api.open-meteo.com/v1/marine?latitude=${lat}&longitude=${lon}&hourly=wave_height,swell_wave_height,swell_wave_period,sea_surface_temperature&timezone=Asia%2FJerusalem&forecast_days=7`),
+      ]);
+      if (!windResp.ok || !waveResp.ok) throw new Error('API error');
+      const windData = await windResp.json();
+      const waveData = await waveResp.json();
+
+      const tw = WZ_TIME_WINDOWS.find(t => t.key === wzState.timeWindow);
+      const [startH, endH] = tw.range;
+      const targetDate = wzState.day;
+
+      function hoursInWindow(times) {
+        return times.reduce((acc, t, i) => {
+          const [datePart, timePart] = t.split('T');
+          const h = parseInt(timePart, 10);
+          if (datePart === targetDate && h >= startH && h < endH) acc.push(i);
+          return acc;
+        }, []);
+      }
+
+      const windIdx = hoursInWindow(windData.hourly.time);
+      const waveIdx = hoursInWindow(waveData.hourly.time);
+
+      if (windIdx.length === 0) {
+        document.getElementById('wizardContent').innerHTML = `
+          <div class="wz-header"><h2>🧙 Sea Wizard</h2><button class="wz-close" onclick="closeWizard()">✕</button></div>
+          <div class="wz-error">No forecast data for that day / window.<br><br><a onclick="wzRenderForm()">↩ Try again</a></div>`;
+        return;
+      }
+
+      const winds = windIdx.map(i => windData.hourly.wind_speed_10m[i] * M2KT);
+      const gusts = windIdx.map(i => windData.hourly.wind_gusts_10m[i] * M2KT);
+      const waves = waveIdx.map(i => waveData.hourly.wave_height[i]).filter(v => v !== null && v !== undefined);
+
+      const avgWind  = winds.reduce((a, b) => a + b, 0) / winds.length;
+      const peakGust = Math.max(...gusts);
+      const avgWave  = waves.length ? waves.reduce((a, b) => a + b, 0) / waves.length : 0;
+
+      const avg = arr => arr.length ? arr.reduce((a,b) => a+b, 0) / arr.length : null;
+      const airTemps   = windIdx.map(i => windData.hourly.temperature_2m[i]).filter(v => v != null);
+      const precips    = windIdx.map(i => windData.hourly.precipitation[i]).filter(v => v != null);
+      const swellHts   = waveIdx.map(i => waveData.hourly.swell_wave_height[i]).filter(v => v != null);
+      const swellPers  = waveIdx.map(i => waveData.hourly.swell_wave_period[i]).filter(v => v != null);
+      const waterTemps = waveIdx.map(i => waveData.hourly.sea_surface_temperature[i]).filter(v => v != null);
+
+      const avgAirTemp   = avg(airTemps);
+      const totalRain    = precips.length ? precips.reduce((a,b) => a+b, 0) : null;
+      const avgSwellHt   = avg(swellHts);
+      const avgSwellPer  = avg(swellPers);
+      const avgWaterTemp = avg(waterTemps);
+
+      const th      = wzCalcThresholds(wzState.sport, wzState.level);
+      const verdict = wzStatus(avgWind, avgWave, th);
+      wzRenderResult({ avgWind, peakGust, avgWave, verdict, modelLabel,
+        avgAirTemp, totalRain, avgSwellHt, avgSwellPer, avgWaterTemp });
+    } catch (e) {
+      document.getElementById('wizardContent').innerHTML = `
+        <div class="wz-header"><h2>🧙 Sea Wizard</h2><button class="wz-close" onclick="closeWizard()">✕</button></div>
+        <div class="wz-error">Could not fetch conditions. Check your connection.<br><br><a onclick="wzRenderForm()">↩ Try again</a></div>`;
+    }
+  }
+
+  function wzRenderResult({ avgWind, peakGust, avgWave, verdict, modelLabel,
+      avgAirTemp, totalRain, avgSwellHt, avgSwellPer, avgWaterTemp }) {
+    const isKmh  = getWindUnit() === 'kmh';
+    const unit   = isKmh ? 'km/h' : 'kn';
+    const disp   = v => (isKmh ? v * KT_TO_KMH : v).toFixed(1);
+    const advice = WZ_ADVICE[wzState.sport]?.[wzState.level]?.[verdict] || '';
+    const badges = { go: 'GO ✓', caution: 'CAUTION', danger: '⚠ DANGER' };
+    const fmtC   = v => v != null ? `${v.toFixed(1)}°C` : '—';
+    const fmtM   = v => v != null ? `${v.toFixed(2)} m` : '—';
+    const fmtS   = v => v != null ? `${Math.round(v)} s` : '—';
+    const fmtMm  = v => v != null ? `${v.toFixed(1)} mm` : '—';
+    const modelReasons = {
+      'ICON EU':   'High-res coastal model · best for today & tomorrow',
+      'ECMWF IFS': 'World-leading accuracy · best for 3–7 day planning',
+    };
+
+    document.getElementById('wizardContent').innerHTML = `
+      <div class="wz-header">
+        <div>
+          <h2 style="display:inline">🧙 Sea Wizard</h2>
+          <span class="wz-model-tag">${modelLabel}</span>
+          <div class="wz-model-reason">${modelReasons[modelLabel] || ''}</div>
+        </div>
+        <button class="wz-close" onclick="closeWizard()">✕</button>
+      </div>
+      <div class="wz-body">
+        <div style="text-align:center">
+          <div class="wz-badge ${verdict}">${badges[verdict]}</div>
+        </div>
+        <div class="wz-conditions">
+          <div class="wz-cond-item"><div class="wz-cval">${disp(avgWind)} ${unit}</div><div class="wz-clbl">Avg Wind</div></div>
+          <div class="wz-cond-item"><div class="wz-cval">${disp(peakGust)} ${unit}</div><div class="wz-clbl">Peak Gust</div></div>
+          <div class="wz-cond-item"><div class="wz-cval">${avgWave.toFixed(2)} m</div><div class="wz-clbl">Beach Waves</div></div>
+          <div class="wz-cond-item"><div class="wz-cval">${fmtM(avgSwellHt)}</div><div class="wz-clbl">Swell</div></div>
+          <div class="wz-cond-item"><div class="wz-cval">${fmtS(avgSwellPer)}</div><div class="wz-clbl">Every (period)</div></div>
+          <div class="wz-cond-item"><div class="wz-cval">${fmtC(avgAirTemp)}</div><div class="wz-clbl">Air Temp</div></div>
+          <div class="wz-cond-item"><div class="wz-cval">${fmtC(avgWaterTemp)}</div><div class="wz-clbl">Water Temp</div></div>
+          <div class="wz-cond-item"><div class="wz-cval">${fmtMm(totalRain)}</div><div class="wz-clbl">Rain</div></div>
+        </div>
+        <div class="wz-advice">${advice}</div>
+        <button class="wz-apply-btn" onclick="wzApplyAndFetch()">Apply Settings &amp; Open Full Forecast</button>
+        <div class="wz-back" onclick="wzRenderForm()">↩ Change selection</div>
+      </div>`;
+  }
+
+  function wzApplyAndFetch() {
+    const loc = wzState.location;
+    document.getElementById('locationSelect').value = loc;
+    if (loc === 'custom' && wzState.customLat && wzState.customLon) {
+      document.getElementById('customLat').value = wzState.customLat;
+      document.getElementById('customLon').value = wzState.customLon;
+    }
+    localStorage.setItem('windyLocation', loc);
+
+    const th    = wzCalcThresholds(wzState.sport, wzState.level);
+    const isKmh = getWindUnit() === 'kmh';
+    const cw    = isKmh ? Math.round(th.cautWind   * KT_TO_KMH * 10) / 10 : th.cautWind;
+    const dw    = isKmh ? Math.round(th.dangerWind  * KT_TO_KMH * 10) / 10 : th.dangerWind;
+    document.getElementById('thCautWind').value   = cw;
+    document.getElementById('thDangerWind').value = dw;
+    document.getElementById('thCautWave').value   = th.cautWave;
+    document.getElementById('thDangerWave').value = th.dangerWave;
+    ['thCautWind','thDangerWind','thCautWave','thDangerWave'].forEach(id => {
+      const sb = document.getElementById(id + 'Sb');
+      if (sb) sb.value = document.getElementById(id).value;
+    });
+    localStorage.setItem('thCautWind',   cw);
+    localStorage.setItem('thDangerWind',  dw);
+    localStorage.setItem('thCautWave',   th.cautWave);
+    localStorage.setItem('thDangerWave',  th.dangerWave);
+
+    closeWizard();
+    fetchForecast();
+    const sportLabel = WZ_SPORTS.find(s => s.key === wzState.sport)?.label || wzState.sport;
+    const lvlLabel   = wzState.level.charAt(0).toUpperCase() + wzState.level.slice(1);
+    showToast(`🎯 ${sportLabel} · ${lvlLabel} thresholds applied`);
+  }
+
 </script>
 
 <footer class="app-footer">
-  <span>SeaSense <strong style="color:var(--muted)">v8.6.3</strong></span>
+  <span>SeaSense <strong style="color:var(--muted)">v8.7.1</strong></span>
   <span style="color:var(--border)">·</span>
   <span>Made with ❤️ by <strong style="color:var(--muted)">Alon Kassir</strong></span>
   <span style="color:var(--border)">·</span>
