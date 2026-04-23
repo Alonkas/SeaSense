@@ -1,0 +1,148 @@
+SeaSense — Version History
+==========================
+
+
+v8.7.4 — 2026-04-23
+---------------------
+- Added service worker (sw.js) with network-first strategy: every app open fetches the latest version from GitHub Pages, with offline cache fallback
+- Service worker registered in index.html; cache name is version-keyed so each release automatically evicts stale caches on all devices
+
+
+v8.7.3 — 2026-04-23
+---------------------
+- Wizard result window is now 30% narrower (max-width 392px) while the question form stays at full width (560px)
+- Smooth width transition (0.25s ease) between the form and result states
+- Width resets correctly when navigating back to the form or closing the wizard
+
+
+v8.0.0 — 2026-04-10
+---------------------
+- Hourly forecast expansion: click the "+Nh" button between any two 3-hour cards (Hourly Box layout) to reveal intermediate hourly slots
+- Column layout: click the ▾ chevron in any time cell to expand the intermediate hourly rows inline
+- Intermediate slots are visually distinct (dimmed, thin status bar) so the 3-hour anchors remain the primary view
+- All models now fetch full hourly data; night slots (21:00, 00:00, 03:00) remain hidden
+
+
+v3.7.7 — 2026-04-10
+---------------------
+- Fixed wind and wave arrow direction: arrows now point TO the direction the wind/waves are heading (not FROM)
+- Added Wind.png icon asset
+
+
+v3.7.6 — 2026-04-09
+---------------------
+- Removed ICON-LAM IL wind model
+- Fixed status bar not clearing between fetches
+- Auto-refresh now triggers immediately when the wind model is changed
+
+
+v3.7.4 — 2026-04-07
+---------------------
+- Added ICON-LAM IL wind model: Israel Meteorological Service 2.5 km resolution model
+  fetched directly from ims.gov.il; automatic CORS-proxy fallback for local file usage;
+  5-day hourly forecast; nearest-location matching for all preset and custom coordinates
+
+
+v3.7.3 — 2026-04-07
+---------------------
+- Added Kinneret (Sea of Galilee) as a preset location (32.7919, 35.5921)
+
+
+v3.7.2 — 2026-04-06
+---------------------
+- Fixed wind model selection persistence
+- Improved wave display precision
+
+
+v3.7.1 — 2026-04-06
+---------------------
+- Added Widget button to the settings sidebar
+- Added mobile widget support: Scriptable widget (iOS) and web widget (Android / PWA)
+
+
+v3.7.0 — 2026-04-06
+---------------------
+- Added interactive map location picker (click globe icon to pick coordinates on a map)
+- UX improvements across the app
+
+
+v3.2.0 — 2026-04-05
+---------------------
+- Added Model Comparison layout: view GFS and ECMWF side-by-side for the same location
+
+
+v2.1.1 — 2026-04-05
+---------------------
+- Fixed wave direction display in Column Layout on mobile
+
+
+v2.1.0 — 2026-04-05
+---------------------
+- Column Layout: columns can now be reordered
+- Tighter spacing in Column Layout for a denser view
+
+
+v2.0.0 — 2026-04-04
+---------------------
+Major milestone. Marks the introduction of multiple layout views, compact mobile
+horizontal scroll, and the full settings/threshold customisation system. Includes:
+- Layout dropdown moved into the mobile sidebar settings
+- Column Layout view fully integrated
+- Hourly Box layout with horizontal scroll on mobile
+- Customisable GO/CAUTION/NO-GO thresholds persisted per session
+
+
+v1.4.0 — 2026-04-04
+---------------------
+- Added Column Layout view (each location/model shown in a side-by-side column)
+
+
+v1.3.1 — 2026-04-04
+---------------------
+- Restored the Layout dropdown with the Hourly Box option (was removed in v1.3.0)
+
+
+v1.3.0 — 2026-04-04
+---------------------
+- Compact cards with tighter spacing
+- Mobile horizontal scroll for forecast cards
+- Layout dropdown temporarily removed (restored in v1.3.1)
+
+
+v1.2.0 — 2026-04-04
+---------------------
+- Added About modal with app overview, features, and model descriptions
+- Added "Add to Phone" button with platform-specific home screen instructions (iOS / Android)
+- Moved Settings button from header into the control bar on mobile
+- Renamed mobile sidebar toggle to Settings button (⚙️)
+- Fit Sun / Share / Phone / Settings actions into a single row on mobile
+
+
+v1.1.0 — 2026-04-02
+---------------------
+- Replaced boat emoji logo with a detailed compass rose SVG
+- Added version number and "Made with love by Alon Kassir" credit
+- Added Sun & UV modal: sunrise, sunset, daylight duration, and UV index per day
+- Added shareable URL and 15-minute auto-refresh countdown
+- Added past-slot dimming: slots earlier than now are greyed out
+- Added WIND / WAVES labels and colored directional arrows to cards
+- Added temperature per card
+- Added rain icon to the bottom row of each card; hides empty S1/S2 swell rows
+- Day nav pills now show wind & wave min–max range instead of status dots
+- Removed legend box from forecast view
+- Mobile: full responsive layout with 2-column cards; lat/lon hidden for preset locations
+- Night slots (21:00, 00:00, 03:00) hidden from forecast
+
+
+v1.0.0 — 2026-03-31
+---------------------
+Initial release.
+- Marine weather forecast for Israeli coastal locations
+- GO / CAUTION / NO-GO status per 3-hour slot based on wind, gust, and wave thresholds
+- Customisable thresholds (GO / CAUTION / NO-GO)
+- Wind unit toggle: knots / km/h
+- Multiple forecast models via Open-Meteo (no API key required)
+- Model descriptions and reordered model list in sidebar
+- Rain probability on cards and day pills
+- Location selector with preset Israeli coastal spots
+- Dark nautical theme
