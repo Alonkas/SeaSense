@@ -27,7 +27,7 @@
       --accent:   #1e3a6e;
       --text:     #0c306a;
       --dim:      #1e3a6e;
-      --muted:    #3a5f9e;
+      --muted:    #1e3a6e;
       --go:       #15803d;
       --caution:  #b45309;
       --danger:   #dc2626;
@@ -143,7 +143,9 @@
     .mobile-only { display: none; }
     /* ── Secondary buttons row ── */
     .sec-btns { display: contents; } /* flat on desktop — buttons stay in ctrl-bar flow */
-    .sec-btns .btn { background: var(--elevated); border: 1px solid var(--border); color: var(--text); }
+    .sec-btns .btn, .sec-loc-btn { background: var(--elevated); border: 1px solid var(--border); color: var(--text); }
+    .sec-loc-btn { color: #0c306a; }
+    .sec-btns .btn:hover, .sec-loc-btn:hover { background: color-mix(in srgb, var(--elevated) 70%, #000 30%); border-color: var(--text); }
 
     /* ── Overlay (mobile only) ── */
     .sidebar-overlay { display: none; }
@@ -520,13 +522,13 @@
     .day-header-left { display: flex; align-items: center; gap: 12px; }
     .hourly-details-btn {
       display: block;
-      background: var(--elevated); border: 1px solid var(--border);
+      background: var(--elevated); border: 2px solid var(--border);
       border-radius: 20px; color: var(--text);
       font-size: 0.75rem; padding: 5px 14px; cursor: pointer;
       transition: background 0.15s, border-color 0.15s, color 0.15s; letter-spacing: 0.04em;
       width: fit-content;
     }
-    .hourly-details-btn:hover, .hourly-details-btn.active { color: var(--accent); border-color: var(--accent); }
+    .hourly-details-btn:hover, .hourly-details-btn.active { color: var(--accent); border-color: var(--accent); background: color-mix(in srgb, var(--elevated) 75%, #000 25%); }
     .day-water-temp { color: #93c5fd; white-space: nowrap; }
     .col-time-hourly { font-size: 0.8rem; color: var(--muted); font-weight: 600; }
     .col-expand-btn {
@@ -724,13 +726,13 @@
       <img src="icons/compass.svg" alt="SeaSense logo" class="header-logo" />
       <div class="header-title-group">
         <h1><em>SeaSense</em></h1>
-        <div class="header-tagline">Know before you go · Catch the right moment <span style="opacity:0.55;margin-left:6px">v8.8.2</span></div>
+        <div class="header-tagline">Know before you go · Catch the right moment <span style="opacity:0.55;margin-left:6px">v8.8.3</span></div>
       </div>
     </div>
     <div class="header-right">
       <div class="header-loc">
         <label>Location:</label>
-        <button class="btn" onclick="openMapPicker()" title="Pick location on map" style="padding:4px 10px;font-size:0.85rem">🌐</button>
+        <button class="btn sec-loc-btn" onclick="openMapPicker()" title="Pick location on map" style="padding:4px 10px;font-size:0.85rem;line-height:0"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></button>
         <select id="locationSelect" onchange="onLocationChange()">
           <option value="amigo">Amigo Surfski Club</option>
           <option value="michmoret">Michmoret</option>
@@ -838,7 +840,7 @@
       </ul>
 
       <div class="about-footer-note">All data is free — no API key required.<br>
-      Built by <strong>Alon Kassir</strong> &nbsp;·&nbsp; v8.8.2</div>
+      Built by <strong>Alon Kassir</strong> &nbsp;·&nbsp; v8.8.3</div>
     </div>
   </div>
 </div>
@@ -2823,7 +2825,7 @@
 </script>
 
 <footer class="app-footer">
-  <span>SeaSense <strong style="color:var(--muted)">v8.8.2</strong></span>
+  <span>SeaSense <strong style="color:var(--muted)">v8.8.3</strong></span>
   <span style="color:var(--border)">·</span>
   <span>Made with ❤️ by <strong style="color:var(--muted)">Alon Kassir</strong></span>
   <span style="color:var(--border)">·</span>
