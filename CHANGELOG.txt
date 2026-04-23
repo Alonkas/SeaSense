@@ -2,6 +2,15 @@ SeaSense — Version History
 ==========================
 
 
+v8.8.4 — 2026-04-23
+---------------------
+- Default theme changed to Light (was Dark)
+- Gust speed now included in GO / CAUTION / NO-GO status logic (caution ≥17 kn, danger ≥24 kn)
+- Added esc() HTML-escaping helper; applied to error messages and wizard loading text to prevent XSS
+- Column table alternating row colours now use CSS classes (col-row-even / col-row-odd) instead of hardcoded hex, so they respect the active theme
+- Service worker cache version updated to v8.8.3
+
+
 v8.8.2 — 2026-04-23
 ---------------------
 Light theme visual polish:
