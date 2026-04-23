@@ -69,10 +69,21 @@ function buildWaveLookup(wave) {
   return lookup;
 }
 
+const _nearestCache = new WeakMap();
 function findNearest(lookup, ts) {
-  const keys = Object.keys(lookup).map(Number);
+  if (!_nearestCache.has(lookup)) {
+    _nearestCache.set(lookup, Object.keys(lookup).map(Number).sort((a, b) => a - b));
+  }
+  const keys = _nearestCache.get(lookup);
   if (!keys.length) return null;
-  const closest = keys.reduce((a, b) => Math.abs(b - ts) < Math.abs(a - ts) ? b : a);
+  let lo = 0, hi = keys.length - 1;
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1;
+    if (keys[mid] < ts) lo = mid + 1; else hi = mid;
+  }
+  const candidates = [keys[lo - 1], keys[lo]].filter(k => k != null);
+  if (!candidates.length) return null;
+  const closest = candidates.reduce((a, b) => Math.abs(b - ts) < Math.abs(a - ts) ? b : a);
   return Math.abs(closest - ts) < 2 * 3600000 ? lookup[closest] : null;
 }
 
