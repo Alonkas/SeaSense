@@ -19,6 +19,19 @@
       --caution:  #f59e0b;
       --danger:   #ef4444;
     }
+    .light-theme {
+      --bg:       #fbefdc;
+      --surface:  #dce8fb;
+      --elevated: #c8d9f5;
+      --border:   #94b4e0;
+      --accent:   #1e3a6e;
+      --text:     #0c306a;
+      --dim:      #1e3a6e;
+      --muted:    #3a5f9e;
+      --go:       #15803d;
+      --caution:  #b45309;
+      --danger:   #dc2626;
+    }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
 
@@ -658,6 +671,44 @@
     .wz-th-danger  { color: var(--nogo); }
     .wz-body .fc:hover { transform: none; box-shadow: none; cursor: default; }
 
+    /* ── Light theme overrides ── */
+    .light-theme header {
+      background: var(--surface);
+    }
+    .light-theme .header-left h1 { color: var(--text); }
+    .light-theme .header-left h1 em { color: var(--text); }
+    .light-theme .header-tagline { color: var(--text); }
+    .light-theme .status-bar.error   { color: #dc2626; }
+    .light-theme .status-bar.warning { color: #b45309; }
+    .light-theme .status-bar.loading { color: #1e3a6e; }
+    .light-theme .dbadge.go      { background: rgba(21,128,61,0.12);  color: #15803d; border-color: rgba(21,128,61,0.25); }
+    .light-theme .dbadge.caution { background: rgba(180,83,9,0.12);   color: #b45309; border-color: rgba(180,83,9,0.25); }
+    .light-theme .dbadge.danger  { background: rgba(220,38,38,0.12);  color: #dc2626; border-color: rgba(220,38,38,0.25); }
+    .light-theme .fc-status.go      { background: rgba(21,128,61,0.15);  color: #15803d; }
+    .light-theme .fc-status.caution { background: rgba(180,83,9,0.15);   color: #b45309; }
+    .light-theme .fc-status.danger  { background: rgba(220,38,38,0.15);  color: #dc2626; }
+    .light-theme .col-dot.go      { background: #15803d; box-shadow: 0 0 5px rgba(21,128,61,0.4); }
+    .light-theme .col-dot.caution { background: #b45309; box-shadow: 0 0 5px rgba(180,83,9,0.4); }
+    .light-theme .col-dot.danger  { background: #dc2626; box-shadow: 0 0 5px rgba(220,38,38,0.4); }
+    .light-theme .sb-badge.caution { background: rgba(180,83,9,0.12);  color: #b45309; border-color: rgba(180,83,9,0.3); }
+    .light-theme .sb-badge.danger  { background: rgba(220,38,38,0.12); color: #dc2626; border-color: rgba(220,38,38,0.3); }
+    .light-theme .uv-low      { color: #15803d; border-color: rgba(21,128,61,0.35); }
+    .light-theme .uv-moderate { color: #a16207; border-color: rgba(161,98,7,0.35); }
+    .light-theme .uv-high     { color: #c2410c; border-color: rgba(194,65,12,0.35); }
+    .light-theme .uv-veryhigh { color: #dc2626; border-color: rgba(220,38,38,0.35); }
+    .light-theme .uv-extreme  { color: #7c3aed; border-color: rgba(124,58,237,0.35); }
+    .light-theme .tide-event.tide-high { color: #1e3a6e; }
+    .light-theme .tide-event.tide-low  { color: #1e3a6e; }
+    .light-theme .day-water-temp       { color: #1e3a6e; }
+    .light-theme #toast { background: #dce8fb; border-color: #1e3a6e; color: #1e3a6e; }
+    .light-theme #mapPickerEl .leaflet-container { background: #c8d9f5; }
+    .light-theme .btn:disabled { background: #c8d9f5; color: #4a6a8a; }
+    .light-theme .about-model-tag { color: #15803d; }
+    .light-theme .fc:hover { box-shadow: 0 10px 30px rgba(30,58,110,0.15); }
+    .light-theme .col-table tbody tr:hover td { background: rgba(30,58,110,0.04); }
+    .light-theme .col-table td { border-bottom-color: rgba(30,58,110,0.08); }
+    .light-theme .fc-side-label { color: #0c306a; background: var(--surface); }
+
   </style>
 <script>
   if ('serviceWorker' in navigator) {
@@ -673,7 +724,7 @@
       <img src="icons/compass.svg" alt="SeaSense logo" class="header-logo" />
       <div class="header-title-group">
         <h1><em>SeaSense</em></h1>
-        <div class="header-tagline">Know before you go · Catch the right moment <span style="opacity:0.55;margin-left:6px">v8.7.5</span></div>
+        <div class="header-tagline">Know before you go · Catch the right moment <span style="opacity:0.55;margin-left:6px">v8.8.2</span></div>
       </div>
     </div>
     <div class="header-right">
@@ -787,7 +838,7 @@
       </ul>
 
       <div class="about-footer-note">All data is free — no API key required.<br>
-      Built by <strong>Alon Kassir</strong> &nbsp;·&nbsp; v8.7.5</div>
+      Built by <strong>Alon Kassir</strong> &nbsp;·&nbsp; v8.8.2</div>
     </div>
   </div>
 </div>
@@ -849,6 +900,14 @@
       <option value="hourly-box">Hourly Box</option>
       <option value="column">Column Layout</option>
       <option value="model-comparison">Model Comparison</option>
+    </select>
+
+    <div class="sb-sep"></div>
+
+    <div class="sb-title">🎨 Background</div>
+    <select id="themeSelect" onchange="setTheme(this.value)" class="sb-input" style="cursor:pointer">
+      <option value="dark">Dark</option>
+      <option value="light">Light</option>
     </select>
 
     <div class="sb-sep"></div>
@@ -1241,6 +1300,14 @@
     if (v !== null) document.getElementById(id).value = v;
   });
 
+  // Apply saved theme (runs before first render so no flash)
+  (function() {
+    const saved = localStorage.getItem('ssTheme') || 'dark';
+    document.documentElement.classList.toggle('light-theme', saved === 'light');
+    const sel = document.getElementById('themeSelect');
+    if (sel) sel.value = saved;
+  })();
+
   function getThresholds() {
     const isKmh   = getWindUnit() === 'kmh';
     const toKt    = v => isKmh ? v / KT_TO_KMH : v;
@@ -1529,6 +1596,21 @@
     if (_lastWindData && _lastWaveLookup) renderForecast(_lastWindData, _lastWaveLookup, _lastTideLookup);
   }
 
+  function setTheme(name) {
+    document.documentElement.classList.toggle('light-theme', name === 'light');
+    localStorage.setItem('ssTheme', name);
+    const sel = document.getElementById('themeSelect');
+    if (sel) sel.value = name;
+    if (_lastWindData && _lastWaveLookup) renderForecast(_lastWindData, _lastWaveLookup, _lastTideLookup);
+  }
+
+  function initTheme() {
+    const saved = localStorage.getItem('ssTheme') || 'dark';
+    document.documentElement.classList.toggle('light-theme', saved === 'light');
+    const sel = document.getElementById('themeSelect');
+    if (sel) sel.value = saved;
+  }
+
   function windDeg(u, v) {
     return (Math.atan2(-u, -v) * 180 / Math.PI + 360) % 360;
   }
@@ -1547,7 +1629,18 @@
     return `<div class="big-dir-arrow" style="color:${c}"><span style="display:inline-block;transform:rotate(${(Math.round(deg) + 180) % 360}deg);line-height:1">↑</span></div>`;
   }
 
+  function isLightTheme() {
+    return document.documentElement.classList.contains('light-theme');
+  }
+
   function windColor(kt) {
+    if (isLightTheme()) {
+      if (kt < 5)  return '#15803d';
+      if (kt < 11) return '#16a34a';
+      if (kt < 17) return '#ca8a04';
+      if (kt < 22) return '#ea580c';
+      return '#dc2626';
+    }
     if (kt < 5)  return '#34d399';
     if (kt < 11) return '#86efac';
     if (kt < 17) return '#fbbf24';
@@ -1556,6 +1649,14 @@
   }
 
   function waveColor(m) {
+    if (isLightTheme()) {
+      if (m == null) return '#3a5f9e';
+      if (m < 0.3)   return '#15803d';
+      if (m < 0.6)   return '#16a34a';
+      if (m < 1.0)   return '#ca8a04';
+      if (m < 1.5)   return '#ea580c';
+      return '#dc2626';
+    }
     if (m == null) return '#4a6a8a';
     if (m < 0.3)   return '#34d399';
     if (m < 0.6)   return '#86efac';
@@ -1565,6 +1666,12 @@
   }
 
   function rainColor(mm) {
+    if (isLightTheme()) {
+      if (mm < 0.1) return '#3a5f9e';
+      if (mm < 1.0) return '#1d4ed8';
+      if (mm < 5.0) return '#1e40af';
+      return '#6d28d9';
+    }
     if (mm < 0.1) return '#4a6a8a';
     if (mm < 1.0) return '#93c5fd';
     if (mm < 5.0) return '#3b82f6';
@@ -1755,7 +1862,8 @@
               </tr></thead>
               <tbody>`;
 
-        rows.forEach(r => {
+        rows.forEach((r, ri) => {
+          const rowBg = ri % 2 === 0 ? '#dce8fb' : '#c5d9f8';
           const time = r.d.toLocaleTimeString('en-IL', { hour: '2-digit', minute: '2-digit', timeZone: TIMEZONE });
           const wc  = windColor(r.windKt);
           const gc  = r.gustKt != null ? windColor(r.gustKt) : 'var(--dim)';
@@ -1773,7 +1881,7 @@
           const surfCCol = waveColor(surfHCol);
           const surfStrCol = surfHCol != null ? `~${surfHCol.toFixed(1)} m` : '—';
           const gid = `hg${r.t}`;
-          html += `<tr>
+          html += `<tr style="background:${rowBg}">
               <td><span class="col-time">${time}</span></td>
               <td><span class="col-dot ${r.st}"></span></td>
               <td><span class="col-val" style="color:${surfCCol}">${surfStrCol}</span></td>
@@ -1804,7 +1912,7 @@
               const bSurfH = komarBreaker(b.wh, b.wp);
               const bSurfC = waveColor(bSurfH);
               const bSurfStr = bSurfH != null ? `~${bSurfH.toFixed(1)} m` : '—';
-              html += `<tr class="hourly-col-row" data-group="${gid}">
+              html += `<tr class="hourly-col-row" data-group="${gid}" style="background:${rowBg}">
                 <td><span class="col-time col-time-hourly">${bt}</span></td>
                 <td><span class="col-dot ${b.st}"></span></td>
                 <td><span class="col-val" style="color:${bSurfC}">${bSurfStr}</span></td>
@@ -1893,7 +2001,8 @@
                 </tr></thead>
                 <tbody>`;
 
-          rows.forEach(r => {
+          rows.forEach((r, ri) => {
+            const rowBg = ri % 2 === 0 ? '#dce8fb' : '#c5d9f8';
             const time = r.d.toLocaleTimeString('en-IL', { hour: '2-digit', minute: '2-digit', timeZone: TIMEZONE });
             const wv   = wLookup[r.t] || findNearest(wLookup, r.t) || {};
             const wh   = wv.wh  ?? null;
@@ -1913,7 +2022,7 @@
               const idx = modelMaps[m.key][r.t];
               if (idx === undefined) {
                 // Model has no data for this slot — render a placeholder row so all models always appear
-                html += `<tr${isLastModel ? ' class="col-model-sep"' : ''}>
+                html += `<tr${isLastModel ? ' class="col-model-sep"' : ''} style="background:${rowBg}">
                     <td>${mi === 0 ? `<span class="col-time">${time}</span>` : ''}<span class="col-model-label">${m.label}</span></td>
                     <td></td>
                     <td colspan="8" style="color:var(--dim);font-size:0.8rem">No data</td>
@@ -1936,7 +2045,7 @@
               const rainMmStr    = rainMm >= 0.05 ? ` <span class="col-sub">${rainMm.toFixed(1)} mm</span>` : '';
               const rainPctColor = rainPct == null ? 'var(--dim)' : rainPct < 20 ? 'var(--dim)' : rainPct < 50 ? '#93c5fd' : rainPct < 75 ? '#3b82f6' : '#a78bfa';
 
-              html += `<tr${isLastModel ? ' class="col-model-sep"' : ''}>
+              html += `<tr${isLastModel ? ' class="col-model-sep"' : ''} style="background:${rowBg}">
                   <td>${mi === 0 ? `<span class="col-time">${time}</span>` : ''}<span class="col-model-label">${m.label}</span></td>
                   <td><span class="col-dot ${st}"></span></td>
                   <td><span class="col-val" style="color:${mcSurfC}">${mcSurfStr}</span></td>
@@ -1964,7 +2073,7 @@
                   const isLastModel = mi === modelDefs.length - 1;
                   const idx = modelMaps[m.key][b.t];
                   if (idx === undefined) {
-                    html += `<tr class="hourly-col-row${isLastModel ? ' col-model-sep' : ''}">
+                    html += `<tr class="hourly-col-row${isLastModel ? ' col-model-sep' : ''}" style="background:${rowBg}">
                         <td>${mi === 0 ? `<span class="col-time col-time-hourly">${bt}</span>` : ''}<span class="col-model-label">${m.label}</span></td>
                         <td></td>
                         <td colspan="8" style="color:var(--dim);font-size:0.8rem">No data</td>
@@ -1986,7 +2095,7 @@
                   const bRainPctStr = bRainPct != null ? `${bRainPct}%` : '—';
                   const bRainMmStr  = bRainMm >= 0.05 ? ` <span class="col-sub">${bRainMm.toFixed(1)} mm</span>` : '';
                   const bRainCol    = bRainPct == null ? 'var(--dim)' : bRainPct < 20 ? 'var(--dim)' : bRainPct < 50 ? '#93c5fd' : bRainPct < 75 ? '#3b82f6' : '#a78bfa';
-                  html += `<tr class="hourly-col-row${isLastModel ? ' col-model-sep' : ''}">
+                  html += `<tr class="hourly-col-row${isLastModel ? ' col-model-sep' : ''}" style="background:${rowBg}">
                       <td>${mi === 0 ? `<span class="col-time col-time-hourly">${bt}</span>` : ''}<span class="col-model-label">${m.label}</span></td>
                       <td><span class="col-dot ${bSt}"></span></td>
                       <td><span class="col-val" style="color:${bMcSurfC}">${bMcSurfStr}</span></td>
@@ -2666,7 +2775,7 @@
 
             <div class="fc-temp-row">
               ${avgAirTemp  != null ? `<div class="fc-temp-item"><div class="fc-temp-item-val"><span style="color:var(--dim)">🌡</span><span style="color:var(--text)">${fmtC(avgAirTemp)}</span></div><div class="fc-temp-lbl">air temp</div></div>` : ''}
-              ${avgWaterTemp != null ? `<div class="fc-temp-item"><div class="fc-temp-item-val"><span style="color:var(--dim)">💧</span><span style="color:#93c5fd">${fmtC(avgWaterTemp)}</span></div><div class="fc-temp-lbl">water temp</div></div>` : ''}
+              ${avgWaterTemp != null ? `<div class="fc-temp-item"><div class="fc-temp-item-val"><span style="color:var(--dim)">💧</span><span style="color:var(--dim)">${fmtC(avgWaterTemp)}</span></div><div class="fc-temp-lbl">water temp</div></div>` : ''}
               ${totalRain   != null ? `<div class="fc-temp-item"><div class="fc-temp-item-val"><span style="color:var(--dim)">🌧</span><span style="color:var(--muted)">${fmtMm(totalRain)}</span></div></div>` : ''}
             </div>
           </div>
@@ -2714,7 +2823,7 @@
 </script>
 
 <footer class="app-footer">
-  <span>SeaSense <strong style="color:var(--muted)">v8.7.5</strong></span>
+  <span>SeaSense <strong style="color:var(--muted)">v8.8.2</strong></span>
   <span style="color:var(--border)">·</span>
   <span>Made with ❤️ by <strong style="color:var(--muted)">Alon Kassir</strong></span>
   <span style="color:var(--border)">·</span>
