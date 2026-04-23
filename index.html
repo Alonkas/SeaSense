@@ -98,7 +98,7 @@
     .btn:hover  { background: #2563eb; }
     .btn:active { transform: scale(0.97); }
     .btn:disabled { background: #1a3a5f; color: var(--dim); cursor: default; transform: none; }
-    #wizardBtn { background: #c45200; }
+    #wizardBtn { background: #c45200; animation: pulse 1.5s ease-in-out infinite; }
     #wizardBtn:hover { background: #a34400; }
 
     /* ── Header right (location) ── */
@@ -340,6 +340,7 @@
     .status-bar.loading { background: rgba(59,130,246,0.1); border: 1px solid rgba(59,130,246,0.3); color: #93c5fd; }
     .spinner { width: 14px; height: 14px; border: 2px solid rgba(59,130,246,0.3); border-top-color: #3b82f6; border-radius: 50%; animation: spin 0.75s linear infinite; flex-shrink: 0; }
     @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes pulse { 0%, 100% { filter: brightness(1); } 50% { filter: brightness(1.25); } }
 
     /* ── Legend ── */
     .legend {
