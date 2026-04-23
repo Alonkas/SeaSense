@@ -2,6 +2,16 @@ SeaSense — Version History
 ==========================
 
 
+v8.8.2 — 2026-04-23
+---------------------
+Light theme visual polish:
+- Main window background set to #fbefdc (warm off-white)
+- Hero/header background now matches the sidebar (--surface, #dce8fb)
+- App name and tagline text use deep blue (--text, #0c306a) instead of white
+- Column layout alternating row second colour updated to #c5d9f8
+- Tides strip and water temperature text set to secondary blue (#1e3a6e) in light mode across all layouts
+
+
 v8.7.4 — 2026-04-23
 ---------------------
 - Added service worker (sw.js) with network-first strategy: every app open fetches the latest version from GitHub Pages, with offline cache fallback

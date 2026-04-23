@@ -545,6 +545,8 @@
     @media (max-width: 768px) {
       .wizard-modal .fc { flex: unset; min-width: unset; }
     }
+    .col-row-even { background: var(--surface); }
+    .col-row-odd  { background: var(--elevated); }
     .col-table tr.hourly-col-row { display: none; }
     .col-table tr.hourly-col-row.open { display: table-row; }
     .col-table tr.hourly-col-row td { opacity: 0.72; }
@@ -726,7 +728,7 @@
       <img src="icons/compass.svg" alt="SeaSense logo" class="header-logo" />
       <div class="header-title-group">
         <h1><em>SeaSense</em></h1>
-        <div class="header-tagline">Know before you go · Catch the right moment <span style="opacity:0.55;margin-left:6px">v8.8.3</span></div>
+        <div class="header-tagline">Know before you go · Catch the right moment <span style="opacity:0.55;margin-left:6px">v8.8.4</span></div>
       </div>
     </div>
     <div class="header-right">
@@ -840,7 +842,7 @@
       </ul>
 
       <div class="about-footer-note">All data is free — no API key required.<br>
-      Built by <strong>Alon Kassir</strong> &nbsp;·&nbsp; v8.8.3</div>
+      Built by <strong>Alon Kassir</strong> &nbsp;·&nbsp; v8.8.4</div>
     </div>
   </div>
 </div>
@@ -908,8 +910,8 @@
 
     <div class="sb-title">🎨 Background</div>
     <select id="themeSelect" onchange="setTheme(this.value)" class="sb-input" style="cursor:pointer">
-      <option value="dark">Dark</option>
       <option value="light">Light</option>
+      <option value="dark">Dark</option>
     </select>
 
     <div class="sb-sep"></div>
@@ -1166,7 +1168,7 @@
         <div style="padding:14px;background:var(--elevated);border-radius:8px;font-size:0.84rem;text-align:center">
           <div style="font-size:1.4rem;margin-bottom:8px">📲</div>
           <strong style="color:var(--text)">Share this link with your phone:</strong><br>
-          <span style="color:var(--accent);font-size:0.8rem;word-break:break-all">${location.href}</span>
+          <span style="color:var(--accent);font-size:0.8rem;word-break:break-all">${esc(location.href)}</span>
         </div>`;
     }
     document.getElementById('a2hsBody').innerHTML = html;
@@ -1197,7 +1199,7 @@
       const data = await res.json();
       renderSunUV(data.daily, loc.name);
     } catch(e) {
-      body.innerHTML = `<div class="modal-loading" style="color:#f87171">Error: ${e.message}</div>`;
+      body.innerHTML = `<div class="modal-loading" style="color:#f87171">Error: ${esc(e.message)}</div>`;
     }
   }
 
@@ -1304,7 +1306,7 @@
 
   // Apply saved theme (runs before first render so no flash)
   (function() {
-    const saved = localStorage.getItem('ssTheme') || 'dark';
+    const saved = localStorage.getItem('ssTheme') || 'light';
     document.documentElement.classList.toggle('light-theme', saved === 'light');
     const sel = document.getElementById('themeSelect');
     if (sel) sel.value = saved;
@@ -1318,6 +1320,8 @@
       cautWave:        parseFloat(document.getElementById('thCautWave').value)   || 0.6,
       dangerWind: toKt(parseFloat(document.getElementById('thDangerWind').value) || (isKmh ? 33 : 18)),
       dangerWave:      parseFloat(document.getElementById('thDangerWave').value) || 1.0,
+      cautGust:   17,
+      dangerGust: 24,
     };
   }
 
@@ -1541,6 +1545,15 @@
     }
   }
 
+  function esc(str) {
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
   const M2KT      = 1.94384;
   const KT_TO_KMH = 1.852;
   let TIMEZONE = localStorage.getItem('ssTimezone') || 'Asia/Jerusalem';
@@ -1607,7 +1620,7 @@
   }
 
   function initTheme() {
-    const saved = localStorage.getItem('ssTheme') || 'dark';
+    const saved = localStorage.getItem('ssTheme') || 'light';
     document.documentElement.classList.toggle('light-theme', saved === 'light');
     const sel = document.getElementById('themeSelect');
     if (sel) sel.value = saved;
@@ -1682,8 +1695,8 @@
 
   function status(windKt, gustKt, waveM) {
     const th = getThresholds();
-    if (windKt >= th.dangerWind || waveM >= th.dangerWave) return 'danger';
-    if (windKt >= th.cautWind   || waveM >= th.cautWave)   return 'caution';
+    if (windKt >= th.dangerWind || gustKt >= th.dangerGust || waveM >= th.dangerWave) return 'danger';
+    if (windKt >= th.cautWind   || gustKt >= th.cautGust   || waveM >= th.cautWave)   return 'caution';
     return 'go';
   }
 
@@ -1865,7 +1878,7 @@
               <tbody>`;
 
         rows.forEach((r, ri) => {
-          const rowBg = ri % 2 === 0 ? '#dce8fb' : '#c5d9f8';
+          const rowClass = ri % 2 === 0 ? 'col-row-even' : 'col-row-odd';
           const time = r.d.toLocaleTimeString('en-IL', { hour: '2-digit', minute: '2-digit', timeZone: TIMEZONE });
           const wc  = windColor(r.windKt);
           const gc  = r.gustKt != null ? windColor(r.gustKt) : 'var(--dim)';
@@ -1883,7 +1896,7 @@
           const surfCCol = waveColor(surfHCol);
           const surfStrCol = surfHCol != null ? `~${surfHCol.toFixed(1)} m` : '—';
           const gid = `hg${r.t}`;
-          html += `<tr style="background:${rowBg}">
+          html += `<tr class="${rowClass}">
               <td><span class="col-time">${time}</span></td>
               <td><span class="col-dot ${r.st}"></span></td>
               <td><span class="col-val" style="color:${surfCCol}">${surfStrCol}</span></td>
@@ -1914,7 +1927,7 @@
               const bSurfH = komarBreaker(b.wh, b.wp);
               const bSurfC = waveColor(bSurfH);
               const bSurfStr = bSurfH != null ? `~${bSurfH.toFixed(1)} m` : '—';
-              html += `<tr class="hourly-col-row" data-group="${gid}" style="background:${rowBg}">
+              html += `<tr class="hourly-col-row ${rowClass}" data-group="${gid}">
                 <td><span class="col-time col-time-hourly">${bt}</span></td>
                 <td><span class="col-dot ${b.st}"></span></td>
                 <td><span class="col-val" style="color:${bSurfC}">${bSurfStr}</span></td>
@@ -2004,7 +2017,7 @@
                 <tbody>`;
 
           rows.forEach((r, ri) => {
-            const rowBg = ri % 2 === 0 ? '#dce8fb' : '#c5d9f8';
+            const rowClass = ri % 2 === 0 ? 'col-row-even' : 'col-row-odd';
             const time = r.d.toLocaleTimeString('en-IL', { hour: '2-digit', minute: '2-digit', timeZone: TIMEZONE });
             const wv   = wLookup[r.t] || findNearest(wLookup, r.t) || {};
             const wh   = wv.wh  ?? null;
@@ -2024,7 +2037,7 @@
               const idx = modelMaps[m.key][r.t];
               if (idx === undefined) {
                 // Model has no data for this slot — render a placeholder row so all models always appear
-                html += `<tr${isLastModel ? ' class="col-model-sep"' : ''} style="background:${rowBg}">
+                html += `<tr class="${isLastModel ? 'col-model-sep ' : ''}${rowClass}">
                     <td>${mi === 0 ? `<span class="col-time">${time}</span>` : ''}<span class="col-model-label">${m.label}</span></td>
                     <td></td>
                     <td colspan="8" style="color:var(--dim);font-size:0.8rem">No data</td>
@@ -2047,7 +2060,7 @@
               const rainMmStr    = rainMm >= 0.05 ? ` <span class="col-sub">${rainMm.toFixed(1)} mm</span>` : '';
               const rainPctColor = rainPct == null ? 'var(--dim)' : rainPct < 20 ? 'var(--dim)' : rainPct < 50 ? '#93c5fd' : rainPct < 75 ? '#3b82f6' : '#a78bfa';
 
-              html += `<tr${isLastModel ? ' class="col-model-sep"' : ''} style="background:${rowBg}">
+              html += `<tr class="${isLastModel ? 'col-model-sep ' : ''}${rowClass}">
                   <td>${mi === 0 ? `<span class="col-time">${time}</span>` : ''}<span class="col-model-label">${m.label}</span></td>
                   <td><span class="col-dot ${st}"></span></td>
                   <td><span class="col-val" style="color:${mcSurfC}">${mcSurfStr}</span></td>
@@ -2075,7 +2088,7 @@
                   const isLastModel = mi === modelDefs.length - 1;
                   const idx = modelMaps[m.key][b.t];
                   if (idx === undefined) {
-                    html += `<tr class="hourly-col-row${isLastModel ? ' col-model-sep' : ''}" style="background:${rowBg}">
+                    html += `<tr class="hourly-col-row${isLastModel ? ' col-model-sep' : ''} ${rowClass}">
                         <td>${mi === 0 ? `<span class="col-time col-time-hourly">${bt}</span>` : ''}<span class="col-model-label">${m.label}</span></td>
                         <td></td>
                         <td colspan="8" style="color:var(--dim);font-size:0.8rem">No data</td>
@@ -2097,7 +2110,7 @@
                   const bRainPctStr = bRainPct != null ? `${bRainPct}%` : '—';
                   const bRainMmStr  = bRainMm >= 0.05 ? ` <span class="col-sub">${bRainMm.toFixed(1)} mm</span>` : '';
                   const bRainCol    = bRainPct == null ? 'var(--dim)' : bRainPct < 20 ? 'var(--dim)' : bRainPct < 50 ? '#93c5fd' : bRainPct < 75 ? '#3b82f6' : '#a78bfa';
-                  html += `<tr class="hourly-col-row${isLastModel ? ' col-model-sep' : ''}" style="background:${rowBg}">
+                  html += `<tr class="hourly-col-row${isLastModel ? ' col-model-sep' : ''} ${rowClass}">
                       <td>${mi === 0 ? `<span class="col-time col-time-hourly">${bt}</span>` : ''}<span class="col-model-label">${m.label}</span></td>
                       <td><span class="col-dot ${bSt}"></span></td>
                       <td><span class="col-val" style="color:${bMcSurfC}">${bMcSurfStr}</span></td>
@@ -2593,7 +2606,7 @@
 
     document.getElementById('wizardContent').innerHTML = `
       <div class="wz-header"><h2 style="display:flex;align-items:center">${WZ_ICON}Sea Wizard</h2><button class="wz-close" onclick="closeWizard()">✕</button></div>
-      <div class="wz-loading"><div class="spinner"></div><div>Fetching conditions for <strong>${locName}</strong>…</div></div>`;
+      <div class="wz-loading"><div class="spinner"></div><div>Fetching conditions for <strong>${esc(locName)}</strong>…</div></div>`;
 
     try {
       const today = new Date(); today.setHours(0,0,0,0);
@@ -2825,7 +2838,7 @@
 </script>
 
 <footer class="app-footer">
-  <span>SeaSense <strong style="color:var(--muted)">v8.8.3</strong></span>
+  <span>SeaSense <strong style="color:var(--muted)">v8.8.4</strong></span>
   <span style="color:var(--border)">·</span>
   <span>Made with ❤️ by <strong style="color:var(--muted)">Alon Kassir</strong></span>
   <span style="color:var(--border)">·</span>
