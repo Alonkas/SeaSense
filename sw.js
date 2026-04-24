@@ -1,4 +1,4 @@
-const CACHE = 'seasense-v8.8.7';
+const CACHE = 'seasense-v8.8.8';
 
 self.addEventListener('install', e => {
   self.skipWaiting();
@@ -18,12 +18,14 @@ self.addEventListener('activate', e => {
 self.addEventListener('fetch', e => {
   if (!e.request.url.startsWith(self.location.origin)) return;
   e.respondWith(
-    fetch(e.request)
-      .then(res => {
-        const clone = res.clone();
-        caches.open(CACHE).then(c => c.put(e.request, clone));
-        return res;
+    caches.open(CACHE).then(c =>
+      c.match(e.request).then(cached => {
+        const network = fetch(e.request).then(res => {
+          c.put(e.request, res.clone());
+          return res;
+        });
+        return cached || network;
       })
-      .catch(() => caches.match(e.request))
+    )
   );
 });

@@ -4,7 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>SeaSense</title>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        media="print" onload="this.media='all'" />
+  <noscript><link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" /></noscript>
   <style>
     :root {
       --bg:       #060e1e;
@@ -729,7 +731,7 @@
       <img src="icons/compass.svg" alt="SeaSense logo" class="header-logo" />
       <div class="header-title-group">
         <h1><em>SeaSense</em></h1>
-        <div class="header-tagline">Know before you go · Catch the right moment <span style="opacity:0.55;margin-left:6px">v8.8.7</span></div>
+        <div class="header-tagline">Know before you go · Catch the right moment <span style="opacity:0.55;margin-left:6px">v8.8.8</span></div>
       </div>
     </div>
     <div class="header-right">
@@ -843,7 +845,7 @@
       </ul>
 
       <div class="about-footer-note">All data is free — no API key required.<br>
-      Built by <strong>Alon Kassir</strong> &nbsp;·&nbsp; v8.8.7</div>
+      Built by <strong>Alon Kassir</strong> &nbsp;·&nbsp; v8.8.8</div>
     </div>
   </div>
 </div>
@@ -1062,6 +1064,20 @@
   let _leafletMap = null;
   let _customMarker = null;
   let _pendingMapSelection = null; // { type: 'preset', key } or { type: 'custom', lat, lng }
+  let _leafletReady = null;
+
+  function ensureLeaflet() {
+    if (window.L) return Promise.resolve();
+    if (_leafletReady) return _leafletReady;
+    _leafletReady = new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+      s.onload = resolve;
+      s.onerror = reject;
+      document.head.appendChild(s);
+    });
+    return _leafletReady;
+  }
 
   function _setMapSelectionLabel(text) {
     document.getElementById('mapSelectionLabel').textContent = text;
@@ -1069,50 +1085,51 @@
 
   function openMapPicker() {
     _pendingMapSelection = null;
-    // Show current location as initial label
     const curSel = document.getElementById('locationSelect').value;
     const curLoc = LOCATIONS[curSel];
     _setMapSelectionLabel(curLoc ? curLoc.name : 'No selection');
-
     document.getElementById('mapModal').classList.add('open');
-    if (!_leafletMap) {
-      _leafletMap = L.map('mapPickerEl').setView([32.0, 34.9], 7);
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-        attribution: '© OpenStreetMap contributors © CARTO', maxZoom: 19, subdomains: 'abcd'
-      }).addTo(_leafletMap);
 
-      // Predefined location markers
-      Object.entries(LOCATIONS).forEach(([key, loc]) => {
-        if (key === 'custom' || loc.lat == null) return;
-        const marker = L.circleMarker([loc.lat, loc.lon], {
-          radius: 8, color: '#38bdf8', fillColor: '#0ea5e9',
-          fillOpacity: 0.9, weight: 2
+    ensureLeaflet().then(() => {
+      if (!_leafletMap) {
+        _leafletMap = L.map('mapPickerEl').setView([32.0, 34.9], 7);
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+          attribution: '© OpenStreetMap contributors © CARTO', maxZoom: 19, subdomains: 'abcd'
         }).addTo(_leafletMap);
-        marker.bindTooltip(loc.name, { permanent: false, direction: 'top', offset: [0, -6] });
-        marker.on('click', e => {
-          L.DomEvent.stopPropagation(e);
-          _pendingMapSelection = { type: 'preset', key };
-          _setMapSelectionLabel(loc.name);
-          if (_customMarker) { _leafletMap.removeLayer(_customMarker); _customMarker = null; }
-        });
-      });
 
-      // Free-click for custom coordinates
-      _leafletMap.on('click', e => {
-        const { lat, lng } = e.latlng;
-        _pendingMapSelection = { type: 'custom', lat, lng };
-        _setMapSelectionLabel(`Custom: ${lat.toFixed(4)}, ${lng.toFixed(4)}`);
-        if (_customMarker) _leafletMap.removeLayer(_customMarker);
-        _customMarker = L.marker([lat, lng]).addTo(_leafletMap);
-      });
-    }
-    // Sync crosshair to current custom position if set
-    const loc = getCoords();
-    if (_customMarker) { _leafletMap.removeLayer(_customMarker); _customMarker = null; }
-    if (curSel === 'custom' && loc) {
-      _customMarker = L.marker([loc.lat, loc.lon]).addTo(_leafletMap);
-    }
-    setTimeout(() => _leafletMap.invalidateSize(), 50);
+        // Predefined location markers
+        Object.entries(LOCATIONS).forEach(([key, loc]) => {
+          if (key === 'custom' || loc.lat == null) return;
+          const marker = L.circleMarker([loc.lat, loc.lon], {
+            radius: 8, color: '#38bdf8', fillColor: '#0ea5e9',
+            fillOpacity: 0.9, weight: 2
+          }).addTo(_leafletMap);
+          marker.bindTooltip(loc.name, { permanent: false, direction: 'top', offset: [0, -6] });
+          marker.on('click', e => {
+            L.DomEvent.stopPropagation(e);
+            _pendingMapSelection = { type: 'preset', key };
+            _setMapSelectionLabel(loc.name);
+            if (_customMarker) { _leafletMap.removeLayer(_customMarker); _customMarker = null; }
+          });
+        });
+
+        // Free-click for custom coordinates
+        _leafletMap.on('click', e => {
+          const { lat, lng } = e.latlng;
+          _pendingMapSelection = { type: 'custom', lat, lng };
+          _setMapSelectionLabel(`Custom: ${lat.toFixed(4)}, ${lng.toFixed(4)}`);
+          if (_customMarker) _leafletMap.removeLayer(_customMarker);
+          _customMarker = L.marker([lat, lng]).addTo(_leafletMap);
+        });
+      }
+      // Sync crosshair to current custom position if set
+      const loc = getCoords();
+      if (_customMarker) { _leafletMap.removeLayer(_customMarker); _customMarker = null; }
+      if (curSel === 'custom' && loc) {
+        _customMarker = L.marker([loc.lat, loc.lon]).addTo(_leafletMap);
+      }
+      setTimeout(() => _leafletMap.invalidateSize(), 50);
+    });
   }
 
   function applyMapSelection() {
@@ -2909,7 +2926,7 @@
 </script>
 
 <footer class="app-footer">
-  <span>SeaSense <strong style="color:var(--muted)">v8.8.7</strong></span>
+  <span>SeaSense <strong style="color:var(--muted)">v8.8.8</strong></span>
   <span style="color:var(--border)">·</span>
   <span>Made with ❤️ by <strong style="color:var(--muted)">Alon Kassir</strong></span>
   <span style="color:var(--border)">·</span>
@@ -2920,6 +2937,5 @@
   <span style="color:var(--border)">·</span>
   <button onclick="openAbout()" style="background:none;border:none;color:var(--dim);font-size:0.72rem;cursor:pointer;padding:0;text-decoration:underline;text-underline-offset:3px">ℹ️ About</button>
 </footer>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </body>
 </html>
