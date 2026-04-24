@@ -1,4 +1,4 @@
-const CACHE = 'seasense-v8.8.6';
+const CACHE = 'seasense-v8.8.7';
 
 self.addEventListener('install', e => {
   self.skipWaiting();

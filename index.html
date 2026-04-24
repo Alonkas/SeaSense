@@ -729,7 +729,7 @@
       <img src="icons/compass.svg" alt="SeaSense logo" class="header-logo" />
       <div class="header-title-group">
         <h1><em>SeaSense</em></h1>
-        <div class="header-tagline">Know before you go · Catch the right moment <span style="opacity:0.55;margin-left:6px">v8.8.6</span></div>
+        <div class="header-tagline">Know before you go · Catch the right moment <span style="opacity:0.55;margin-left:6px">v8.8.7</span></div>
       </div>
     </div>
     <div class="header-right">
@@ -843,7 +843,47 @@
       </ul>
 
       <div class="about-footer-note">All data is free — no API key required.<br>
-      Built by <strong>Alon Kassir</strong> &nbsp;·&nbsp; v8.8.6</div>
+      Built by <strong>Alon Kassir</strong> &nbsp;·&nbsp; v8.8.7</div>
+    </div>
+  </div>
+</div>
+
+<!-- Privacy Policy Modal -->
+<div class="modal-overlay" id="privacyModal" onclick="closePrivacyOutside(event)">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closePrivacy()">✕</button>
+    <div class="modal-title">🔒 Privacy Policy</div>
+    <div class="about-body">
+      <p class="about-footer-note" style="margin-bottom:16px">Last Updated: April 23, 2026</p>
+      <p>SeaSense is committed to protecting your privacy. This policy explains how your information is handled when you use SeaSense.</p>
+
+      <h3>1. Information We Do Not Collect</h3>
+      <p>We do not collect, store, or transmit any personal data to our own servers. SeaSense does not require account creation, email address, or name.</p>
+
+      <h3>2. Local Storage</h3>
+      <p>Preferences you set (favourite locations, units, layout) are stored <strong>locally on your device</strong> using native storage APIs. This information never leaves your device.</p>
+
+      <h3>3. Third-Party Services</h3>
+      <p>SeaSense retrieves weather data from the <strong>Open-Meteo API</strong>. Each request transmits:</p>
+      <ul>
+        <li>The coordinates (latitude/longitude) of the selected location.</li>
+        <li>Your IP address as a standard part of internet communication.</li>
+      </ul>
+      <p>See the <a href="https://open-meteo.com/en/terms" target="_blank" rel="noopener">Open-Meteo Privacy Policy</a> for details.</p>
+
+      <h3>4. Location Data</h3>
+      <p>Location data is used strictly to fetch the forecast for the area you select — not for tracking or profiling.</p>
+
+      <h3>5. Children's Privacy</h3>
+      <p>SeaSense does not collect personal information from anyone, including children under 13, in compliance with COPPA.</p>
+
+      <h3>6. Changes to This Policy</h3>
+      <p>We may update this policy periodically. Changes will be posted on this page.</p>
+
+      <h3>7. Contact</h3>
+      <p>Questions? Email: <a href="mailto:alon.kassir@gmail.com">alon.kassir@gmail.com</a></p>
+
+      <div class="about-footer-note" style="margin-top:20px">© 2026 SeaSense · Built by Alon Kassir</div>
     </div>
   </div>
 </div>
@@ -1097,6 +1137,10 @@
   function openAbout()              { document.getElementById('aboutModal').classList.add('open'); }
   function closeAbout()             { closeModal('aboutModal'); }
   function closeAboutOutside(e)     { closeModalOutside(e, 'aboutModal'); }
+
+  function openPrivacy()            { document.getElementById('privacyModal').classList.add('open'); }
+  function closePrivacy()           { closeModal('privacyModal'); }
+  function closePrivacyOutside(e)   { closeModalOutside(e, 'privacyModal'); }
 
   // ── Add to Home Screen ──────────────────────────────────────
   let _a2hsDeferredPrompt = null;
@@ -2865,11 +2909,14 @@
 </script>
 
 <footer class="app-footer">
-  <span>SeaSense <strong style="color:var(--muted)">v8.8.6</strong></span>
+  <span>SeaSense <strong style="color:var(--muted)">v8.8.7</strong></span>
   <span style="color:var(--border)">·</span>
   <span>Made with ❤️ by <strong style="color:var(--muted)">Alon Kassir</strong></span>
   <span style="color:var(--border)">·</span>
   <span>Data: <a href="https://open-meteo.com" target="_blank">Open-Meteo</a></span>
+  <span style="color:var(--border)">·</span>
+  <span style="color:var(--border)">·</span>
+  <button onclick="openPrivacy()" style="background:none;border:none;color:var(--dim);font-size:0.72rem;cursor:pointer;padding:0;text-decoration:underline;text-underline-offset:3px">🔒 Privacy</button>
   <span style="color:var(--border)">·</span>
   <button onclick="openAbout()" style="background:none;border:none;color:var(--dim);font-size:0.72rem;cursor:pointer;padding:0;text-decoration:underline;text-underline-offset:3px">ℹ️ About</button>
 </footer>
