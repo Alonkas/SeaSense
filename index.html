@@ -577,13 +577,16 @@
       max-height: 90vh; overflow-y: auto;
       box-shadow: 0 20px 60px rgba(0,0,0,0.5);
       transition: max-width 0.25s ease;
+      position: absolute;
     }
     .wizard-modal.wz-result { max-width: 392px; }
     .wizard-modal .big-dir-arrow { font-size: 2.75rem; width: 2.75rem; }
     .wz-header {
       display: flex; align-items: center; justify-content: space-between;
       padding: 18px 20px 14px; border-bottom: 1px solid var(--border);
+      cursor: grab; user-select: none;
     }
+    .wz-header:active { cursor: grabbing; }
     .wz-header h2 { margin: 0; font-size: 1.05rem; color: var(--text); }
     .wz-close {
       background: none; border: none; color: var(--dim); cursor: pointer;
@@ -731,7 +734,7 @@
       <img src="icons/compass.svg" alt="SeaSense logo" class="header-logo" />
       <div class="header-title-group">
         <h1><em>SeaSense</em></h1>
-        <div class="header-tagline">Know before you go · Catch the right moment <span style="opacity:0.55;margin-left:6px">v8.8.8</span></div>
+        <div class="header-tagline">Know before you go · Catch the right moment <span style="opacity:0.55;margin-left:6px">v8.8.9</span></div>
       </div>
     </div>
     <div class="header-right">
@@ -845,7 +848,7 @@
       </ul>
 
       <div class="about-footer-note">All data is free — no API key required.<br>
-      Built by <strong>Alon Kassir</strong> &nbsp;·&nbsp; v8.8.8</div>
+      Built by <strong>Alon Kassir</strong> &nbsp;·&nbsp; v8.8.9</div>
     </div>
   </div>
 </div>
@@ -2580,6 +2583,8 @@
     wzState = { location: sel, day: null, timeWindow: null, sport: null, level: null,
       customLat: parseFloat(document.getElementById('customLat').value) || null,
       customLon: parseFloat(document.getElementById('customLon').value) || null };
+    const modal = document.querySelector('.wizard-modal');
+    modal.style.left = ''; modal.style.top = ''; modal.style.margin = '';
     document.getElementById('wizardModal').style.display = 'flex';
     wzRenderForm();
   }
@@ -2923,10 +2928,32 @@
     showToast(`🎯 ${sportLabel} · ${lvlLabel} thresholds applied`);
   }
 
+  function initWizardDrag() {
+    const modal = document.querySelector('.wizard-modal');
+    let dragging = false, ox = 0, oy = 0;
+    modal.addEventListener('mousedown', function(e) {
+      if (!e.target.closest('.wz-header')) return;
+      if (e.target.closest('.wz-close')) return;
+      dragging = true;
+      const rect = modal.getBoundingClientRect();
+      ox = e.clientX - rect.left;
+      oy = e.clientY - rect.top;
+      e.preventDefault();
+    });
+    document.addEventListener('mousemove', function(e) {
+      if (!dragging) return;
+      modal.style.left   = (e.clientX - ox) + 'px';
+      modal.style.top    = (e.clientY - oy) + 'px';
+      modal.style.margin = '0';
+    });
+    document.addEventListener('mouseup', function() { dragging = false; });
+  }
+  initWizardDrag();
+
 </script>
 
 <footer class="app-footer">
-  <span>SeaSense <strong style="color:var(--muted)">v8.8.8</strong></span>
+  <span>SeaSense <strong style="color:var(--muted)">v8.8.9</strong></span>
   <span style="color:var(--border)">·</span>
   <span>Made with ❤️ by <strong style="color:var(--muted)">Alon Kassir</strong></span>
   <span style="color:var(--border)">·</span>
