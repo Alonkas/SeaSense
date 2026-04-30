@@ -737,7 +737,7 @@
       <img src="icons/compass.svg" alt="SeaSense logo" class="header-logo" />
       <div class="header-title-group">
         <h1><em>SeaSense</em></h1>
-        <div class="header-tagline">Know before you go · Catch the right moment <span style="opacity:0.55;margin-left:6px">v8.9.0</span></div>
+        <div class="header-tagline">Know before you go · Catch the right moment <span style="opacity:0.55;margin-left:6px">v8.9.1</span></div>
       </div>
     </div>
     <div class="header-right">
@@ -832,7 +832,7 @@
         <li><strong>Air temperature</strong> — so you know what to wear</li>
         <li><strong>Rain probability & amount</strong> — per time slot and daily summary</li>
         <li><strong>Sunrise, sunset & UV index</strong> — via the ☀️ Sun & UV panel</li>
-        <li><strong>GO / CAUTION / DANGER status</strong> — instantly at a glance, customisable thresholds</li>
+        <li><strong>GO / CAUTION / DANGER status</strong> — instantly at a glance</li>
       </ul>
 
       <div class="about-section-title">📡 Wind models</div>
@@ -854,7 +854,6 @@
 
       <div class="about-section-title">⚙️ Customisation</div>
       <ul class="about-list">
-        <li>Set your own <strong>CAUTION</strong> and <strong>DANGER</strong> wind & wave thresholds from the sidebar</li>
         <li>Switch between <strong>knots</strong> and <strong>km/h</strong></li>
         <li>Choose from 11 Israeli coastal locations or enter custom coordinates</li>
         <li>Share your exact view with friends via the 🔗 Share button</li>
@@ -862,7 +861,7 @@
       </ul>
 
       <div class="about-footer-note">All data is free — no API key required.<br>
-      Built by <strong>Alon Kassir</strong> &nbsp;·&nbsp; v8.9.0</div>
+      Built by <strong>Alon Kassir</strong> &nbsp;·&nbsp; v8.9.1</div>
     </div>
   </div>
 </div>
@@ -989,38 +988,6 @@
       <option value="America/Los_Angeles">US West (America/Los_Angeles)</option>
       <option value="UTC">UTC</option>
     </select>
-
-    <div class="sb-sep"></div>
-
-    <div class="sb-title">⚙️ Thresholds</div>
-
-    <div class="sb-group">
-      <span class="sb-badge caution">CAUTION</span>
-      <div class="sb-field">
-        <label class="sb-lbl">Wind above (<span class="wind-unit-lbl">kn</span>)</label>
-        <input class="sb-input" type="number" id="thCautWind" min="1" max="200" step="1" value="12" />
-      </div>
-      <div class="sb-field">
-        <label class="sb-lbl">Waves above (m)</label>
-        <input class="sb-input" type="number" id="thCautWave" min="0.1" max="5" step="0.1" value="0.6" />
-      </div>
-    </div>
-
-    <div class="sb-sep"></div>
-
-    <div class="sb-group">
-      <span class="sb-badge danger">DANGER</span>
-      <div class="sb-field">
-        <label class="sb-lbl">Wind above (<span class="wind-unit-lbl">kn</span>)</label>
-        <input class="sb-input" type="number" id="thDangerWind" min="1" max="200" step="1" value="18" />
-      </div>
-      <div class="sb-field">
-        <label class="sb-lbl">Waves above (m)</label>
-        <input class="sb-input" type="number" id="thDangerWave" min="0.1" max="5" step="0.1" value="1.0" />
-      </div>
-    </div>
-
-    <button class="sb-apply" onclick="applyThresholds()">✓ Apply</button>
 
     <div class="sb-title" style="margin-top:18px">📊 Widget</div>
     <button class="sb-apply" style="background:var(--card);border:1px solid var(--border);color:var(--text)" onclick="openWidget()">Open Widget Page →</button>
@@ -1376,12 +1343,6 @@
   if (savedUnit)  document.getElementById('windUnitSelect').value = savedUnit;
   document.querySelectorAll('.wind-unit-lbl').forEach(el => el.textContent = windUnitLabel());
 
-  // Load saved thresholds
-  const thInputs = ['thCautWind','thCautWave','thDangerWind','thDangerWave'];
-  thInputs.forEach(id => {
-    const v = localStorage.getItem(id);
-    if (v !== null) document.getElementById(id).value = v;
-  });
 
   // Apply saved theme (runs before first render so no flash)
   (function() {
@@ -1391,44 +1352,6 @@
     if (sel) sel.value = saved;
   })();
 
-  function getThresholds() {
-    const isKmh   = getWindUnit() === 'kmh';
-    const toKt    = v => isKmh ? v / KT_TO_KMH : v;
-    return {
-      cautWind:   toKt(parseFloat(document.getElementById('thCautWind').value)   || (isKmh ? 22 : 12)),
-      cautWave:        parseFloat(document.getElementById('thCautWave').value)   || 0.6,
-      dangerWind: toKt(parseFloat(document.getElementById('thDangerWind').value) || (isKmh ? 33 : 18)),
-      dangerWave:      parseFloat(document.getElementById('thDangerWave').value) || 1.0,
-      cautGust:   17,
-      dangerGust: 24,
-    };
-  }
-
-  function saveThresholds() {
-    thInputs.forEach(id => localStorage.setItem(id, document.getElementById(id).value));
-  }
-
-  function applyThresholds() {
-    const cautWind  = parseFloat(document.getElementById('thCautWind').value);
-    const dangerWind = parseFloat(document.getElementById('thDangerWind').value);
-    const cautWave  = parseFloat(document.getElementById('thCautWave').value);
-    const dangerWave = parseFloat(document.getElementById('thDangerWave').value);
-    if (!isNaN(cautWind) && !isNaN(dangerWind) && cautWind >= dangerWind) {
-      showToast('⚠️ CAUTION wind must be lower than DANGER wind');
-      return;
-    }
-    if (!isNaN(cautWave) && !isNaN(dangerWave) && cautWave >= dangerWave) {
-      showToast('⚠️ CAUTION wave height must be lower than DANGER wave height');
-      return;
-    }
-    saveThresholds();
-    // Close drawer on mobile
-    document.getElementById('sidebar').classList.remove('open');
-    document.getElementById('sidebarOverlay').classList.remove('open');
-    if (document.getElementById('output').innerHTML.trim()) {
-      fetchForecast();
-    }
-  }
 
   function setStatus(msg, type) {
     const el = document.getElementById('status');
@@ -1670,16 +1593,7 @@
     const newUnit = document.getElementById('windUnitSelect').value;
     const oldUnit = localStorage.getItem('windUnit') || 'kn';
     if (newUnit !== oldUnit) {
-      ['thCautWind','thDangerWind'].forEach(id => {
-        const el  = document.getElementById(id);
-        const val = parseFloat(el.value);
-        if (!isNaN(val))
-          el.value = newUnit === 'kmh'
-            ? Math.round(val * KT_TO_KMH)
-            : Math.round(val / KT_TO_KMH);
-      });
       localStorage.setItem('windUnit', newUnit);
-      saveThresholds();
     }
     document.querySelectorAll('.wind-unit-lbl').forEach(el => el.textContent = windUnitLabel());
   }
@@ -1744,33 +1658,25 @@
 
   function windColor(kt) {
     if (isLightTheme()) {
-      if (kt < 5)  return '#15803d';
-      if (kt < 11) return '#16a34a';
-      if (kt < 17) return '#ca8a04';
-      if (kt < 22) return '#ea580c';
+      if (kt < 12) return '#15803d';
+      if (kt < 18) return '#ca8a04';
       return '#dc2626';
     }
-    if (kt < 5)  return '#34d399';
-    if (kt < 11) return '#86efac';
-    if (kt < 17) return '#fbbf24';
-    if (kt < 22) return '#fb923c';
+    if (kt < 12) return '#34d399';
+    if (kt < 18) return '#fbbf24';
     return '#f87171';
   }
 
   function waveColor(m) {
     if (isLightTheme()) {
       if (m == null) return '#3a5f9e';
-      if (m < 0.3)   return '#15803d';
-      if (m < 0.6)   return '#16a34a';
+      if (m < 0.6)   return '#15803d';
       if (m < 1.0)   return '#ca8a04';
-      if (m < 1.5)   return '#ea580c';
       return '#dc2626';
     }
     if (m == null) return '#4a6a8a';
-    if (m < 0.3)   return '#34d399';
-    if (m < 0.6)   return '#86efac';
+    if (m < 0.6)   return '#34d399';
     if (m < 1.0)   return '#fbbf24';
-    if (m < 1.5)   return '#fb923c';
     return '#f87171';
   }
 
@@ -1788,9 +1694,8 @@
   }
 
   function status(windKt, gustKt, waveM) {
-    const th = getThresholds();
-    if (windKt >= th.dangerWind || gustKt >= th.dangerGust || waveM >= th.dangerWave) return 'danger';
-    if (windKt >= th.cautWind   || gustKt >= th.cautGust   || waveM >= th.cautWave)   return 'caution';
+    if (windKt >= 18 || gustKt >= 24 || waveM >= 1.0) return 'danger';
+    if (windKt >= 12 || gustKt >= 17 || waveM >= 0.6) return 'caution';
     return 'go';
   }
 
@@ -1833,7 +1738,6 @@
   }
 
   function renderForecast(windData, wLookup, tideLookup = {}) {
-    const th   = getThresholds();
     const { ts, windKt: windKts, gustKt: gustKts, deg: degs, rainMm: rains, rainPct: rainPcts, airTempC: airTemps } = windData;
 
     // Build rows grouped by day; anchor slots (every 3h) carry a .between[] for intermediate hourly slots
@@ -2371,10 +2275,6 @@
     }
     p.set('model', document.getElementById('modelSelect').value);
     p.set('unit',  document.getElementById('windUnitSelect').value);
-    p.set('thcw',  document.getElementById('thCautWind').value);
-    p.set('thcwv', document.getElementById('thCautWave').value);
-    p.set('thdw',  document.getElementById('thDangerWind').value);
-    p.set('thdwv', document.getElementById('thDangerWave').value);
     return `https://alonkas.github.io/SeaSense/?${p.toString()}`;
   }
 
@@ -2428,13 +2328,6 @@
       localStorage.setItem('windUnit', p.get('unit'));
       document.querySelectorAll('.wind-unit-lbl').forEach(el => el.textContent = windUnitLabel());
     }
-    const thMap = { thcw: 'thCautWind', thcwv: 'thCautWave', thdw: 'thDangerWind', thdwv: 'thDangerWave' };
-    Object.entries(thMap).forEach(([key, id]) => {
-      if (p.has(key)) {
-        const v = parseFloat(p.get(key));
-        if (!isNaN(v) && v >= 0) document.getElementById(id).value = v;
-      }
-    });
   }
 
   // ── Toast ────────────────────────────────────────────────────
@@ -2918,28 +2811,11 @@
     }
     localStorage.setItem('windyLocation', loc);
 
-    const th    = wzCalcThresholds(wzState.sport, wzState.level);
-    const isKmh = getWindUnit() === 'kmh';
-    const cw    = isKmh ? Math.round(th.cautWind   * KT_TO_KMH * 10) / 10 : th.cautWind;
-    const dw    = isKmh ? Math.round(th.dangerWind  * KT_TO_KMH * 10) / 10 : th.dangerWind;
-    document.getElementById('thCautWind').value   = cw;
-    document.getElementById('thDangerWind').value = dw;
-    document.getElementById('thCautWave').value   = th.cautWave;
-    document.getElementById('thDangerWave').value = th.dangerWave;
-    ['thCautWind','thDangerWind','thCautWave','thDangerWave'].forEach(id => {
-      const sb = document.getElementById(id + 'Sb');
-      if (sb) sb.value = document.getElementById(id).value;
-    });
-    localStorage.setItem('thCautWind',   cw);
-    localStorage.setItem('thDangerWind',  dw);
-    localStorage.setItem('thCautWave',   th.cautWave);
-    localStorage.setItem('thDangerWave',  th.dangerWave);
-
     closeWizard();
     fetchForecast();
     const sportLabel = WZ_SPORTS.find(s => s.key === wzState.sport)?.label || wzState.sport;
     const lvlLabel   = wzState.level.charAt(0).toUpperCase() + wzState.level.slice(1);
-    showToast(`🎯 ${sportLabel} · ${lvlLabel} thresholds applied`);
+    showToast(`🎯 ${sportLabel} · ${lvlLabel}`);
   }
 
   function initWizardDrag() {
@@ -2967,7 +2843,7 @@
 </script>
 
 <footer class="app-footer">
-  <span>SeaSense <strong style="color:var(--muted)">v8.9.0</strong></span>
+  <span>SeaSense <strong style="color:var(--muted)">v8.9.1</strong></span>
   <span style="color:var(--border)">·</span>
   <span>Made with ❤️ by <strong style="color:var(--muted)">Alon Kassir</strong></span>
   <span style="color:var(--border)">·</span>

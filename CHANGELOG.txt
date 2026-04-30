@@ -2,6 +2,13 @@ SeaSense — Version History
 ==========================
 
 
+v8.9.1 — 2026-04-30
+---------------------
+- Removed customisable thresholds feature (sidebar panel, inputs, Apply button, localStorage persistence)
+- GO / CAUTION / DANGER thresholds are now hardcoded: wind 12/18 kn, gust 17/24 kn, waves 0.6/1.0 m
+- Simplified wind and wave colour scale from 5 steps to 3 (green / amber / red), aligned to status thresholds
+
+
 v8.8.5 — 2026-04-23
 ---------------------
 - Sea Wizard button now has continuous pulsing animation to increase visibility and encourage interaction
