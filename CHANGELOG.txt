@@ -2,6 +2,21 @@ SeaSense — Version History
 ==========================
 
 
+v8.9.3 — 2026-05-01
+---------------------
+- Location change now auto-fetches new data
+- Model change auto-fetches in all layouts (model-comparison excluded — all models already loaded)
+- Wind unit change re-renders instantly without a new fetch
+- Sea Wizard skips fetch and re-renders when the same location is re-applied
+
+
+v8.9.2 — 2026-05-01
+---------------------
+- Location change now auto-fetches new data (when forecast is already loaded)
+- Model change now auto-fetches in all layouts (model-comparison no longer excluded)
+- Wind unit change now instantly re-renders existing data in the new unit
+
+
 v8.9.1 — 2026-04-30
 ---------------------
 - Removed customisable thresholds feature (sidebar panel, inputs, Apply button, localStorage persistence)
