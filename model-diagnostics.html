@@ -57,7 +57,7 @@
 <body>
 
 <h1>SeaSense — Model Diagnostics <span style="font-size:0.7em;color:#64748b">v3.0.0</span></h1>
-<p class="subtitle">Tests all 4 wind models + ECMWF WAM + CMEMS MED Waves (Zarr S3). Open browser console for raw responses.</p>
+<p class="subtitle">Tests all 4 wind models + ECMWF WAM + MFWAM + CMEMS MED Waves (Zarr S3). Open browser console for raw responses.</p>
 
 <div class="controls">
   <button id="runBtn" onclick="runAll()">▶ Run All Tests</button>
@@ -104,6 +104,14 @@
     <div class="card-header">
       <div class="name">ECMWF WAM — Waves</div>
       <button class="run-btn" onclick="runSingle('ecmwfWam')">▶</button>
+    </div>
+    <div class="status">Waiting…</div>
+    <div class="sample"></div>
+  </div>
+  <div class="model-card" id="card-mfwam">
+    <div class="card-header">
+      <div class="name">MFWAM — Waves</div>
+      <button class="run-btn" onclick="runSingle('mfwam')">▶</button>
     </div>
     <div class="status">Waiting…</div>
     <div class="sample"></div>
@@ -508,6 +516,86 @@ function appendWaveToCard(cardId, waveSlot) {
   sample.appendChild(div);
 }
 
+// ── Wave data (MFWAM via Open-Meteo Marine API) ───────────────────────────
+async function testMfwamWaveData() {
+  const lat = parseFloat(document.getElementById('lat').value);
+  const lon = parseFloat(document.getElementById('lon').value);
+
+  log(`\n── Testing MFWAM Wave Data (Open-Meteo Marine) ──`, 'head');
+  setCard('mfwam', 'running', 'Fetching…');
+
+  const url = `${OM_MARINE_URL}?latitude=${lat}&longitude=${lon}` +
+    `&hourly=wave_height,wave_direction,swell_wave_height,swell_wave_direction,` +
+    `secondary_swell_wave_height,secondary_swell_wave_direction,sea_surface_temperature` +
+    `&models=meteofrance_wave&timezone=UTC&forecast_days=3`;
+
+  log(`GET ${url}`, 'info');
+
+  const t0  = Date.now();
+  const res = await fetch(url);
+  const ms  = Date.now() - t0;
+  log(`Response: HTTP ${res.status} in ${ms} ms`, res.ok ? 'ok' : 'error');
+
+  if (!res.ok) {
+    const body = await res.text();
+    log(`Error body: ${body.slice(0, 300)}`, 'error');
+    setCard('mfwam', 'fail', `HTTP ${res.status}`);
+    return null;
+  }
+
+  const data = await res.json();
+  console.log('[mfwam] raw response', data);
+
+  const times = data.hourly?.time                           ?? [];
+  const wh    = data.hourly?.wave_height                    ?? [];
+  const whd   = data.hourly?.wave_direction                 ?? [];
+  const sw1   = data.hourly?.swell_wave_height              ?? [];
+  const sw1d  = data.hourly?.swell_wave_direction           ?? [];
+  const sw2   = data.hourly?.secondary_swell_wave_height    ?? [];
+  const sw2d  = data.hourly?.secondary_swell_wave_direction ?? [];
+  const sst   = data.hourly?.sea_surface_temperature        ?? [];
+
+  log(`Slots returned: ${times.length}`, 'info');
+
+  if (times.length === 0) {
+    log('WARNING: No time slots in response!', 'warn');
+    setCard('mfwam', 'fail', 'No data in response');
+    return null;
+  }
+
+  const first = wh.findIndex(v => v != null);
+  if (first === -1) {
+    log('WARNING: All wave_height values are null — location may be inland or outside MFWAM coverage', 'warn');
+    setCard('mfwam', 'fail', 'No wave data (inland?)');
+    return null;
+  }
+
+  log(`First valid slot: ${times[first]}`, 'info');
+  log(`  Total wave height : ${wh[first].toFixed(2)} m  @ ${whd[first] ?? '?'}°`, 'data');
+  log(`  Primary swell     : ${sw1[first] != null ? sw1[first].toFixed(2) + ' m' : '—'}  @ ${sw1d[first] ?? '—'}°`, 'data');
+  log(`  Secondary swell   : ${sw2[first] != null ? sw2[first].toFixed(2) + ' m' : '—'}  @ ${sw2d[first] ?? '—'}°`, 'data');
+  log(`  Wind sea (approx) : ${sw1[first] != null ? Math.max(0, wh[first] - sw1[first]).toFixed(2) + ' m' : '—'}  (wave − swell₁)`, 'data');
+  log(`  Water temp (SST)  : ${sst[first] != null ? sst[first].toFixed(1) + ' °C' : '— (null — not available for this location)'}`, sst[first] != null ? 'data' : 'warn');
+
+  for (let i = first + 1; i < Math.min(first + 4, times.length); i++) {
+    if (wh[i] == null) continue;
+    log(`  ${times[i]}: wave ${wh[i].toFixed(2)}m | sw1 ${sw1[i] != null ? sw1[i].toFixed(2) + 'm' : '—'} | sw2 ${sw2[i] != null ? sw2[i].toFixed(2) + 'm' : '—'}`, 'data');
+  }
+
+  log(`Last slot: ${times[times.length - 1]}`, 'info');
+
+  const firstSlotWave = {
+    wh:  wh[first],  whd:  whd[first],
+    sw1: sw1[first], sw1d: sw1d[first],
+    sw2: sw2[first], sw2d: sw2d[first],
+    sst: sst[first] ?? null,
+  };
+
+  setCard('mfwam', 'ok', `OK — ${times.length} slots`,
+    waveBlockHtml(firstSlotWave, times[first], times[times.length - 1]));
+  return firstSlotWave;
+}
+
 // ── Blosc / LZ4 decoder (pure JS, no CDN needed) ─────────────────────────
 function lz4Decompress(src, expectedSize) {
   const dst = new Uint8Array(expectedSize);
@@ -825,6 +913,7 @@ async function runSingle(key) {
   try {
     if      (key === 'imsIconLam') await testImsModel();
     else if (key === 'ecmwfWam')   await testWaveData();
+    else if (key === 'mfwam')      await testMfwamWaveData();
     else if (key === 'cmems')      await testCmemsZarr();
     else                           await testOpenMeteoModel(key);
   } catch (e) {
@@ -858,6 +947,7 @@ async function runAll() {
         appendWaveToCard(id, waveSlot);
       }
     }
+    await testMfwamWaveData();
     await testCmemsZarr();
   } catch (e) {
     log(`Unexpected error: ${e.message}`, 'error');

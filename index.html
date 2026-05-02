@@ -765,7 +765,7 @@
       <img src="icons/compass.svg" alt="SeaSense logo" class="header-logo" />
       <div class="header-title-group">
         <h1><em>SeaSense</em></h1>
-        <div class="header-tagline">Know before you go · Catch the right moment <span style="opacity:0.55;margin-left:6px">v8.9.4</span></div>
+        <div class="header-tagline">Know before you go · Catch the right moment <span style="opacity:0.55;margin-left:6px">v9.0.0</span></div>
       </div>
     </div>
     <div class="header-right">
@@ -823,6 +823,12 @@
     <option value="kn">Knots (kn)</option>
     <option value="kmh">km/h</option>
   </select>
+  <div class="bar-sep"></div>
+  <label class="model-label">Wave Model:</label>
+  <select id="waveModelSelect" onchange="onWaveModelChange()">
+    <option value="ecmwfWam">ECMWF WAM</option>
+    <option value="mfwam">MFWAM — Météo-France</option>
+  </select>
   <button class="btn" id="fetchBtn" onclick="fetchForecast()">Get Forecast</button>
   <div class="action-row">
   <button class="btn" id="wizardBtn" onclick="openWizard()">Sea Wizard</button>
@@ -879,7 +885,7 @@
           <div class="about-model-desc">US global model (~25 km). Best for extended outlooks beyond 5 days and cross-referencing with other models. Less detail near coastlines than ICON EU.</div>
         </div>
       </div>
-      <div class="about-wave-note">🌊 Wave data always comes from <strong>ECMWF WAM</strong> — the dedicated ocean wave model, regardless of which wind model is selected.</div>
+      <div class="about-wave-note">🌊 Wave model is selectable: <strong>ECMWF WAM</strong> (default, global coverage) or <strong>MFWAM</strong> (Météo-France, strong Mediterranean performance). In Model Comparison view both wave models are shown side-by-side.</div>
 
       <div class="about-section-title">⚙️ Customisation</div>
       <ul class="about-list">
@@ -890,7 +896,7 @@
       </ul>
 
       <div class="about-footer-note">All data is free — no API key required.<br>
-      Built by <strong>Alon Kassir</strong> &nbsp;·&nbsp; v8.9.4</div>
+      Built by <strong>Alon Kassir</strong> &nbsp;·&nbsp; v9.0.0</div>
     </div>
   </div>
 </div>
@@ -997,6 +1003,14 @@
 
     <div class="sb-sep"></div>
 
+    <div class="sb-title">🌊 Wave Model</div>
+    <select id="waveModelSelectSb" onchange="onWaveModelChangeSb()" class="sb-input" style="cursor:pointer">
+      <option value="ecmwfWam">ECMWF WAM</option>
+      <option value="mfwam">MFWAM — Météo-France</option>
+    </select>
+
+    <div class="sb-sep"></div>
+
     <div class="sb-title">🎨 Background</div>
     <select id="themeSelect" onchange="setTheme(this.value)" class="sb-input" style="cursor:pointer">
       <option value="light">Light</option>
@@ -1041,6 +1055,8 @@
   let _lastWindDataAll = null;
   let _lastWindDataIconEu = null;
   let _lastWindDataEcmwf  = null;
+  let _lastWaveMfwam   = {};   // MFWAM lookup, populated in model-comparison mode
+  let _refreshInterval = null; // moved here so fetchForecast() can always access it
 
   const LOCATIONS = {
     amigo:     { name: 'Amigo Surfski Club',     lat: 32.4116, lon: 34.8697, sea: 'Mediterranean Sea' },
@@ -1402,6 +1418,27 @@
     gfs:    { name: 'GFS — Global Forecast System', desc: 'NOAA\'s global model. Updated 4×/day. Reliable backup and good for cross-checking, but lower coastal resolution than ICON EU.' },
   };
 
+  // ── Wave model map ────────────────────────────────────────────────────────
+  const WAVE_MODEL_MAP = {
+    ecmwfWam: 'ecmwf_wam',
+    mfwam:    'meteofrance_wave',
+  };
+  const WAVE_MODEL_LABEL = {
+    ecmwfWam: 'ECMWF WAM',
+    mfwam:    'MFWAM',
+  };
+  const WAVE_MODEL_DESC = {
+    ecmwfWam: {
+      name: 'ECMWF WAM — Default wave model',
+      desc: 'The ECMWF ocean wave model. Global coverage, high accuracy, 7-day forecast. Default choice for the Israeli coast.',
+    },
+    mfwam: {
+      name: 'MFWAM — Météo-France Wave Model',
+      desc: 'Météo-France dedicated wave model with strong Atlantic & Mediterranean performance. Use alongside ECMWF WAM to cross-check wave forecasts.',
+    },
+  };
+  const VALID_WAVE_MODELS = new Set(['ecmwfWam', 'mfwam']);
+
   function updateModelInfo() {
     const m = document.getElementById('modelSelect').value;
     const info = OM_MODEL_DESC[m] || {};
@@ -1414,6 +1451,33 @@
     if (layout !== 'model-comparison' && layout !== 'weekly-overview' && _lastWindData !== null) fetchForecast();
   });
   updateModelInfo();
+
+  function onWaveModelChange() {
+    const key = document.getElementById('waveModelSelect').value;
+    if (!VALID_WAVE_MODELS.has(key)) return;
+    localStorage.setItem('ssWaveModel', key);
+    // Keep sidebar in sync
+    const sb = document.getElementById('waveModelSelectSb');
+    if (sb) sb.value = key;
+    if (_lastWindData !== null) fetchForecast();
+  }
+  function onWaveModelChangeSb() {
+    const key = document.getElementById('waveModelSelectSb').value;
+    if (!VALID_WAVE_MODELS.has(key)) return;
+    localStorage.setItem('ssWaveModel', key);
+    document.getElementById('waveModelSelect').value = key;
+    if (_lastWindData !== null) fetchForecast();
+  }
+
+  // Restore saved wave model (must run after VALID_WAVE_MODELS is defined above)
+  (() => {
+    const savedWaveModel = localStorage.getItem('ssWaveModel') || 'ecmwfWam';
+    if (VALID_WAVE_MODELS.has(savedWaveModel)) {
+      document.getElementById('waveModelSelect').value = savedWaveModel;
+      const sbWave = document.getElementById('waveModelSelectSb');
+      if (sbWave) sbWave.value = savedWaveModel;
+    }
+  })();
 
   async function fetchOpenMeteoWind(model) {
     const { lat, lon } = getCoords();
@@ -1440,16 +1504,16 @@
     return { ts, windKt, gustKt, deg, rainMm, rainPct, airTempC };
   }
 
-  async function fetchEcmwfWam() {
+  async function fetchWaveData(modelParam = 'ecmwf_wam') {
     const { lat, lon } = getCoords();
     const waveUrl = `${OM_MARINE_URL}?latitude=${lat}&longitude=${lon}` +
       `&hourly=wave_height,wave_direction,wave_period,swell_wave_height,swell_wave_direction,swell_wave_period,secondary_swell_wave_height,secondary_swell_wave_direction,secondary_swell_wave_period` +
-      `&models=ecmwf_wam&timezone=UTC&forecast_days=7`;
-    // sea_level_height_msl + sea_surface_temperature use the default model (ecmwf_wam doesn't provide SST)
+      `&models=${modelParam}&timezone=UTC&forecast_days=7`;
+    // sea_level_height_msl + sea_surface_temperature use the default model (wave models don't provide SST)
     const tideUrl = `${OM_MARINE_URL}?latitude=${lat}&longitude=${lon}` +
       `&hourly=sea_level_height_msl,sea_surface_temperature&timezone=UTC&forecast_days=7`;
     const [waveRes, tideRes] = await Promise.all([fetch(waveUrl), fetch(tideUrl).catch(() => null)]);
-    if (!waveRes.ok) throw new Error(`ECMWF WAM (Open-Meteo) HTTP ${waveRes.status}`);
+    if (!waveRes.ok) throw new Error(`Wave API (${modelParam}) HTTP ${waveRes.status}`);
     const data = await waveRes.json();
     const lookup = {};
     (data.hourly?.time || []).forEach((isoStr, i) => {
@@ -1471,7 +1535,7 @@
     if (tideRes?.ok) {
       const tideData = await tideRes.json();
       tideLookup = buildTideLookup(tideData.hourly?.time ?? [], tideData.hourly?.sea_level_height_msl ?? []);
-      // Merge SST — default model returns it; ecmwf_wam does not
+      // Merge SST — default model returns it; wave models do not
       (tideData.hourly?.time ?? []).forEach((isoStr, i) => {
         const t = new Date(isoStr + ':00Z').getTime();
         const sst = tideData.hourly.sea_surface_temperature?.[i] ?? null;
@@ -1562,8 +1626,11 @@
     try {
       const currentLayout = document.getElementById('layoutSelect').value;
       // Fetch wave data separately so a marine API failure doesn't kill wind data
+      const waveModelKey   = VALID_WAVE_MODELS.has(document.getElementById('waveModelSelect').value)
+        ? document.getElementById('waveModelSelect').value : 'ecmwfWam';
+      const waveModelParam = WAVE_MODEL_MAP[waveModelKey];
       let waveErrMsg = null;
-      const waveRaw = await fetchEcmwfWam().catch(e => {
+      const waveRaw = await fetchWaveData(waveModelParam).catch(e => {
         waveErrMsg = e.message;
         return null; // continue without waves
       });
@@ -1574,14 +1641,25 @@
         const windIconEu = await fetchOpenMeteoWind('iconEu');
         const windEcmwf  = await fetchOpenMeteoWind('ecmwf');
         const windGfs    = await fetchOpenMeteoWind('gfs');
-        if (!waveResult) setStatus(waveStatusMsg(waveErrMsg), 'warning'); else setStatus('');
+        // Fetch both wave models in parallel for comparison row (marine API rarely rate-limits)
+        const [waveEcmwfSettled, waveMfwamSettled] = await Promise.allSettled([
+          fetchWaveData('ecmwf_wam'),
+          fetchWaveData('meteofrance_wave'),
+        ]);
+        const waveEcmwfResult = waveEcmwfSettled.status === 'fulfilled' ? waveEcmwfSettled.value : null;
+        const waveMfwamResult = waveMfwamSettled.status === 'fulfilled' ? waveMfwamSettled.value : null;
+        // Use ECMWF WAM as primary for status/surf calculations; MFWAM stored separately
+        const compWaveResult  = waveEcmwfResult?.lookup ?? waveResult ?? {};
+        const compTideLookup  = waveEcmwfResult?.tideLookup ?? tideLookup;
+        if (!compWaveResult) setStatus(waveStatusMsg(waveErrMsg), 'warning'); else setStatus('');
         _lastWindDataAll    = { iconEu: windIconEu, ecmwf: windEcmwf, gfs: windGfs };
         _lastWindDataIconEu = windIconEu;
         _lastWindDataEcmwf  = windEcmwf;
         _lastWindData       = windIconEu;
-        _lastWaveLookup     = waveResult ?? {};
-        _lastTideLookup     = tideLookup;
-        renderForecast(windIconEu, waveResult ?? {}, tideLookup);
+        _lastWaveLookup     = compWaveResult;
+        _lastWaveMfwam      = waveMfwamResult?.lookup ?? {};
+        _lastTideLookup     = compTideLookup;
+        renderForecast(windIconEu, compWaveResult, compTideLookup);
         startAutoRefresh();
       } else if (currentLayout === 'weekly-overview') {
         const [windIconEu, windEcmwf] = await Promise.all([
@@ -1846,19 +1924,24 @@
     const MODEL_COLORS = { iconEu: '#3b82f6', ecmwf: '#10b981' };
     const MODEL_LABELS = { iconEu: 'ICON EU', ecmwf: 'ECMWF IFS' };
 
-    // Separator lines (same xOf formula as buildWeeklyChart → perfect alignment)
+    // Separator lines + collect their x-positions for column-center label placement
+    const sepXs = [0]; // left edge of SVG = left boundary of first column
     for (let i = 1; i < n; i++) {
       if (points[i].dateKey !== points[i - 1].dateKey) {
         const x = xOf(i).toFixed(1);
         parts.push(`<line x1="${x}" y1="0" x2="${x}" y2="${SVG_H}" style="stroke:var(--border)" stroke-width="1"/>`);
+        sepXs.push(parseFloat(x));
       }
     }
+    sepXs.push(SVG_W); // right edge of SVG = right boundary of last column
 
     // Day labels — 2 lines: "Sat. 2 May" / "ICON EU  24° ☂84%"
-    Object.entries(dayGroups).forEach(([dk, { start, end }]) => {
+    // cx is the midpoint between separator boundaries, not between data points,
+    // so a day with few remaining slots (e.g. today late in the evening) still centres correctly.
+    Object.entries(dayGroups).forEach(([dk], dayIdx) => {
       const dm = dayMeta[dk];
       if (!dm) return;
-      const cx = ((xOf(start) + xOf(end)) / 2).toFixed(1);
+      const cx = ((sepXs[dayIdx] + sepXs[dayIdx + 1]) / 2).toFixed(1);
       const [wd, ...rest] = dm.label.split(' ');
       // Line 1: day + date
       parts.push(`<text x="${cx}" y="15" text-anchor="middle" font-size="13" font-weight="700" fill="var(--text)">${wd} <tspan font-weight="400" fill="var(--muted)">${rest.join(' ')}</tspan></text>`);
@@ -1891,12 +1974,10 @@
 
     const parts = [];
 
-    // Grid lines + Y-axis labels
+    // Grid lines (no Y-axis labels)
     [0, yMax / 2, yMax].forEach(v => {
       const y = yOf(v);
-      const lbl = unit === 'm' ? (v === 0 ? '0' : v.toFixed(1)) : Math.round(v).toString();
       parts.push(`<line x1="${PAD_L}" y1="${y.toFixed(1)}" x2="${SVG_W - PAD_R}" y2="${y.toFixed(1)}" stroke="rgba(255,255,255,0.07)" stroke-width="1"/>`);
-      parts.push(`<text x="${(PAD_L - 5).toFixed(1)}" y="${(y + 3.5).toFixed(1)}" text-anchor="end" font-size="15" fill="rgba(190,215,245,0.9)">${lbl}</text>`);
     });
 
     // Threshold reference lines
@@ -1927,36 +2008,44 @@
     const lineD = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${xOf(i).toFixed(1)} ${yOf(p[valueKey] ?? 0).toFixed(1)}`).join(' ');
     parts.push(`<path d="${lineD}" fill="none" stroke="#3b82f6" stroke-width="1.5" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>`);
 
-    // Peak/trough annotations per day
+    // Per-day annotations: dot + value label + direction arrow, all at the midday point
     const dateGroups = {};
     points.forEach((p, i) => {
       if (!dateGroups[p.dateKey]) dateGroups[p.dateKey] = [];
       dateGroups[p.dateKey].push({ i, val: p[valueKey] ?? 0 });
     });
 
-    // One peak annotation per day
+    const midEntry = group => {
+      let best = group[Math.floor(group.length / 2)], minDiff = Infinity;
+      group.forEach(g => {
+        const pt = points[g.i];
+        if (pt?.t) {
+          const h = parseInt(new Date(pt.t).toLocaleTimeString('en-IL', { hour: '2-digit', hour12: false, timeZone: TIMEZONE }), 10);
+          const d = Math.abs(h - 12);
+          if (d < minDiff) { minDiff = d; best = g; }
+        }
+      });
+      return best;
+    };
+
     Object.values(dateGroups).forEach(group => {
-      const peak = group.reduce((a, b) => b.val > a.val ? b : a);
+      const mid = midEntry(group);
       const fmt = v => unit === 'm' ? v.toFixed(2).replace(/\.?0+$/, '') || '0' : Math.round(v).toString();
-      parts.push(`<circle cx="${xOf(peak.i).toFixed(1)}" cy="${yOf(peak.val).toFixed(1)}" r="2.5" fill="#3b82f6"/>`);
-      const ty = Math.max(PAD_T + 2, yOf(peak.val) - 10);
-      parts.push(`<text x="${xOf(peak.i).toFixed(1)}" y="${ty.toFixed(1)}" text-anchor="middle" font-size="16" font-weight="600" fill="#60a5fa">${fmt(peak.val)} ${unit}</text>`);
+      parts.push(`<circle cx="${xOf(mid.i).toFixed(1)}" cy="${yOf(mid.val).toFixed(1)}" r="2.5" fill="#3b82f6"/>`);
+      const ty = Math.max(PAD_T + 2, yOf(mid.val) - 32);
+      parts.push(`<text x="${xOf(mid.i).toFixed(1)}" y="${ty.toFixed(1)}" text-anchor="middle" font-size="16" font-weight="600" fill="#60a5fa">${fmt(mid.val)} ${unit}</text>`);
     });
 
-    // Direction arrows: 3–4 per day, drawn near the data line
     if (dirKey) {
       Object.values(dateGroups).forEach(group => {
-        const step = Math.max(1, Math.round(group.length / 3));
-        for (let si = 0; si < group.length; si += step) {
-          const g = group[si];
-          const dir = points[g.i][dirKey];
-          if (dir == null) continue;
-          const cx = xOf(g.i).toFixed(1);
-          const dataY = yOf(g.val);
-          const cy = Math.max(PAD_T + 10, dataY - 14).toFixed(1);
-          const rotate = (Math.round(dir) + 180) % 360;
-          parts.push(`<g transform="translate(${cx},${cy}) rotate(${rotate}) scale(1.25)"><path d="M0 -7 L-3.5 4 L0 2 L3.5 4 Z" fill="#60a5fa"/></g>`);
-        }
+        const mid = midEntry(group);
+        const dir = points[mid.i][dirKey];
+        if (dir == null) return;
+        const cx = xOf(mid.i).toFixed(1);
+        const dataY = yOf(mid.val);
+        const cy = Math.max(PAD_T + 10, dataY - 14).toFixed(1);
+        const rotate = (Math.round(dir) + 180) % 360;
+        parts.push(`<g transform="translate(${cx},${cy}) rotate(${rotate}) scale(1.25)"><path d="M0 -7 L-3.5 4 L0 2 L3.5 4 Z" fill="#60a5fa"/></g>`);
       });
     }
 
@@ -2315,6 +2404,34 @@
                 </tr>`;
             });
 
+            // ── Wave model comparison row (ECMWF WAM vs MFWAM) ─────────────
+            if (Object.keys(_lastWaveMfwam).length > 0) {
+              const wvE = wLookup[r.t]        || findNearest(wLookup, r.t)        || {};
+              const wvM = _lastWaveMfwam[r.t] || findNearest(_lastWaveMfwam, r.t) || {};
+              const whE  = wvE.wh  ?? null;
+              const whM  = wvM.wh  ?? null;
+              const sw1E = wvE.sw1 ?? null;
+              const sw1M = wvM.sw1 ?? null;
+              const whEC = waveColor(whE);
+              const whMC = waveColor(whM);
+              html += `<tr class="col-model-sep ${rowClass}" style="font-size:0.78rem">
+                  <td><span class="col-time" style="visibility:hidden">${time}</span><span class="col-model-label" style="color:#60a5fa">🌊 Waves</span></td>
+                  <td></td>
+                  <td>
+                    <span style="color:var(--dim)">WAM:</span> <span style="color:${whEC}">${whE != null ? whE.toFixed(1)+' m' : '—'}</span>
+                    &nbsp;
+                    <span style="color:var(--dim)">MF:</span> <span style="color:${whMC}">${whM != null ? whM.toFixed(1)+' m' : '—'}</span>
+                  </td>
+                  <td>
+                    <span style="color:var(--dim)">WAM:</span> ${sw1E != null ? sw1E.toFixed(1)+' m' : '—'}
+                    &nbsp;
+                    <span style="color:var(--dim)">MF:</span> ${sw1M != null ? sw1M.toFixed(1)+' m' : '—'}
+                  </td>
+                  <td class="col-hide-mobile" style="color:var(--dim)">—</td>
+                  <td colspan="5" style="color:var(--dim);font-size:0.75rem">wave model comparison</td>
+                </tr>`;
+            }
+
             if (r.between && r.between.length > 0) {
               r.between.forEach(b => {
                 const bt = b.d.toLocaleTimeString('en-IL', { hour: '2-digit', minute: '2-digit', timeZone: TIMEZONE });
@@ -2381,10 +2498,10 @@
             t:        r.t,
             windKt:   r.windKt,
             gustKt:   r.gustKt,
-            waveM:    r.wh  ?? 0,
-            swellM:   r.sw1 ?? 0,
+            waveM:    komarBreaker(r.wh, r.wp) ?? r.wh ?? 0,
+            swellM:   r.wh ?? 0,
             windDeg:  r.deg,
-            swellDeg: r.sw1d ?? r.whd ?? null,
+            swellDeg: r.whd ?? null,
             modelTag: r.modelTag ?? null,
             airTempC: r.airTempC ?? null,
             rainPct:  r.rainPct  ?? null,
@@ -2426,17 +2543,11 @@
         const yMaxWave  = Math.ceil(Math.max(...woPoints.map(p => p.waveM))  * 1.4 * 10) / 10 || 2;
         const yMaxSwell = Math.ceil(Math.max(...woPoints.map(p => p.swellM)) * 1.4 * 10) / 10 || 2;
         const woPointsWind = woPoints.map(p => ({ ...p, windKtDisp: windDisp(p.windKt) }));
-        const waveThresholds = [
-          { v: 0.5, color: 'rgba(52,211,153,0.55)' },
-          { v: 1.0, color: 'rgba(251,191,36,0.55)' },
-          { v: 1.5, color: 'rgba(239,68,68,0.55)' },
-        ].filter(t => t.v <= yMaxWave);
-
         html += `<div class="weekly-overview">`;
         html += buildWeeklyHeaderSvg(woPoints, dayMeta);
-        html += buildWeeklyChart(woPoints,     'waveM',      'Surf Waves',   'm',             yMaxWave,  null,       waveThresholds);
+        html += buildWeeklyChart(woPoints,     'waveM',      'Surf Waves',   'm',             yMaxWave,  null);
         html += buildWeeklyChart(woPointsWind, 'windKtDisp', 'Wind Speed',   windUnitLabel(), yMaxWind,  'windDeg');
-        html += buildWeeklyChart(woPoints,     'swellM',     'Swell Height', 'm',             yMaxSwell, 'swellDeg');
+        html += buildWeeklyChart(woPoints,     'swellM',     'Swell',        'm',             yMaxSwell, 'swellDeg');
         html += `</div>`;
       }
 
@@ -2642,7 +2753,6 @@
   // ── Auto-refresh (15 min) ────────────────────────────────────
   const AUTO_REFRESH_SEC = 15 * 60;
   let _refreshSecsLeft = AUTO_REFRESH_SEC;
-  let _refreshInterval = null;
 
   function startAutoRefresh() {
     clearInterval(_refreshInterval);
@@ -3148,7 +3258,7 @@
 </script>
 
 <footer class="app-footer">
-  <span>SeaSense <strong style="color:var(--muted)">v8.9.4</strong></span>
+  <span>SeaSense <strong style="color:var(--muted)">v9.0.0</strong></span>
   <span style="color:var(--border)">·</span>
   <span>Made with ❤️ by <strong style="color:var(--muted)">Alon Kassir</strong></span>
   <span style="color:var(--border)">·</span>
