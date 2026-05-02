@@ -255,6 +255,10 @@
       /* Day pills — tighter */
       .day-pill { padding: 8px 10px; }
       .dp-date  { font-size: 0.85rem; }
+
+      /* Weekly overview — horizontal scroll so charts stay readable */
+      .wo-header-wrap, .wo-chart-wrap { min-width: 800px; }
+      .wo-chart-label { font-size: 0.9rem; }
     }
 
 
@@ -723,7 +727,7 @@
     .light-theme .fc-side-label { color: #0c306a; background: var(--surface); }
 
     /* ── Weekly Overview layout ── */
-    .weekly-overview { width: 100%; overflow-x: hidden; }
+    .weekly-overview { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
     .wo-header-wrap {
       background: var(--surface);
       border: 1px solid var(--border);
@@ -761,7 +765,7 @@
       <img src="icons/compass.svg" alt="SeaSense logo" class="header-logo" />
       <div class="header-title-group">
         <h1><em>SeaSense</em></h1>
-        <div class="header-tagline">Know before you go · Catch the right moment <span style="opacity:0.55;margin-left:6px">v8.9.3</span></div>
+        <div class="header-tagline">Know before you go · Catch the right moment <span style="opacity:0.55;margin-left:6px">v8.9.4</span></div>
       </div>
     </div>
     <div class="header-right">
@@ -886,7 +890,7 @@
       </ul>
 
       <div class="about-footer-note">All data is free — no API key required.<br>
-      Built by <strong>Alon Kassir</strong> &nbsp;·&nbsp; v8.9.3</div>
+      Built by <strong>Alon Kassir</strong> &nbsp;·&nbsp; v8.9.4</div>
     </div>
   </div>
 </div>
@@ -1824,7 +1828,7 @@
   }
 
   function buildWeeklyHeaderSvg(points, dayMeta) {
-    const SVG_W = 1000, SVG_H = 60;
+    const SVG_W = 1000, SVG_H = 38;
     const PAD_L = 44, PAD_R = 12;
     const CW = SVG_W - PAD_L - PAD_R;
     const n = points.length;
@@ -1850,26 +1854,21 @@
       }
     }
 
-    // Day labels
+    // Day labels — 2 lines: "Sat. 2 May" / "ICON EU  24° ☂84%"
     Object.entries(dayGroups).forEach(([dk, { start, end }]) => {
       const dm = dayMeta[dk];
       if (!dm) return;
       const cx = ((xOf(start) + xOf(end)) / 2).toFixed(1);
       const [wd, ...rest] = dm.label.split(' ');
-      parts.push(`<text x="${cx}" y="13" text-anchor="middle" font-size="11" font-weight="700" fill="var(--text)">${wd}</text>`);
-      parts.push(`<text x="${cx}" y="24" text-anchor="middle" font-size="9" fill="var(--muted)">${rest.join(' ')}</text>`);
-      if (dm.model) {
-        const color = MODEL_COLORS[dm.model] || 'var(--dim)';
-        const lbl = MODEL_LABELS[dm.model] || dm.model;
-        parts.push(`<text x="${cx}" y="36" text-anchor="middle" font-size="8" font-weight="700" letter-spacing="0.04em" fill="${color}">${lbl}</text>`);
-      }
-      // Temp & rain row
+      // Line 1: day + date
+      parts.push(`<text x="${cx}" y="15" text-anchor="middle" font-size="13" font-weight="700" fill="var(--text)">${wd} <tspan font-weight="400" fill="var(--muted)">${rest.join(' ')}</tspan></text>`);
+      // Line 2: model + temp/rain
+      const modelLbl = dm.model ? (MODEL_LABELS[dm.model] || dm.model) : '';
+      const modelColor = dm.model ? (MODEL_COLORS[dm.model] || 'var(--dim)') : 'var(--dim)';
       const tempStr = dm.maxTempC  != null ? `${Math.round(dm.maxTempC)}\u00b0` : '';
       const rainStr = dm.maxRainPct != null && dm.maxRainPct > 0 ? `\u2614${Math.round(dm.maxRainPct)}%` : '';
-      const infoStr = [tempStr, rainStr].filter(Boolean).join('  ');
-      if (infoStr) {
-        parts.push(`<text x="${cx}" y="52" text-anchor="middle" font-size="9" fill="var(--muted)">${infoStr}</text>`);
-      }
+      const infoStr = [tempStr, rainStr].filter(Boolean).join('\u00a0');
+      if (infoStr) parts.push(`<text x="${cx}" y="33" text-anchor="middle" font-size="10" fill="var(--muted)">${infoStr}</text>`);
     });
 
     return `<div class="wo-header-wrap">
@@ -1897,7 +1896,7 @@
       const y = yOf(v);
       const lbl = unit === 'm' ? (v === 0 ? '0' : v.toFixed(1)) : Math.round(v).toString();
       parts.push(`<line x1="${PAD_L}" y1="${y.toFixed(1)}" x2="${SVG_W - PAD_R}" y2="${y.toFixed(1)}" stroke="rgba(255,255,255,0.07)" stroke-width="1"/>`);
-      parts.push(`<text x="${(PAD_L - 5).toFixed(1)}" y="${(y + 3.5).toFixed(1)}" text-anchor="end" font-size="9" fill="rgba(160,185,220,0.65)">${lbl}</text>`);
+      parts.push(`<text x="${(PAD_L - 5).toFixed(1)}" y="${(y + 3.5).toFixed(1)}" text-anchor="end" font-size="15" fill="rgba(190,215,245,0.9)">${lbl}</text>`);
     });
 
     // Threshold reference lines
@@ -1906,7 +1905,7 @@
         if (v > yMax) return;
         const y = yOf(v).toFixed(1);
         parts.push(`<line x1="${PAD_L}" y1="${y}" x2="${SVG_W - PAD_R}" y2="${y}" stroke="${color}" stroke-width="1" stroke-dasharray="4 3"/>`);
-        parts.push(`<text x="${(PAD_L - 5).toFixed(1)}" y="${(parseFloat(y) + 3.5).toFixed(1)}" text-anchor="end" font-size="8.5" fill="${color}">${v % 1 === 0 ? v + '.0' : v}</text>`);
+        parts.push(`<text x="${(PAD_L - 5).toFixed(1)}" y="${(parseFloat(y) + 3.5).toFixed(1)}" text-anchor="end" font-size="13" fill="${color}">${v % 1 === 0 ? v + '.0' : v}</text>`);
       });
     }
 
@@ -1935,28 +1934,13 @@
       dateGroups[p.dateKey].push({ i, val: p[valueKey] ?? 0 });
     });
 
-    const annotations = [];
+    // One peak annotation per day
     Object.values(dateGroups).forEach(group => {
-      const peak   = group.reduce((a, b) => b.val > a.val ? b : a);
-      const trough = group.reduce((a, b) => b.val < a.val ? b : a);
+      const peak = group.reduce((a, b) => b.val > a.val ? b : a);
       const fmt = v => unit === 'm' ? v.toFixed(2).replace(/\.?0+$/, '') || '0' : Math.round(v).toString();
-      annotations.push({ x: xOf(peak.i), y: yOf(peak.val), text: `${fmt(peak.val)} ${unit}`, above: true });
       parts.push(`<circle cx="${xOf(peak.i).toFixed(1)}" cy="${yOf(peak.val).toFixed(1)}" r="2.5" fill="#3b82f6"/>`);
-      if (trough.i !== peak.i && (peak.val - trough.val) > yMax * 0.1) {
-        annotations.push({ x: xOf(trough.i), y: yOf(trough.val), text: `${fmt(trough.val)} ${unit}`, above: false });
-        parts.push(`<circle cx="${xOf(trough.i).toFixed(1)}" cy="${yOf(trough.val).toFixed(1)}" r="2.5" fill="#3b82f6"/>`);
-      }
-    });
-
-    // Render annotation labels with collision nudging
-    annotations.sort((a, b) => a.x - b.x);
-    for (let i = 1; i < annotations.length; i++) {
-      if (Math.abs(annotations[i].x - annotations[i - 1].x) < 60) annotations[i].nudge = (annotations[i].above ? -10 : 10);
-    }
-    annotations.forEach(a => {
-      const baseOffset = a.above ? -10 : 13;
-      const ty = Math.max(PAD_T + 2, a.y + baseOffset + (a.nudge || 0));
-      parts.push(`<text x="${a.x.toFixed(1)}" y="${ty.toFixed(1)}" text-anchor="middle" font-size="9.5" font-weight="600" fill="#93c5fd">${a.text}</text>`);
+      const ty = Math.max(PAD_T + 2, yOf(peak.val) - 10);
+      parts.push(`<text x="${xOf(peak.i).toFixed(1)}" y="${ty.toFixed(1)}" text-anchor="middle" font-size="16" font-weight="600" fill="#60a5fa">${fmt(peak.val)} ${unit}</text>`);
     });
 
     // Direction arrows: 3–4 per day, drawn near the data line
@@ -1971,7 +1955,7 @@
           const dataY = yOf(g.val);
           const cy = Math.max(PAD_T + 10, dataY - 14).toFixed(1);
           const rotate = (Math.round(dir) + 180) % 360;
-          parts.push(`<g transform="translate(${cx},${cy}) rotate(${rotate})"><path d="M0 -7 L-3.5 4 L0 2 L3.5 4 Z" fill="rgba(160,185,220,0.75)"/></g>`);
+          parts.push(`<g transform="translate(${cx},${cy}) rotate(${rotate}) scale(1.25)"><path d="M0 -7 L-3.5 4 L0 2 L3.5 4 Z" fill="#60a5fa"/></g>`);
         }
       });
     }
@@ -3164,7 +3148,7 @@
 </script>
 
 <footer class="app-footer">
-  <span>SeaSense <strong style="color:var(--muted)">v8.9.3</strong></span>
+  <span>SeaSense <strong style="color:var(--muted)">v8.9.4</strong></span>
   <span style="color:var(--border)">·</span>
   <span>Made with ❤️ by <strong style="color:var(--muted)">Alon Kassir</strong></span>
   <span style="color:var(--border)">·</span>
