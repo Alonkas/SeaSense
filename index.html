@@ -1961,7 +1961,7 @@
     </div>`;
   }
 
-  function buildWeeklyChart(points, valueKey, label, unit, yMax, dirKey = null, thresholds = null) {
+  function buildWeeklyChart(points, valueKey, label, unit, yMax, dirKey = null, thresholds = null, colorFn = null) {
     const SVG_W = 1000, SVG_H = 160;
     const PAD_L = 44, PAD_R = 12, PAD_T = 24, PAD_B = 22;
     const CW = SVG_W - PAD_L - PAD_R;
@@ -2031,9 +2031,10 @@
     Object.values(dateGroups).forEach(group => {
       const mid = midEntry(group);
       const fmt = v => unit === 'm' ? v.toFixed(2).replace(/\.?0+$/, '') || '0' : Math.round(v).toString();
-      parts.push(`<circle cx="${xOf(mid.i).toFixed(1)}" cy="${yOf(mid.val).toFixed(1)}" r="2.5" fill="#3b82f6"/>`);
+      const annotColor = colorFn ? colorFn(points[mid.i]) : '#60a5fa';
+      parts.push(`<circle cx="${xOf(mid.i).toFixed(1)}" cy="${yOf(mid.val).toFixed(1)}" r="2.5" fill="${annotColor}"/>`);
       const ty = Math.max(PAD_T + 2, yOf(mid.val) - 32);
-      parts.push(`<text x="${xOf(mid.i).toFixed(1)}" y="${ty.toFixed(1)}" text-anchor="middle" font-size="16" font-weight="600" fill="#60a5fa">${fmt(mid.val)} ${unit}</text>`);
+      parts.push(`<text x="${xOf(mid.i).toFixed(1)}" y="${ty.toFixed(1)}" text-anchor="middle" font-size="16" font-weight="600" fill="${annotColor}">${fmt(mid.val)} ${unit}</text>`);
     });
 
     if (dirKey) {
@@ -2045,7 +2046,8 @@
         const dataY = yOf(mid.val);
         const cy = Math.max(PAD_T + 10, dataY - 14).toFixed(1);
         const rotate = (Math.round(dir) + 180) % 360;
-        parts.push(`<g transform="translate(${cx},${cy}) rotate(${rotate}) scale(1.25)"><path d="M0 -7 L-3.5 4 L0 2 L3.5 4 Z" fill="#60a5fa"/></g>`);
+        const annotColor = colorFn ? colorFn(points[mid.i]) : '#60a5fa';
+        parts.push(`<g transform="translate(${cx},${cy}) rotate(${rotate}) scale(1.25)"><path d="M0 -7 L-3.5 4 L0 2 L3.5 4 Z" fill="${annotColor}"/></g>`);
       });
     }
 
@@ -2545,9 +2547,9 @@
         const woPointsWind = woPoints.map(p => ({ ...p, windKtDisp: windDisp(p.windKt) }));
         html += `<div class="weekly-overview">`;
         html += buildWeeklyHeaderSvg(woPoints, dayMeta);
-        html += buildWeeklyChart(woPoints,     'waveM',      'Surf Waves',   'm',             yMaxWave,  null);
-        html += buildWeeklyChart(woPointsWind, 'windKtDisp', 'Wind Speed',   windUnitLabel(), yMaxWind,  'windDeg');
-        html += buildWeeklyChart(woPoints,     'swellM',     'Swell',        'm',             yMaxSwell, 'swellDeg');
+        html += buildWeeklyChart(woPoints,     'waveM',      'Surf Waves',   'm',             yMaxWave,  null,       null, p => waveColor(p.waveM));
+        html += buildWeeklyChart(woPointsWind, 'windKtDisp', 'Wind Speed',   windUnitLabel(), yMaxWind,  'windDeg',  null, p => windColor(p.windKt));
+        html += buildWeeklyChart(woPoints,     'swellM',     'Swell',        'm',             yMaxSwell, 'swellDeg', null, p => waveColor(p.swellM));
         html += `</div>`;
       }
 
