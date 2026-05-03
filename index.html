@@ -747,7 +747,7 @@
       letter-spacing: 0.09em; color: var(--dim); margin-bottom: 6px;
     }
     .wo-chart-unit { font-weight: 400; text-transform: none; letter-spacing: 0; color: var(--muted); }
-    .wo-chart-svg { display: block; width: 100%; overflow: visible; }
+    .wo-chart-svg { display: block; width: 75%; overflow: visible; }
     .wo-no-data { color: var(--muted); font-size: 0.85rem; padding: 8px 0; }
 
   </style>
@@ -1955,7 +1955,7 @@
     });
 
     return `<div class="wo-header-wrap">
-      <svg viewBox="0 0 ${SVG_W} ${SVG_H}" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg" style="display:block;width:100%">
+      <svg viewBox="0 0 ${SVG_W} ${SVG_H}" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg" style="display:block;width:75%">
         ${parts.join('\n        ')}
       </svg>
     </div>`;
