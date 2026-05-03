@@ -258,7 +258,7 @@
 
       /* Weekly overview — horizontal scroll so charts stay readable */
       .wo-header-wrap, .wo-chart-wrap { min-width: 800px; }
-      .wo-chart-label { font-size: 0.9rem; }
+      .wo-chart-label { font-size: 0.72rem; }
     }
 
 
@@ -732,19 +732,21 @@
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: 10px;
-      padding: 4px 14px 2px;
+      padding: 4px 6px 2px;
       margin-bottom: 6px;
     }
     .wo-chart-wrap {
+      position: relative;
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: 10px;
-      padding: 10px 14px 8px;
+      padding: 10px 6px 8px;
       margin-bottom: 14px;
     }
     .wo-chart-label {
-      font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
-      letter-spacing: 0.09em; color: var(--dim); margin-bottom: 6px;
+      position: absolute; top: 6px; left: calc(6px + 0.8%); z-index: 1;
+      font-size: 0.58rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.09em; color: var(--dim); line-height: 1.3;
     }
     .wo-chart-unit { font-weight: 400; text-transform: none; letter-spacing: 0; color: var(--muted); }
     .wo-chart-svg { display: block; width: 75%; overflow: visible; }
@@ -1907,7 +1909,7 @@
 
   function buildWeeklyHeaderSvg(points, dayMeta) {
     const SVG_W = 1000, SVG_H = 38;
-    const PAD_L = 44, PAD_R = 12;
+    const PAD_L = 10, PAD_R = 6;
     const CW = SVG_W - PAD_L - PAD_R;
     const n = points.length;
     if (n === 0) return '';
@@ -1955,7 +1957,7 @@
 
   function buildWeeklyChart(points, valueKey, label, unit, yMax, dirKey = null, thresholds = null, colorFn = null) {
     const SVG_W = 1000, SVG_H = 160;
-    const PAD_L = 44, PAD_R = 12, PAD_T = 24, PAD_B = 22;
+    const PAD_L = 10, PAD_R = 6, PAD_T = 24, PAD_B = 22;
     const CW = SVG_W - PAD_L - PAD_R;
     const CH = SVG_H - PAD_T - PAD_B;
     const n = points.length;
@@ -2073,7 +2075,7 @@
     }
 
     return `<div class="wo-chart-wrap">
-      <div class="wo-chart-label">${label} <span class="wo-chart-unit">(${unit})</span></div>
+      <div class="wo-chart-label">${label.replace(' ', '<br>')} <span class="wo-chart-unit">(${unit})</span></div>
       <svg class="wo-chart-svg" viewBox="0 0 ${SVG_W} ${SVG_H}" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
         ${parts.join('\n        ')}
       </svg>
