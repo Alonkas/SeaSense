@@ -1911,37 +1911,29 @@
     const CW = SVG_W - PAD_L - PAD_R;
     const n = points.length;
     if (n === 0) return '';
-    const xOf = i => PAD_L + (n > 1 ? (i / (n - 1)) * CW : CW / 2);
 
-    // Build day groups: first and last index per dateKey
     const dayGroups = {};
     points.forEach((p, i) => {
       if (!dayGroups[p.dateKey]) dayGroups[p.dateKey] = { start: i, end: i };
       else dayGroups[p.dateKey].end = i;
     });
 
+    const numDays = Object.keys(dayGroups).length;
+    const dayWidth = CW / numDays;
+
     const parts = [];
     const MODEL_COLORS = { iconEu: '#3b82f6', ecmwf: '#10b981' };
     const MODEL_LABELS = { iconEu: 'ICON EU', ecmwf: 'ECMWF IFS' };
 
-    // Separator lines + collect their x-positions for column-center label placement
-    const sepXs = [0]; // left edge of SVG = left boundary of first column
-    for (let i = 1; i < n; i++) {
-      if (points[i].dateKey !== points[i - 1].dateKey) {
-        const x = xOf(i).toFixed(1);
-        parts.push(`<line x1="${x}" y1="0" x2="${x}" y2="${SVG_H}" style="stroke:var(--border)" stroke-width="1"/>`);
-        sepXs.push(parseFloat(x));
-      }
+    for (let d = 1; d < numDays; d++) {
+      const x = (PAD_L + d * dayWidth).toFixed(1);
+      parts.push(`<line x1="${x}" y1="0" x2="${x}" y2="${SVG_H}" style="stroke:var(--border)" stroke-width="1"/>`);
     }
-    sepXs.push(SVG_W); // right edge of SVG = right boundary of last column
 
-    // Day labels — 2 lines: "Sat. 2 May" / "ICON EU  24° ☂84%"
-    // cx is the midpoint between separator boundaries, not between data points,
-    // so a day with few remaining slots (e.g. today late in the evening) still centres correctly.
     Object.entries(dayGroups).forEach(([dk], dayIdx) => {
       const dm = dayMeta[dk];
       if (!dm) return;
-      const cx = ((sepXs[dayIdx] + sepXs[dayIdx + 1]) / 2).toFixed(1);
+      const cx = (PAD_L + dayIdx * dayWidth + dayWidth / 2).toFixed(1);
       const [wd, ...rest] = dm.label.split(' ');
       // Line 1: day + date
       parts.push(`<text x="${cx}" y="15" text-anchor="middle" font-size="13" font-weight="700" fill="var(--text)">${wd} <tspan font-weight="400" fill="var(--muted)">${rest.join(' ')}</tspan></text>`);
@@ -1969,7 +1961,37 @@
     const n = points.length;
     if (n === 0) return `<div class="wo-chart-wrap"><div class="wo-no-data">${label}: no data</div></div>`;
 
-    const xOf = i => PAD_L + (n > 1 ? (i / (n - 1)) * CW : CW / 2);
+    // Build day boundaries so each day gets equal width regardless of point count
+    const dayBoundaries = [];
+    let prevDateKey = null;
+    points.forEach((p, i) => {
+      if (p.dateKey !== prevDateKey) {
+        dayBoundaries.push({dateKey: p.dateKey, startIdx: i});
+        prevDateKey = p.dateKey;
+      }
+    });
+    const numDays = dayBoundaries.length;
+
+    // Map each point to its day and position within that day
+    const pointToDay = new Array(n);
+    points.forEach((p, i) => {
+      const dayIdx = dayBoundaries.findIndex(d => d.dateKey === p.dateKey);
+      const dayEnd = dayIdx + 1 < dayBoundaries.length ? dayBoundaries[dayIdx + 1].startIdx : n;
+      const dayStart = dayBoundaries[dayIdx].startIdx;
+      const pointWithinDay = i - dayStart;
+      pointToDay[i] = { dayIdx, dayStart, dayEnd, pointWithinDay };
+    });
+
+    const dayWidth = CW / numDays;
+    const xOf = i => {
+      const { dayIdx, dayEnd, pointWithinDay } = pointToDay[i];
+      const pointsInDay = dayEnd - pointToDay[i].dayStart;
+      const dayX = PAD_L + dayIdx * dayWidth;
+      const xWithinDay = pointsInDay > 1 ? (pointWithinDay / (pointsInDay - 1)) * dayWidth : dayWidth / 2;
+      return dayX + xWithinDay;
+    };
+    const dayCenterX = dayIdx => PAD_L + dayIdx * dayWidth + dayWidth / 2;
+
     const yOf = v => PAD_T + CH - Math.min(1, Math.max(0, (v ?? 0) / yMax)) * CH;
 
     const parts = [];
@@ -1990,12 +2012,10 @@
       });
     }
 
-    // Day separator dashed lines
-    for (let i = 1; i < n; i++) {
-      if (points[i].dateKey !== points[i - 1].dateKey) {
-        const x = xOf(i).toFixed(1);
-        parts.push(`<line x1="${x}" y1="${PAD_T}" x2="${x}" y2="${PAD_T + CH}" style="stroke:var(--border)" stroke-width="1"/>`);
-      }
+    // Day separator lines — equal-width columns
+    for (let d = 1; d < numDays; d++) {
+      const x = (PAD_L + d * dayWidth).toFixed(1);
+      parts.push(`<line x1="${x}" y1="${PAD_T}" x2="${x}" y2="${PAD_T + CH}" style="stroke:var(--border)" stroke-width="1"/>`);
     }
 
     // Area fill path
@@ -2028,21 +2048,22 @@
       return best;
     };
 
-    Object.values(dateGroups).forEach(group => {
+    Object.entries(dateGroups).forEach(([dk, group], dayIdx) => {
       const mid = midEntry(group);
       const fmt = v => unit === 'm' ? v.toFixed(2).replace(/\.?0+$/, '') || '0' : Math.round(v).toString();
       const annotColor = colorFn ? colorFn(points[mid.i]) : '#60a5fa';
-      parts.push(`<circle cx="${xOf(mid.i).toFixed(1)}" cy="${yOf(mid.val).toFixed(1)}" r="2.5" fill="${annotColor}"/>`);
+      const cx = dayCenterX(dayIdx).toFixed(1);
+      parts.push(`<circle cx="${cx}" cy="${yOf(mid.val).toFixed(1)}" r="2.5" fill="${annotColor}"/>`);
       const ty = Math.max(PAD_T + 2, yOf(mid.val) - 32);
-      parts.push(`<text x="${xOf(mid.i).toFixed(1)}" y="${ty.toFixed(1)}" text-anchor="middle" font-size="16" font-weight="600" fill="${annotColor}">${fmt(mid.val)} ${unit}</text>`);
+      parts.push(`<text x="${cx}" y="${ty.toFixed(1)}" text-anchor="middle" font-size="16" font-weight="600" fill="${annotColor}">${fmt(mid.val)} ${unit}</text>`);
     });
 
     if (dirKey) {
-      Object.values(dateGroups).forEach(group => {
+      Object.entries(dateGroups).forEach(([dk, group], dayIdx) => {
         const mid = midEntry(group);
         const dir = points[mid.i][dirKey];
         if (dir == null) return;
-        const cx = xOf(mid.i).toFixed(1);
+        const cx = dayCenterX(dayIdx).toFixed(1);
         const dataY = yOf(mid.val);
         const cy = Math.max(PAD_T + 10, dataY - 14).toFixed(1);
         const rotate = (Math.round(dir) + 180) % 360;
