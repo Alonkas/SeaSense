@@ -402,14 +402,6 @@
     .tide-event.tide-low  { color: #94a3b8; }
     .tide-ht { opacity: 0.75; }
     .day-title { font-size: 1.05rem; font-weight: 700; }
-    .day-badges { display: flex; gap: 8px; }
-    .dbadge {
-      font-size: 0.67rem; font-weight: 700; padding: 3px 10px;
-      border-radius: 20px; letter-spacing: 0.05em;
-    }
-    .dbadge.go      { background: rgba(16,185,129,0.15); color: #34d399; border: 1px solid rgba(16,185,129,0.25); }
-    .dbadge.caution { background: rgba(245,158,11,0.15);  color: #fbbf24; border: 1px solid rgba(245,158,11,0.25); }
-    .dbadge.danger    { background: rgba(239,68,68,0.15);   color: #f87171; border: 1px solid rgba(239,68,68,0.25); }
 
     /* ── Cards grid ── */
     .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(155px, 1fr)); gap: 10px; }
@@ -698,9 +690,6 @@
     .light-theme .status-bar.error   { color: #dc2626; }
     .light-theme .status-bar.warning { color: #b45309; }
     .light-theme .status-bar.loading { color: #1e3a6e; }
-    .light-theme .dbadge.go      { background: rgba(21,128,61,0.12);  color: #15803d; border-color: rgba(21,128,61,0.25); }
-    .light-theme .dbadge.caution { background: rgba(180,83,9,0.12);   color: #b45309; border-color: rgba(180,83,9,0.25); }
-    .light-theme .dbadge.danger  { background: rgba(220,38,38,0.12);  color: #dc2626; border-color: rgba(220,38,38,0.25); }
     .light-theme .fc-status.go      { background: rgba(21,128,61,0.15);  color: #15803d; }
     .light-theme .fc-status.caution { background: rgba(180,83,9,0.15);   color: #b45309; }
     .light-theme .fc-status.danger  { background: rgba(220,38,38,0.15);  color: #dc2626; }
@@ -767,7 +756,7 @@
       <img src="icons/compass.svg" alt="SeaSense logo" class="header-logo" />
       <div class="header-title-group">
         <h1><em>SeaSense</em></h1>
-        <div class="header-tagline">Know before you go · Catch the right moment <span style="opacity:0.55;margin-left:6px">v9.0.0</span></div>
+        <div class="header-tagline">Know before you go · Catch the right moment <span style="opacity:0.55;margin-left:6px">v9.1.0</span></div>
       </div>
     </div>
     <div class="header-right">
@@ -898,7 +887,7 @@
       </ul>
 
       <div class="about-footer-note">All data is free — no API key required.<br>
-      Built by <strong>Alon Kassir</strong> &nbsp;·&nbsp; v9.0.0</div>
+      Built by <strong>Alon Kassir</strong> &nbsp;·&nbsp; v9.1.0</div>
     </div>
   </div>
 </div>
@@ -2209,11 +2198,6 @@
               <div class="day-title">${dk}</div>
               ${hasBetween ? `<button class="hourly-details-btn" onclick="toggleColHours('${id}',this)">▸ hourly details</button>` : ''}
             </div>
-            <div class="day-badges">
-              ${goCnt    > 0 ? `<span class="dbadge go">${goCnt} GO</span>` : ''}
-              ${cautCnt  > 0 ? `<span class="dbadge caution">${cautCnt} CAUTION</span>` : ''}
-              ${dangerCnt > 0 ? `<span class="dbadge danger">${dangerCnt} DANGER</span>` : ''}
-            </div>
           </div>
           ${fmtTideStrip(tideLookup[days[dk].isoDate], dailyWaterTemp)}
           <div class="col-table-wrap">
@@ -2347,11 +2331,6 @@
               <div class="day-header-left">
                 <div class="day-title">${dk}</div>
                 ${hasBetween ? `<button class="hourly-details-btn" onclick="toggleColHours('${id}',this)">▸ hourly details</button>` : ''}
-              </div>
-              <div class="day-badges">
-                ${goCnt    > 0 ? `<span class="dbadge go">${goCnt} GO</span>` : ''}
-                ${cautCnt  > 0 ? `<span class="dbadge caution">${cautCnt} CAUTION</span>` : ''}
-                ${dangerCnt > 0 ? `<span class="dbadge danger">${dangerCnt} DANGER</span>` : ''}
               </div>
             </div>
             ${fmtTideStrip(tideLookup[days[dk].isoDate], mcDailyWaterTemp)}
@@ -2591,11 +2570,6 @@
           <div class="day-header">
             <div class="day-header-left">
               <div class="day-title">${dk}</div>
-            </div>
-            <div class="day-badges">
-              ${goCnt   > 0 ? `<span class="dbadge go">${goCnt} GO</span>` : ''}
-              ${cautCnt > 0 ? `<span class="dbadge caution">${cautCnt} CAUTION</span>` : ''}
-              ${dangerCnt > 0 ? `<span class="dbadge danger">${dangerCnt} DANGER</span>` : ''}
             </div>
           </div>
           ${fmtTideStrip(tideLookup[days[dk].isoDate], hbDailyWaterTemp)}
@@ -3283,7 +3257,7 @@
 </script>
 
 <footer class="app-footer">
-  <span>SeaSense <strong style="color:var(--muted)">v9.0.0</strong></span>
+  <span>SeaSense <strong style="color:var(--muted)">v9.1.0</strong></span>
   <span style="color:var(--border)">·</span>
   <span>Made with ❤️ by <strong style="color:var(--muted)">Alon Kassir</strong></span>
   <span style="color:var(--border)">·</span>
