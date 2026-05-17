@@ -756,7 +756,7 @@
       <img src="icons/compass.svg" alt="SeaSense logo" class="header-logo" />
       <div class="header-title-group">
         <h1><em>SeaSense</em></h1>
-        <div class="header-tagline">Know before you go · Catch the right moment <span style="opacity:0.55;margin-left:6px">v9.1.0</span></div>
+        <div class="header-tagline">Know before you go · Catch the right moment <span style="opacity:0.55;margin-left:6px">v9.2.0</span></div>
       </div>
     </div>
     <div class="header-right">
@@ -792,11 +792,11 @@
 
 <!-- Settings bar -->
 <div class="ctrl-bar">
-  <label class="model-label">Wind Model:</label>
-  <select id="modelSelect">
-    <option value="iconEu">ICON EU — Europe / Mediterranean</option>
-    <option value="ecmwf">ECMWF IFS — Global (high res)</option>
-    <option value="gfs">GFS — Global</option>
+  <label class="model-label">Models:</label>
+  <select id="modelPresetSelect" onchange="onModelPresetChange()">
+    <option value="ecmwf">ECMWF (IFS/WAM)</option>
+    <option value="iconEuMfwam">ICON EU + MFWAM</option>
+    <option value="gfs">GFS</option>
   </select>
   <span class="layout-ctrl-group">
     <div class="bar-sep"></div>
@@ -813,12 +813,6 @@
   <select id="windUnitSelect" onchange="onUnitChange()">
     <option value="kn">Knots (kn)</option>
     <option value="kmh">km/h</option>
-  </select>
-  <div class="bar-sep"></div>
-  <label class="model-label">Wave Model:</label>
-  <select id="waveModelSelect" onchange="onWaveModelChange()">
-    <option value="ecmwfWam">ECMWF WAM</option>
-    <option value="mfwam">MFWAM — Météo-France</option>
   </select>
   <button class="btn" id="fetchBtn" onclick="fetchForecast()">Get Forecast</button>
   <div class="action-row">
@@ -887,7 +881,7 @@
       </ul>
 
       <div class="about-footer-note">All data is free — no API key required.<br>
-      Built by <strong>Alon Kassir</strong> &nbsp;·&nbsp; v9.1.0</div>
+      Built by <strong>Alon Kassir</strong> &nbsp;·&nbsp; v9.2.0</div>
     </div>
   </div>
 </div>
@@ -975,12 +969,13 @@
   <!-- Sidebar -->
   <aside class="sidebar" id="sidebar">
 
-    <!-- Model info -->
-    <div class="sb-title">📡 Wind Model</div>
-    <div class="sb-model-info" id="modelInfo">
-      <div class="sb-model-name" id="modelInfoName"></div>
-      <div class="sb-model-desc" id="modelInfoDesc"></div>
-    </div>
+    <!-- Model preset -->
+    <div class="sb-title">Models</div>
+    <select id="modelPresetSelectSb" onchange="onModelPresetChangeSb()" class="sb-input" style="cursor:pointer">
+      <option value="ecmwf">ECMWF (IFS/WAM)</option>
+      <option value="iconEuMfwam">ICON EU + MFWAM</option>
+      <option value="gfs">GFS</option>
+    </select>
 
     <div class="sb-sep"></div>
 
@@ -990,14 +985,6 @@
       <option value="column">Column Layout</option>
       <option value="model-comparison">Model Comparison</option>
       <option value="weekly-overview">Weekly Overview</option>
-    </select>
-
-    <div class="sb-sep"></div>
-
-    <div class="sb-title">🌊 Wave Model</div>
-    <select id="waveModelSelectSb" onchange="onWaveModelChangeSb()" class="sb-input" style="cursor:pointer">
-      <option value="ecmwfWam">ECMWF WAM</option>
-      <option value="mfwam">MFWAM — Météo-France</option>
     </select>
 
     <div class="sb-sep"></div>
@@ -1364,10 +1351,7 @@
     document.title = `SeaSense — ${loc.name}`;
   }
 
-  const modelSelect = document.getElementById('modelSelect');
-  const savedModel  = localStorage.getItem('ssModel') || 'iconEu';
   const savedLoc    = localStorage.getItem('windyLocation');
-  modelSelect.value = savedModel;
   if (savedLoc) {
     document.getElementById('locationSelect').value = savedLoc;
     if (savedLoc === 'custom') {
@@ -1402,72 +1386,46 @@
   }
 
   const OM_MODEL_MAP   = { gfs: 'gfs_seamless', iconEu: 'icon_eu', ecmwf: 'ecmwf_ifs025' };
-  const OM_MODEL_LABEL = { gfs: 'GFS', iconEu: 'ICON EU', ecmwf: 'ECMWF IFS' };
-  const OM_MODEL_DESC  = {
-    iconEu: { name: 'ICON EU — Best for coastal paddling', desc: '⭐ Recommended for Israeli coast. High-resolution (~7 km) German model covering Europe & the Mediterranean. Captures sea breezes, coastal wind shifts, and near-shore conditions better than global models. Best for same-day and next-day decisions.' },
-    ecmwf:  { name: 'ECMWF IFS — Best for trip planning', desc: 'Widely considered the world\'s most accurate global model. Less detailed at the coastline, but superior skill at 3–7 day range. Use it to spot approaching rough weather earlier in the week.' },
-    gfs:    { name: 'GFS — Global Forecast System', desc: 'NOAA\'s global model. Updated 4×/day. Reliable backup and good for cross-checking, but lower coastal resolution than ICON EU.' },
-  };
 
   // ── Wave model map ────────────────────────────────────────────────────────
   const WAVE_MODEL_MAP = {
     ecmwfWam: 'ecmwf_wam',
     mfwam:    'meteofrance_wave',
+    gfsWave:  'gfs_wave',
   };
-  const WAVE_MODEL_LABEL = {
-    ecmwfWam: 'ECMWF WAM',
-    mfwam:    'MFWAM',
-  };
-  const WAVE_MODEL_DESC = {
-    ecmwfWam: {
-      name: 'ECMWF WAM — Default wave model',
-      desc: 'The ECMWF ocean wave model. Global coverage, high accuracy, 7-day forecast. Default choice for the Israeli coast.',
-    },
-    mfwam: {
-      name: 'MFWAM — Météo-France Wave Model',
-      desc: 'Météo-France dedicated wave model with strong Atlantic & Mediterranean performance. Use alongside ECMWF WAM to cross-check wave forecasts.',
-    },
-  };
-  const VALID_WAVE_MODELS = new Set(['ecmwfWam', 'mfwam']);
+  const VALID_WAVE_MODELS = new Set(['ecmwfWam', 'mfwam', 'gfsWave']);
 
-  function updateModelInfo() {
-    const m = document.getElementById('modelSelect').value;
-    const info = OM_MODEL_DESC[m] || {};
-    document.getElementById('modelInfoName').textContent = info.name || '';
-    document.getElementById('modelInfoDesc').textContent = info.desc || '';
-  }
-  document.getElementById('modelSelect').addEventListener('change', () => {
-    updateModelInfo();
-    const layout = document.getElementById('layoutSelect').value;
-    if (layout !== 'model-comparison' && layout !== 'weekly-overview' && _lastWindData !== null) fetchForecast();
-  });
-  updateModelInfo();
+  // ── Combined model presets ────────────────────────────────────────────────
+  const MODEL_PRESETS = {
+    ecmwf:       { wind: 'ecmwf',  wave: 'ecmwfWam', label: 'ECMWF (IFS/WAM)' },
+    iconEuMfwam: { wind: 'iconEu', wave: 'mfwam',    label: 'ICON EU + MFWAM'  },
+    gfs:         { wind: 'gfs',    wave: 'gfsWave',  label: 'GFS'              },
+  };
+  const VALID_PRESETS = new Set(Object.keys(MODEL_PRESETS));
 
-  function onWaveModelChange() {
-    const key = document.getElementById('waveModelSelect').value;
-    if (!VALID_WAVE_MODELS.has(key)) return;
-    localStorage.setItem('ssWaveModel', key);
-    // Keep sidebar in sync
-    const sb = document.getElementById('waveModelSelectSb');
+  function onModelPresetChange() {
+    const key = document.getElementById('modelPresetSelect').value;
+    if (!VALID_PRESETS.has(key)) return;
+    localStorage.setItem('ssModelPreset', key);
+    const sb = document.getElementById('modelPresetSelectSb');
     if (sb) sb.value = key;
     if (_lastWindData !== null) fetchForecast();
   }
-  function onWaveModelChangeSb() {
-    const key = document.getElementById('waveModelSelectSb').value;
-    if (!VALID_WAVE_MODELS.has(key)) return;
-    localStorage.setItem('ssWaveModel', key);
-    document.getElementById('waveModelSelect').value = key;
+  function onModelPresetChangeSb() {
+    const key = document.getElementById('modelPresetSelectSb').value;
+    if (!VALID_PRESETS.has(key)) return;
+    localStorage.setItem('ssModelPreset', key);
+    document.getElementById('modelPresetSelect').value = key;
     if (_lastWindData !== null) fetchForecast();
   }
 
-  // Restore saved wave model (must run after VALID_WAVE_MODELS is defined above)
+  // Restore saved model preset
   (() => {
-    const savedWaveModel = localStorage.getItem('ssWaveModel') || 'ecmwfWam';
-    if (VALID_WAVE_MODELS.has(savedWaveModel)) {
-      document.getElementById('waveModelSelect').value = savedWaveModel;
-      const sbWave = document.getElementById('waveModelSelectSb');
-      if (sbWave) sbWave.value = savedWaveModel;
-    }
+    const savedPreset = localStorage.getItem('ssModelPreset') || 'ecmwf';
+    const initPreset  = VALID_PRESETS.has(savedPreset) ? savedPreset : 'ecmwf';
+    document.getElementById('modelPresetSelect').value = initPreset;
+    const sbPreset = document.getElementById('modelPresetSelectSb');
+    if (sbPreset) sbPreset.value = initPreset;
   })();
 
   async function fetchOpenMeteoWind(model) {
@@ -1603,7 +1561,7 @@
       return;
     }
 
-    localStorage.setItem('ssModel', modelSelect.value);
+    localStorage.setItem('ssModelPreset', document.getElementById('modelPresetSelect').value);
     localStorage.setItem('windyLocation', document.getElementById('locationSelect').value);
     updateHeaderLocation();
 
@@ -1617,9 +1575,10 @@
     try {
       const currentLayout = document.getElementById('layoutSelect').value;
       // Fetch wave data separately so a marine API failure doesn't kill wind data
-      const waveModelKey   = VALID_WAVE_MODELS.has(document.getElementById('waveModelSelect').value)
-        ? document.getElementById('waveModelSelect').value : 'ecmwfWam';
-      const waveModelParam = WAVE_MODEL_MAP[waveModelKey];
+      const rawPreset      = document.getElementById('modelPresetSelect').value;
+      const presetKey      = VALID_PRESETS.has(rawPreset) ? rawPreset : 'ecmwf';
+      const preset         = MODEL_PRESETS[presetKey];
+      const waveModelParam = WAVE_MODEL_MAP[preset.wave];
       let waveErrMsg = null;
       const waveRaw = await fetchWaveData(waveModelParam).catch(e => {
         waveErrMsg = e.message;
@@ -1668,7 +1627,7 @@
         renderForecast(blended, waveResult ?? {}, tideLookup);
         startAutoRefresh();
       } else {
-        const windData = await fetchOpenMeteoWind(modelSelect.value);
+        const windData = await fetchOpenMeteoWind(preset.wind);
         if (!waveResult) setStatus(waveStatusMsg(waveErrMsg), 'warning'); else setStatus('');
         _lastWindData    = windData;
         _lastWaveLookup  = waveResult ?? {};
@@ -2683,7 +2642,7 @@
       p.set('lat', document.getElementById('customLat').value);
       p.set('lon', document.getElementById('customLon').value);
     }
-    p.set('model', document.getElementById('modelSelect').value);
+    p.set('model', document.getElementById('modelPresetSelect').value);
     p.set('unit',  document.getElementById('windUnitSelect').value);
     return `https://alonkas.github.io/SeaSense/?${p.toString()}`;
   }
@@ -2730,8 +2689,14 @@
       if (!isNaN(lon) && lon >= -180 && lon <= 180)
         document.getElementById('customLon').value = lon;
     }
-    if (p.has('model') && VALID_MODELS.has(p.get('model')))
-      document.getElementById('modelSelect').value = p.get('model');
+    if (p.has('model')) {
+      const modelParam = p.get('model');
+      if (VALID_PRESETS.has(modelParam)) {
+        document.getElementById('modelPresetSelect').value = modelParam;
+        const sbPreset = document.getElementById('modelPresetSelectSb');
+        if (sbPreset) sbPreset.value = modelParam;
+      }
+    }
 
     if (p.has('unit') && VALID_UNITS.has(p.get('unit'))) {
       document.getElementById('windUnitSelect').value = p.get('unit');
@@ -3257,7 +3222,7 @@
 </script>
 
 <footer class="app-footer">
-  <span>SeaSense <strong style="color:var(--muted)">v9.1.0</strong></span>
+  <span>SeaSense <strong style="color:var(--muted)">v9.2.0</strong></span>
   <span style="color:var(--border)">·</span>
   <span>Made with ❤️ by <strong style="color:var(--muted)">Alon Kassir</strong></span>
   <span style="color:var(--border)">·</span>
